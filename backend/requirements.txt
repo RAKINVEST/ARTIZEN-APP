@@ -1,0 +1,23 @@
+fastapi==0.115.6
+python-multipart==0.0.20
+uvicorn[standard]==0.34.0
+sqlalchemy==2.0.36
+greenlet==3.1.1
+asyncpg==0.30.0
+alembic==1.14.0
+pypdf==5.1.0
+Pillow==11.0.0
+pydantic==2.10.4
+pydantic-settings==2.7.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+# passlib 1.7.4 (its last release) self-tests bcrypt with a >72-byte secret
+# during backend detection; bcrypt>=4.1 correctly rejects that as invalid,
+# which passlib doesn't handle — pinned to the last version before that
+# behavior change so hash_password()/verify_password() actually work.
+bcrypt==4.0.1
+email-validator==2.2.0
+httpx==0.28.1
+anthropic==0.40.0
+pytest==8.3.4
+pytest-asyncio==0.25.0

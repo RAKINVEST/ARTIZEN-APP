@@ -1,0 +1,16 @@
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          # Backend fields are snake_case; Dart fields stay idiomatic
+          # camelCase. One global rule here beats repeating @JsonKey(name:
+          # ...) on every field of every model.
+          field_rename: snake
+          # Partial updates (PUT .../{id}) rely on the backend's
+          # `model_dump(exclude_unset=True)`, which only ignores keys that
+          # are *absent* from the JSON body — an explicit `null` still
+          # counts as "set" and would wipe the field. Omitting null fields
+          # from toJson() entirely keeps "untouched in the edit form" and
+          # "not sent" the same thing.
+          include_if_null: false
