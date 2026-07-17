@@ -6,7 +6,12 @@ Ce fichier commence à la V2 : la V1 a été construite en 10 étapes dont
 commit — un changelog rétroactif n'apporterait rien que `README.md` ne dise
 déjà mieux.
 
-## [Non publié] — V2 en cours (branche `v2`)
+## [v2.0.0-rc1] — 2026-07-17 (branche `v2`)
+
+**Release Candidate V2, gelée.** Périmètre figé, certifié, et validé en
+conditions proches de la production. Aucune modification de code n'intervient
+au-delà de ce tag ; toute anomalie découverte ouvre une RC2 (bloquante /
+majeure) ou est reportée V2.x/V3 (mineure).
 
 ### Décision de périmètre (stabilisation, 2026-07-17)
 
@@ -178,6 +183,26 @@ entreprise, compteurs cohérents, et `downgrade` → `upgrade` complet.*
 V2 a été rejouée en conteneur — build avec `reportlab`, installation neuve
 (6 migrations), pytest **208** dans le conteneur, QA fonctionnelle (21/21), rollback. Un bug
 spécifique à Docker a été trouvé et corrigé au passage (voir ci-dessus).
+
+### User Acceptance Test (UAT)
+
+Le parcours artisan complet (17 étapes : connexion → devis → PDF → envoi →
+acceptation → duplication → PDF → déconnexion) a été **piloté dans un vrai
+navigateur Chrome** contre la pile Docker réelle, ses effets vérifiés en
+base, dans les logs et sous l'angle multi-tenant. **13/13** vérifications
+d'invariants backend. Deux anomalies rencontrées, toutes deux dans le
+harnais de test (aucune dans le produit) ; corrigées, scénario rejoué au
+vert. Comble le dernier trou de validation de la V2 (« personne n'a cliqué
+de bout en bout »). Détail : `docs/release/08_USER_ACCEPTANCE_TEST.md`.
+
+### Documentation de release (Release Manager)
+
+Livrables de publication ajoutés sous `docs/` (RELEASE_NOTES, QUICK_START,
+INSTALL, DEPLOYMENT_GUIDE, DOCKER_GUIDE, BACKUP_RESTORE, MIGRATION_GUIDE,
+USER_GUIDE, ADMIN_GUIDE, API_REFERENCE, SECURITY, KNOWN_LIMITATIONS,
+TROUBLESHOOTING, ARCHITECTURE) et à la racine (LICENSE, CONTRIBUTING).
+Package de release assemblé dans `docs/release/package/`. Toute la
+documentation correspond au code tagué `v2.0.0-rc1`.
 
 ## [v1.0.0-rc1] — 2026-07-17
 
