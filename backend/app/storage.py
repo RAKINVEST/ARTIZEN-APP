@@ -18,8 +18,11 @@ import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import lru_cache
+from typing import Annotated
 from pathlib import Path
 from uuid import uuid4
+
+from fastapi import Depends
 
 from app.core.config import settings
 
@@ -88,3 +91,12 @@ def get_storage_provider() -> StorageProvider:
     if settings.STORAGE_PROVIDER == "local":
         return LocalStorageProvider(Path(settings.STORAGE_LOCAL_ROOT))
     raise ValueError(f"Unsupported storage provider: {settings.STORAGE_PROVIDER}")
+
+
+#: Moved here from ``branding/deps.py`` when ``quotes`` became the second
+#: module needing it — the same "second consumer = infrastructure signal"
+#: that pulled ``storage.py`` itself out of ``branding/`` in step 3, and
+#: upload validation after it. One module needing something is not a
+#: signal; two is. ``branding/deps.py`` re-exports it so nothing that
+#: already imported it from there has to change.
+StorageDep = Annotated[StorageProvider, Depends(get_storage_provider)]

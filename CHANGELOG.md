@@ -24,6 +24,30 @@ déjà mieux.
     (`QUOTE_TRANSITIONS`) ; **rien ne revient jamais à `draft`** — un devis
     envoyé est un document que le client détient.
 
+- **Moteur PDF** (`app/pdf/`) et `GET /quotes/{id}/pdf`. Le trou du
+  produit : un artisan pouvait composer un devis et pas l'envoyer.
+  - **Générique par construction.** `app/pdf/` n'importe que `app.pdf.*` —
+    vérifié mécaniquement. Il ne sait pas ce qu'est un devis, ce qui est la
+    seule façon de servir aussi factures, avoirs et bons de commande sans
+    une branche par type. Le `title` est une chaîne, pas un enum : les
+    documents futurs n'exigeront aucune modification du moteur.
+    *Prouvé : le même code rend DEVIS, FACTURE, AVOIR (montants négatifs
+    inclus) et BON DE COMMANDE.*
+  - **Il ne calcule rien.** Chaque montant arrive déjà calculé par
+    `QuoteCalculator` — y compris le récapitulatif de TVA par taux, ajouté
+    à `calculate_vat_breakdown()` plutôt qu'au moteur. Le PDF que reçoit le
+    client porte, au centime, les totaux que l'artisan a validés à l'écran.
+  - **reportlab** plutôt que WeasyPrint : pur Python, aucune bibliothèque
+    système. WeasyPrint rend du HTML/CSS (plus agréable à styler) mais
+    exige cairo et pango via apt, que `python:3.13-slim` n'a pas.
+  - **Rendu à la demande, jamais stocké** : le PDF est une fonction pure du
+    devis, et un devis ne change jamais (aucun chemin de modification).
+  - **Hors event loop** (`asyncio.to_thread`) : reportlab est CPU-bound,
+    comme pypdf que l'audit V1 avait trouvé en train de geler toutes les
+    autres requêtes.
+  - **Dégradation systématique** : logo illisible, couleur invalide, aucune
+    identité configurée — l'artisan perd le logo, jamais son document.
+
 ### Modifié
 
 - **`DELETE /quotes/{id}` n'accepte plus que les brouillons** (409 sinon).
@@ -66,9 +90,10 @@ entreprise, compteurs cohérents, et `downgrade` → `upgrade` complet.*
 
 | Porte | Résultat |
 |---|---|
-| `pytest` | **162 passed** (142 → 162) |
+| `pytest` | **189 passed** (142 → 189) |
 | Migration + rollback | ✅ aller-retour complet sur données réelles |
-| Tentative de casse V2 | ✅ **18/18** |
+| Tentative de casse — cycle de vie | ✅ **18/18** |
+| Tentative de casse — moteur PDF | ✅ **14/14** |
 | Docker | ❌ **non exécuté** — voir ci-dessous |
 
 **Limitation :** Docker Desktop est arrêté sur la machine de développement

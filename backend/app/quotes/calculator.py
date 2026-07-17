@@ -37,6 +37,15 @@ class QuoteTotals:
     total_ttc: Decimal
 
 
+@dataclass
+class VatBucket:
+    """One row of the per-rate VAT summary a French document must carry."""
+
+    rate: Decimal
+    base_ht: Decimal
+    vat_amount: Decimal
+
+
 class QuoteCalculator:
     def calculate_line(
         self, *, quantity: Decimal, unit_price_ht: Decimal, vat_rate: Decimal
@@ -51,3 +60,32 @@ class QuoteCalculator:
         total_vat = sum((line.total_vat for line in lines), Decimal("0.00"))
         total_ttc = total_ht + total_vat
         return QuoteTotals(total_ht=total_ht, total_vat=total_vat, total_ttc=total_ttc)
+
+    def calculate_vat_breakdown(
+        self, lines: list[tuple[Decimal, Decimal, Decimal]]
+    ) -> list[VatBucket]:
+        """Group already-computed line amounts by VAT rate.
+
+        ``lines`` is ``(vat_rate, total_ht, total_vat)`` per line — amounts
+        this class already produced. Nothing new is computed from prices
+        here: this only sums, which is why it lives in this file rather
+        than in the PDF engine that needs it. A document is required to
+        show what part of its VAT sits at each rate, and that summary is a
+        monetary figure like any other — the moment it were derived
+        anywhere else, "amounts are only computed here" would stop being
+        true.
+
+        Sorted by rate ascending, so a document's summary reads the same
+        way every time regardless of the order lines were entered.
+        """
+        by_rate: dict[Decimal, VatBucket] = {}
+        for vat_rate, total_ht, total_vat in lines:
+            bucket = by_rate.get(vat_rate)
+            if bucket is None:
+                by_rate[vat_rate] = VatBucket(
+                    rate=vat_rate, base_ht=total_ht, vat_amount=total_vat
+                )
+            else:
+                bucket.base_ht += total_ht
+                bucket.vat_amount += total_vat
+        return [by_rate[rate] for rate in sorted(by_rate)]

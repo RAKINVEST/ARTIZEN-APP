@@ -6,9 +6,11 @@ from fastapi import Depends
 
 from app.api.deps import SessionDep
 from app.branding.service import BrandingService
-from app.storage import StorageProvider, get_storage_provider
 
-StorageDep = Annotated[StorageProvider, Depends(get_storage_provider)]
+# Re-exported, not defined here: it moved to app/storage.py once `quotes`
+# became a second consumer. Kept as a name in this module so existing
+# imports keep working.
+from app.storage import StorageDep  # noqa: F401
 
 
 def get_branding_service(session: SessionDep, storage: StorageDep) -> BrandingService:

@@ -121,7 +121,14 @@ et `models/__init__.py`. Tout est monté sous `API_PREFIX` (`/api`) sauf `/healt
 
 Un helper reste dans son module d'origine jusqu'à ce qu'un **deuxième** module en ait besoin ;
 il est extrait vers le transverse à ce moment-là, pas avant. C'est l'histoire de `storage.py`,
-de la validation d'upload et de `core/authorization.py`. Ne pas généraliser par anticipation.
+de la validation d'upload, de `core/authorization.py`, et — en V2 — de `StorageDep`, remonté de
+`branding/deps.py` vers `storage.py` le jour où `quotes` en a eu besoin pour le PDF.
+Ne pas généraliser par anticipation.
+
+**Exception assumée : `app/pdf/`.** Il est transverse dès le premier consommateur, parce que les
+suivants sont déclarés (factures, avoirs, bons de commande). Contrainte à tenir : `app/pdf/`
+n'importe **que** `app.pdf.*` — jamais un module métier. C'est ce qui le rend réutilisable ; la
+traduction Devis → Document vit dans `quotes/document_mapper.py`, côté métier.
 
 ### Abstractions de fournisseur
 

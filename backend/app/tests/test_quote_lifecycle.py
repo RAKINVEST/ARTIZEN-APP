@@ -6,10 +6,13 @@ human can use, and can it only move through its commercial life forwards.
 """
 
 import asyncio
+import io
+import uuid
 from datetime import datetime, timezone
 
 import pytest
 from httpx import AsyncClient
+from pypdf import PdfReader
 
 from app.quotes.service import format_quote_number
 
@@ -285,3 +288,75 @@ async def test_changing_status_of_another_companys_quote_is_a_404(
     assert response.status_code == 404
     # And the attempt left it untouched.
     assert (await client.get(f"/api/quotes/{quote['id']}")).json()["status"] == "draft"
+
+
+# --- PDF (V2.1-2) ---
+
+
+async def test_quote_pdf_is_downloadable_and_readable(
+    client: AsyncClient, client_id: str, item_id: str
+) -> None:
+    quote = await _create_quote(client, client_id, item_id)
+
+    response = await client.get(f"/api/quotes/{quote['id']}/pdf")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.content.startswith(b"%PDF-")
+    text = PdfReader(io.BytesIO(response.content)).pages[0].extract_text()
+    assert quote["quote_number"] in text
+    assert "DEVIS" in text
+
+
+async def test_pdf_filename_is_the_quote_number(
+    client: AsyncClient, client_id: str, item_id: str
+) -> None:
+    """It lands as DEV-2026-0001.pdf, not as the UUID from the URL — the
+    artisan files it, mails it, and looks for it by number."""
+    quote = await _create_quote(client, client_id, item_id)
+
+    response = await client.get(f"/api/quotes/{quote['id']}/pdf")
+
+    assert f'filename="{quote["quote_number"]}.pdf"' in response.headers["content-disposition"]
+
+
+async def test_pdf_carries_the_totals_the_backend_computed(
+    client: AsyncClient, client_id: str, item_id: str
+) -> None:
+    """The document the customer receives must agree with the screen the
+    artisan approved — to the cent."""
+    quote = await _create_quote(client, client_id, item_id)
+
+    response = await client.get(f"/api/quotes/{quote['id']}/pdf")
+
+    text = PdfReader(io.BytesIO(response.content)).pages[0].extract_text()
+    # 1 x 100.00 @ 20% -> 120.00 TTC, printed the French way.
+    assert "120,00" in text
+
+
+async def test_a_draft_can_be_previewed_as_pdf(
+    client: AsyncClient, client_id: str, item_id: str
+) -> None:
+    """An artisan needs to see the document before committing to send it."""
+    quote = await _create_quote(client, client_id, item_id)
+    assert quote["status"] == "draft"
+
+    assert (await client.get(f"/api/quotes/{quote['id']}/pdf")).status_code == 200
+
+
+async def test_pdf_of_another_companys_quote_is_a_404(
+    client: AsyncClient, second_client: AsyncClient, client_id: str, item_id: str
+) -> None:
+    """A PDF carries the company's identity and its customer's address —
+    the last thing that should cross a tenant boundary."""
+    quote = await _create_quote(client, client_id, item_id)
+
+    response = await second_client.get(f"/api/quotes/{quote['id']}/pdf")
+
+    assert response.status_code == 404
+
+
+async def test_pdf_of_an_unknown_quote_is_a_404(client: AsyncClient) -> None:
+    response = await client.get(f"/api/quotes/{uuid.uuid4()}/pdf")
+
+    assert response.status_code == 404

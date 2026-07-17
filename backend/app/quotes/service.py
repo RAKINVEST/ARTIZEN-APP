@@ -10,14 +10,20 @@ cannot exist without referencing real catalog items and a real client,
 so this module is naturally "downstream" of both.
 """
 
+import asyncio
+import logging
 import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.branding.service import BrandingService
 from app.catalog.repository import CatalogItemRepository
 from app.clients.repository import ClientRepository
 from app.core.exceptions import NotFoundError
+from app.pdf.renderer import PdfRenderer
+from app.quotes.document_mapper import quote_to_document
+from app.storage import StorageProvider
 from app.quotes.calculator import LineTotals, QuoteCalculator
 from app.quotes.exceptions import (
     InactiveCatalogItemError,
@@ -31,6 +37,8 @@ from app.quotes.repository import (
     QuoteRepository,
 )
 from app.quotes.schemas import QuoteCreate, QuoteLineRead, QuoteRead
+
+logger = logging.getLogger(__name__)
 
 #: "DEV-2026-0001". Prefix + year + zero-padded sequence, the sequence
 #: restarting each year. Chosen because it is what French artisans
@@ -53,8 +61,21 @@ def format_quote_number(year: int, sequence: int) -> str:
 
 
 class QuoteService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        branding: BrandingService,
+        storage: StorageProvider,
+    ) -> None:
+        """``branding`` and ``storage`` are injected rather than built here:
+        rendering a document needs the artisan's identity and their logo
+        bytes, and both are somebody else's to own. quotes -> branding is a
+        one-way dependency, the same shape quote_assistant -> branding
+        already has."""
         self._session = session
+        self._branding = branding
+        self._storage = storage
+        self._renderer = PdfRenderer()
         self._quotes = QuoteRepository(session)
         self._lines = QuoteLineRepository(session)
         self._counters = QuoteCounterRepository(session)
@@ -131,6 +152,62 @@ class QuoteService:
         if quote is None:
             raise NotFoundError(f"Quote {quote_id} not found.")
         return await self._build_read(quote)
+
+    async def render_pdf(self, quote_id: uuid.UUID) -> tuple[str, bytes]:
+        """The document the artisan actually sends. Returns (filename, bytes).
+
+        Rendered on demand rather than stored: the PDF is a pure function
+        of the quote, and a quote's lines and totals never change (there is
+        no update path — see ``delete``). Storing it would add a file to
+        keep in sync with a row that cannot drift from it, plus a second
+        thing to back up and to clean up.
+
+        Off the event loop: reportlab is synchronous and CPU-bound, exactly
+        like pypdf — which the V1 audit found freezing every other request
+        for seconds on a large document.
+        """
+        quote = await self._quotes.get(quote_id)
+        if quote is None:
+            raise NotFoundError(f"Quote {quote_id} not found.")
+
+        lines = await self._lines.list_by_quote(quote.id)
+        client = await self._clients.get(quote.client_id)
+        if client is None:
+            # The FK is RESTRICT, so this should be unreachable. If it ever
+            # happens, saying so beats rendering a document addressed to
+            # nobody.
+            raise NotFoundError(f"Client {quote.client_id} not found.")
+
+        profile = await self._branding.get_profile(quote.company_id)
+        vat_breakdown = self._calculator.calculate_vat_breakdown(
+            [(line.vat_rate, line.total_ht, line.total_vat) for line in lines]
+        )
+        logo = await self._load_logo(profile.brand.logo_path)
+
+        document = quote_to_document(
+            quote=quote,
+            lines=lines,
+            client=client,
+            profile=profile,
+            vat_breakdown=vat_breakdown,
+            logo=logo,
+        )
+        pdf = await asyncio.to_thread(self._renderer.render, document)
+        return f"{quote.quote_number}.pdf", pdf
+
+    async def _load_logo(self, logo_path: str | None) -> bytes | None:
+        """A missing or unreadable logo costs the artisan a logo, never
+        their document: the storage key comes from a row that may point at
+        a file that has since gone, and a quote must still be sendable."""
+        if not logo_path:
+            return None
+        try:
+            return await self._storage.load(logo_path)
+        except OSError:
+            logger.warning(
+                "quotes.logo_unreadable path=%s — rendering without it", logo_path
+            )
+            return None
 
     async def change_status(self, quote_id: uuid.UUID, new_status: QuoteStatus) -> QuoteRead:
         """Move a quote along its commercial life, or refuse to.

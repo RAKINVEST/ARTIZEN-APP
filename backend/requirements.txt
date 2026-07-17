@@ -7,6 +7,11 @@ asyncpg==0.30.0
 alembic==1.14.0
 pypdf==5.1.0
 Pillow==11.0.0
+# PDF generation (app/pdf/). Pure Python, no system libraries — which is
+# why it beats WeasyPrint here: WeasyPrint renders HTML/CSS (nicer to
+# style) but needs cairo and pango via apt, and python:3.13-slim has
+# neither. reportlab uses Pillow, already above.
+reportlab==4.2.5
 pydantic==2.10.4
 pydantic-settings==2.7.0
 python-jose[cryptography]==3.3.0

@@ -13,7 +13,7 @@ is always scoped to it, and ``get`` verifies ownership via
 
 import uuid
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Response, status
 
 from app.core.authorization import ensure_same_company
 from app.quotes.deps import QuoteServiceDep
@@ -48,6 +48,36 @@ async def get_quote(
     quote = await service.get(quote_id)
     ensure_same_company(quote.company_id, quote_id, current_user.company_id)
     return quote
+
+
+@router.get(
+    "/{quote_id}/pdf",
+    response_class=Response,
+    responses={200: {"content": {"application/pdf": {}}, "description": "The quote as a PDF."}},
+)
+async def download_quote_pdf(
+    service: QuoteServiceDep, current_user: CurrentUserDep, quote_id: uuid.UUID
+) -> Response:
+    """The document the artisan sends to their customer.
+
+    Available in every status, drafts included: an artisan needs to see
+    what their quote will look like before committing to send it.
+
+    ``Content-Disposition: attachment`` with the quote number as filename,
+    so the file lands as "DEV-2026-0001.pdf" rather than as the UUID in
+    the URL. The tenant check runs first — a PDF carries the company's
+    identity and its customer's address, so it is the last thing that
+    should leak across tenants.
+    """
+    existing = await service.get(quote_id)
+    ensure_same_company(existing.company_id, quote_id, current_user.company_id)
+
+    filename, pdf = await service.render_pdf(quote_id)
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.put("/{quote_id}/status", response_model=QuoteRead)
