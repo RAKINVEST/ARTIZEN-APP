@@ -50,6 +50,20 @@ async def get_quote(
     return quote
 
 
+@router.post("/{quote_id}/duplicate", response_model=QuoteRead, status_code=status.HTTP_201_CREATED)
+async def duplicate_quote(
+    service: QuoteServiceDep, current_user: CurrentUserDep, quote_id: uuid.UUID
+) -> QuoteRead:
+    """Creates a new draft from an existing quote — the edit path a quote
+    doesn't otherwise have. The tenant check is on the *source*: you can
+    only duplicate a quote you own, and the copy is created for your own
+    company (``QuoteService.duplicate`` carries the source's company_id,
+    which this route has just confirmed is the caller's)."""
+    existing = await service.get(quote_id)
+    ensure_same_company(existing.company_id, quote_id, current_user.company_id)
+    return await service.duplicate(quote_id)
+
+
 @router.get(
     "/{quote_id}/pdf",
     response_class=Response,

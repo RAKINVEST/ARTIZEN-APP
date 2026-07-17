@@ -360,3 +360,100 @@ async def test_pdf_of_an_unknown_quote_is_a_404(client: AsyncClient) -> None:
     response = await client.get(f"/api/quotes/{uuid.uuid4()}/pdf")
 
     assert response.status_code == 404
+
+
+# --- Duplication (V2.2) ---
+
+
+async def test_duplicate_creates_a_fresh_draft_with_the_same_lines(
+    client: AsyncClient, client_id: str, item_id: str
+) -> None:
+    original = await _create_quote(client, client_id, item_id)
+
+    response = await client.post(f"/api/quotes/{original['id']}/duplicate")
+
+    assert response.status_code == 201
+    copy = response.json()
+    assert copy["id"] != original["id"]
+    assert copy["status"] == "draft"
+    # Same lines, same amounts, to the cent.
+    assert copy["total_ttc"] == original["total_ttc"]
+    assert len(copy["lines"]) == len(original["lines"])
+    assert copy["lines"][0]["designation"] == original["lines"][0]["designation"]
+    assert copy["lines"][0]["total_ttc"] == original["lines"][0]["total_ttc"]
+
+
+async def test_duplicate_gets_its_own_number(
+    client: AsyncClient, client_id: str, item_id: str
+) -> None:
+    """A copy is a distinct document. It must not share the original's
+    number — that would break the unique constraint and, worse, put two
+    different quotes under one identity."""
+    original = await _create_quote(client, client_id, item_id)
+
+    copy = (await client.post(f"/api/quotes/{original['id']}/duplicate")).json()
+
+    assert copy["quote_number"] != original["quote_number"]
+    year = datetime.now(timezone.utc).year
+    assert copy["quote_number"] == f"DEV-{year}-0002"
+
+
+async def test_duplicate_of_a_sent_quote_is_a_new_draft(
+    client: AsyncClient, client_id: str, item_id: str
+) -> None:
+    """The common case: revise a quote that has already gone out. The
+    original stays sent and untouched; the copy is an editable draft."""
+    original = await _create_quote(client, client_id, item_id)
+    await _advance_to(client, original["id"], "sent")
+
+    copy = (await client.post(f"/api/quotes/{original['id']}/duplicate")).json()
+
+    assert copy["status"] == "draft"
+    # The source is untouched by the duplication.
+    assert (await client.get(f"/api/quotes/{original['id']}")).json()["status"] == "sent"
+
+
+async def test_duplicate_works_even_if_the_catalog_item_is_now_inactive(
+    client: AsyncClient, company_id: str, client_id: str, item_id: str
+) -> None:
+    """The robustness win, and the reason duplication copies the snapshot
+    instead of re-pricing. An old quote worth duplicating is exactly the
+    one whose items may since have been deactivated — re-pricing would fail
+    on it; copying does not."""
+    original = await _create_quote(client, client_id, item_id)
+    # Deactivate the catalog item the quote was built from.
+    await client.delete(f"/api/catalog/items/{item_id}")
+
+    response = await client.post(f"/api/quotes/{original['id']}/duplicate")
+
+    assert response.status_code == 201
+    assert response.json()["lines"][0]["designation"] == original["lines"][0]["designation"]
+
+
+async def test_duplicate_is_editable_where_the_original_was_not(
+    client: AsyncClient, client_id: str, item_id: str
+) -> None:
+    """The whole point: the copy can be deleted (and thus corrected),
+    even when made from a quote that could not be."""
+    original = await _create_quote(client, client_id, item_id)
+    await _advance_to(client, original["id"], "accepted")
+
+    copy = (await client.post(f"/api/quotes/{original['id']}/duplicate")).json()
+
+    assert (await client.delete(f"/api/quotes/{copy['id']}")).status_code == 204
+
+
+async def test_duplicating_another_companys_quote_is_a_404(
+    client: AsyncClient, second_client: AsyncClient, client_id: str, item_id: str
+) -> None:
+    original = await _create_quote(client, client_id, item_id)
+
+    response = await second_client.post(f"/api/quotes/{original['id']}/duplicate")
+
+    assert response.status_code == 404
+
+
+async def test_duplicating_an_unknown_quote_is_a_404(client: AsyncClient) -> None:
+    response = await client.post(f"/api/quotes/{uuid.uuid4()}/duplicate")
+
+    assert response.status_code == 404

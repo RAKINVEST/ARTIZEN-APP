@@ -24,7 +24,7 @@ from app.core.exceptions import NotFoundError
 from app.pdf.renderer import PdfRenderer
 from app.quotes.document_mapper import quote_to_document
 from app.storage import StorageProvider
-from app.quotes.calculator import LineTotals, QuoteCalculator
+from app.quotes.calculator import LineTotals, QuoteCalculator, QuoteTotals
 from app.quotes.exceptions import (
     InactiveCatalogItemError,
     InvalidQuoteTransitionError,
@@ -120,25 +120,47 @@ class QuoteService:
             )
 
         quote_totals = self._calculator.calculate_quote(line_totals)
+        return await self._persist_new_quote(
+            company_id=data.company_id,
+            client_id=data.client_id,
+            line_models=line_models,
+            totals=quote_totals,
+        )
 
-        # Numbered at creation, not at send: the number is how the artisan
-        # refers to the quote from the moment it exists — including while
-        # still a draft, on the phone, before anything is sent. A deleted
-        # draft therefore leaves a gap, which is fine for quotes. Invoices
-        # inheriting this scheme will not have that latitude (art. 242
-        # nonies A CGI) and will need to number at issue instead.
+    async def _persist_new_quote(
+        self,
+        *,
+        company_id: uuid.UUID,
+        client_id: uuid.UUID,
+        line_models: list[QuoteLine],
+        totals: QuoteTotals,
+    ) -> QuoteRead:
+        """Numbers, persists and returns a brand-new DRAFT quote.
+
+        Shared by ``create`` (lines built from the live catalog) and
+        ``duplicate`` (lines copied from an existing quote). Both need the
+        exact same "claim a number, insert the quote, insert its lines"
+        sequence, and the numbering is the part that must not be
+        reimplemented twice — a second copy is a second chance to get the
+        FOR UPDATE lock wrong.
+
+        Numbered here, not at send: the number is how the artisan refers to
+        the quote from the moment it exists. A deleted draft leaves a gap,
+        which is fine for quotes; invoices inheriting this scheme will not
+        have that latitude (art. 242 nonies A CGI) and must number at issue.
+        """
         year = datetime.now(timezone.utc).year
-        sequence = await self._counters.next_number(data.company_id, year)
+        sequence = await self._counters.next_number(company_id, year)
 
         quote = await self._quotes.create(
             Quote(
-                company_id=data.company_id,
-                client_id=data.client_id,
+                company_id=company_id,
+                client_id=client_id,
                 quote_number=format_quote_number(year, sequence),
                 status=QuoteStatus.DRAFT,
-                total_ht=quote_totals.total_ht,
-                total_vat=quote_totals.total_vat,
-                total_ttc=quote_totals.total_ttc,
+                total_ht=totals.total_ht,
+                total_vat=totals.total_vat,
+                total_ttc=totals.total_ttc,
             )
         )
         for line in line_models:
@@ -152,6 +174,70 @@ class QuoteService:
         if quote is None:
             raise NotFoundError(f"Quote {quote_id} not found.")
         return await self._build_read(quote)
+
+    async def duplicate(self, quote_id: uuid.UUID) -> QuoteRead:
+        """Creates a fresh DRAFT that copies an existing quote's lines.
+
+        This is the *edit* path a quote deliberately doesn't have: a quote
+        can't be modified, so "correct" or "reuse" one means duplicating it
+        into a new draft and changing that. Works on a quote in any status —
+        the common case is duplicating a sent or refused quote to make a
+        revised one.
+
+        The lines are copied verbatim from the original's stored snapshot
+        (designation, unit, quantity, unit_price_ht, vat_rate), **not**
+        re-priced from the live catalog. Two reasons this is the right
+        default:
+
+        - "Duplicate" means "make a copy". An artisan expects the same
+          figures, not today's — if they wanted new prices they would
+          remove and re-add the line, which re-prices.
+        - It cannot fail. Re-pricing would have to re-fetch each catalog
+          item and would break the moment one had been deactivated or its
+          price changed — precisely on the old quotes most worth
+          duplicating. Copying the snapshot depends on nothing but the
+          original.
+
+        Totals are still recomputed through ``QuoteCalculator`` rather than
+        copied, so the one-place-computes-money rule holds: the numbers are
+        re-derived from the copied inputs, never trusted blindly from the
+        source row.
+        """
+        original = await self._quotes.get(quote_id)
+        if original is None:
+            raise NotFoundError(f"Quote {quote_id} not found.")
+        source_lines = await self._lines.list_by_quote(quote_id)
+
+        line_models: list[QuoteLine] = []
+        line_totals: list[LineTotals] = []
+        for source in source_lines:
+            totals = self._calculator.calculate_line(
+                quantity=source.quantity,
+                unit_price_ht=source.unit_price_ht,
+                vat_rate=source.vat_rate,
+            )
+            line_totals.append(totals)
+            line_models.append(
+                QuoteLine(
+                    catalog_item_id=source.catalog_item_id,
+                    designation=source.designation,
+                    unit=source.unit,
+                    quantity=source.quantity,
+                    unit_price_ht=source.unit_price_ht,
+                    vat_rate=source.vat_rate,
+                    total_ht=totals.total_ht,
+                    total_vat=totals.total_vat,
+                    total_ttc=totals.total_ttc,
+                )
+            )
+
+        quote_totals = self._calculator.calculate_quote(line_totals)
+        return await self._persist_new_quote(
+            company_id=original.company_id,
+            client_id=original.client_id,
+            line_models=line_models,
+            totals=quote_totals,
+        )
 
     async def render_pdf(self, quote_id: uuid.UUID) -> tuple[str, bytes]:
         """The document the artisan actually sends. Returns (filename, bytes).

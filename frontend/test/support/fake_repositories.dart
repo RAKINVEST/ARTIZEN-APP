@@ -125,6 +125,11 @@ class FakeQuotesRepository implements QuotesRepository {
   Future<void> delete(String id) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<Quote> duplicate(String id) async {
+    throw UnimplementedError();
+  }
 }
 
 class FakeQuoteAssistantRepository implements QuoteAssistantRepository {

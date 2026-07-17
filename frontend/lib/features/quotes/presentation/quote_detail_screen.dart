@@ -78,6 +78,27 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     );
   }
 
+  Future<void> _duplicate(Quote quote) async {
+    // No confirmation: duplicating creates a new draft and changes nothing
+    // about the original — it is a safe, reversible act (the copy can be
+    // deleted). A prompt would only stand between the artisan and the thing
+    // they asked for.
+    await _run(
+      () async {
+        final copy = await ref.read(quotesNotifierProvider.notifier).duplicateQuote(quote.id);
+        if (mounted) {
+          // Replace, not push: the artisan wanted the copy, not a stack of
+          // two quote screens to back out of.
+          context.pushReplacement('/quotes/${copy.id}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Brouillon ${copy.quoteNumber} créé à partir de ${quote.quoteNumber}')),
+          );
+        }
+      },
+      failureLabel: 'Duplication impossible',
+    );
+  }
+
   Future<void> _delete(Quote quote) async {
     final confirmed = await showConfirmDialog(
       context,
@@ -106,12 +127,20 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         // and what the customer has in front of them.
         title: Text(quoteAsync.valueOrNull?.quoteNumber ?? 'Devis'),
         actions: [
-          if (quoteAsync.valueOrNull != null)
+          if (quoteAsync.valueOrNull != null) ...[
+            IconButton(
+              icon: const Icon(Icons.copy_outlined),
+              // Available in every status: revise a sent/refused quote, or
+              // start a new one from an existing draft.
+              tooltip: 'Dupliquer en brouillon',
+              onPressed: _busy ? null : () => _duplicate(quoteAsync.value!),
+            ),
             IconButton(
               icon: const Icon(Icons.picture_as_pdf_outlined),
               tooltip: 'PDF',
               onPressed: _busy ? null : () => _openPdf(quoteAsync.value!),
             ),
+          ],
         ],
       ),
       body: AsyncValueView(
@@ -168,6 +197,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                 quote: quote,
                 busy: _busy,
                 onChange: (next) => _changeStatus(quote, next),
+                onDuplicate: () => _duplicate(quote),
               ),
             ],
           );
@@ -184,22 +214,40 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
 /// ones: a greyed-out "Accepter" on a refused quote only invites the
 /// artisan to wonder what they did wrong.
 class _StatusActions extends StatelessWidget {
-  const _StatusActions({required this.quote, required this.busy, required this.onChange});
+  const _StatusActions({
+    required this.quote,
+    required this.busy,
+    required this.onChange,
+    required this.onDuplicate,
+  });
 
   final Quote quote;
   final bool busy;
   final ValueChanged<QuoteStatus> onChange;
+  final VoidCallback onDuplicate;
 
   @override
   Widget build(BuildContext context) {
     final next = quote.status.nextStates;
     if (next.isEmpty) {
-      return Center(
-        child: Text(
-          'Ce devis est ${quote.status.label.toLowerCase()} : il reste archivé tel quel.',
-          style: Theme.of(context).textTheme.bodySmall,
-          textAlign: TextAlign.center,
-        ),
+      // A terminal quote can't advance, but the artisan is rarely done with
+      // it — they came here to revise it. Offering "duplicate" turns a
+      // dead-end screen into the start of the next quote, which is exactly
+      // why the header icon alone is not enough here.
+      return Column(
+        children: [
+          Text(
+            'Ce devis est ${quote.status.label.toLowerCase()} : il reste archivé tel quel.',
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.copy_outlined),
+            label: const Text('Dupliquer en nouveau brouillon'),
+            onPressed: busy ? null : onDuplicate,
+          ),
+        ],
       );
     }
 

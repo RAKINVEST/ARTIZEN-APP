@@ -72,6 +72,28 @@ déjà mieux.
     parce que l'endpoint exige l'en-tête `Authorization` : un simple lien
     aurait pris un 403.
 
+- **Duplication d'un devis** (`POST /quotes/{id}/duplicate`, backend +
+  Flutter). Le chemin d'édition qu'un devis n'a pas : puisqu'un devis ne se
+  modifie pas, le corriger ou le réutiliser, c'est le dupliquer en nouveau
+  brouillon et éditer la copie. Disponible dans **tous** les statuts — le
+  cas courant est de réviser un devis déjà envoyé ou refusé.
+  - **Copie de l'instantané, pas de re-tarification.** Les lignes sont
+    reprises telles quelles (désignation, quantité, prix, TVA), *pas*
+    recalculées depuis le catalogue courant. « Dupliquer » veut dire
+    « faire une copie » : l'artisan attend les mêmes montants. Et surtout,
+    c'est **robuste** — re-tarifer échouerait dès qu'un article a été
+    désactivé entre-temps, précisément sur les vieux devis les plus dignes
+    d'être dupliqués. *Vérifié : la duplication réussit même après
+    désactivation de l'article source.*
+  - **Les totaux sont recalculés** via `QuoteCalculator`, jamais copiés
+    de la ligne source : « le calculateur est le seul endroit où un montant
+    est calculé » reste vrai.
+  - **Numéro neuf via le même compteur verrouillé** que la création :
+    *vérifié, 10 duplications concurrentes donnent 10 numéros distincts.*
+  - **UX** : un devis terminal (accepté/refusé) n'était qu'un cul-de-sac ;
+    il offre désormais « Dupliquer en nouveau brouillon », qui mène
+    directement à la copie éditable.
+
 ### Modifié
 
 - **`DELETE /quotes/{id}` n'accepte plus que les brouillons** (409 sinon).
@@ -129,15 +151,15 @@ entreprise, compteurs cohérents, et `downgrade` → `upgrade` complet.*
 
 | Porte | Résultat |
 |---|---|
-| `pytest` | **189 passed** (142 → 189) |
+| `pytest` | **201 passed** (142 → 201) |
 | `flutter analyze` | ✅ **No issues found!** |
-| `flutter test` | **62 passed** (53 → 62) |
+| `flutter test` | **63 passed** (53 → 63) |
 | `flutter build web --release` | ✅ construit avec `printing` |
 | Migration + rollback | ✅ aller-retour complet sur données réelles |
 | Tentative de casse — cycle de vie | ✅ **18/18** |
 | Tentative de casse — moteur PDF | ✅ **14/14** |
-| **pytest dans le conteneur** | ✅ **194 passed** |
-| **QA fonctionnelle HTTP contre Docker** | ✅ **21/21** |
+| **pytest dans le conteneur** | ✅ **201 passed** |
+| **QA fonctionnelle HTTP contre Docker** | ✅ **21/21** (V2.1) + **19/19** (duplication) |
 | **Build image (reportlab)** | ✅ wheel universelle, aucune lib système |
 | **Migration + rollback en Docker** | ✅ 6 migrations à vide, aller-retour propre |
 

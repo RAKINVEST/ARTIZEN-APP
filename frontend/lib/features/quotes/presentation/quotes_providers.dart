@@ -53,6 +53,14 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
     await ref.read(quotesRepositoryProvider).delete(id);
     await refresh();
   }
+
+  /// Duplicates a quote into a new draft and returns it, so the caller can
+  /// navigate straight to the copy the artisan will now edit.
+  Future<Quote> duplicateQuote(String id) async {
+    final copy = await ref.read(quotesRepositoryProvider).duplicate(id);
+    await refresh();
+    return copy;
+  }
 }
 
 final quotesNotifierProvider = AsyncNotifierProvider<QuotesNotifier, List<Quote>>(

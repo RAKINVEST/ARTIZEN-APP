@@ -56,6 +56,12 @@ class QuotesRepositoryImpl implements QuotesRepository {
   }
 
   @override
+  Future<Quote> duplicate(String id) async {
+    final response = await _dio.post<Map<String, dynamic>>('/quotes/$id/duplicate');
+    return Quote.fromJson(response.data!);
+  }
+
+  @override
   Future<Quote> create({
     required String companyId,
     required String clientId,

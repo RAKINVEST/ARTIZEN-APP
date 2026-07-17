@@ -30,4 +30,9 @@ abstract class QuotesRepository {
   /// draft (409 otherwise) — deleting and recreating is how a mistyped
   /// quote gets corrected, since a quote has no update path.
   Future<void> delete(String id);
+
+  /// Creates a new draft copying an existing quote's lines. The edit path
+  /// a quote does not otherwise have: to revise a sent or refused quote,
+  /// the artisan duplicates it and edits the copy. Returns the new draft.
+  Future<Quote> duplicate(String id);
 }

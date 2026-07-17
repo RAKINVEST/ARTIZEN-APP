@@ -96,6 +96,24 @@ void main() {
     });
   });
 
+  group('duplicate', () {
+    test('POSTs to /duplicate and returns the new draft', () async {
+      when(() => dio.post<Map<String, dynamic>>('/quotes/q1/duplicate')).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/quotes/q1/duplicate'),
+          statusCode: 201,
+          // The backend always returns a fresh draft with its own number.
+          data: _quoteJson(status: 'draft'),
+        ),
+      );
+
+      final copy = await repository.duplicate('q1');
+
+      expect(copy.status, QuoteStatus.draft);
+      verify(() => dio.post<Map<String, dynamic>>('/quotes/q1/duplicate')).called(1);
+    });
+  });
+
   group('delete', () {
     test('calls DELETE /quotes/{id}', () async {
       when(() => dio.delete<void>('/quotes/q1')).thenAnswer(
