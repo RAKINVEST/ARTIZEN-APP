@@ -1,8 +1,11 @@
-# Rapport final de release — ARTIZEN V2.0.0-RC1
+# Rapport final de release — ARTIZEN V2.0.0-RC2
 
-**Date : 2026-07-17.** Branche `v2` · HEAD `7f68131` · Tag **`v2.0.0-rc1`**.
+**Date : 2026-07-17.** Branche `v2`. Tags : **`v2.0.0-rc1`** (photographie
+certifiée, figée) et **`v2.0.0-rc2`** (alignement des versions sur `2.0.0`).
 Rôle : Release Manager. Ce rapport unique synthétise l'état de la Release
-Candidate V2 et renvoie aux documents détaillés du package.
+Candidate V2 et renvoie aux documents détaillés du package. Sauf la version,
+tout ce qui suit décrit un code strictement identique entre RC1 et RC2 (la
+RC2 ne touche que des métadonnées de version).
 
 ---
 
@@ -109,8 +112,9 @@ bref :
   import PDF), pas d'upload de logo dans l'app, pas d'écran de détail client,
   catégories non éditables en UI, pas de « mot de passe oublié ».
 - **Par conception** : pas d'édition de devis en place.
-- **Versions** : métadonnées divergentes (backend `0.1.0`, frontend `1.0.0`,
-  tag `2.0.0-rc1`) — cosmétique, à aligner sur `2.0.0`.
+- **Versions** : la divergence de métadonnée relevée au RC1 (backend `0.1.0`,
+  frontend `1.0.0`, tag `2.0.0-rc1`) est **corrigée en RC2** — tout aligné
+  sur `2.0.0`.
 - **Sécurité** : rate limiting en mémoire par worker, JWT en localStorage,
   `python-jose` non maintenu, corps chunké non borné (→ reverse proxy).
 
@@ -153,17 +157,20 @@ Source : `docs/ROADMAP.md`, `docs/release/06_V2_SCOPE_TRIAGE.md`.
 - **UI** : écran d'édition de l'identité d'entreprise, upload de logo,
   détail client, gestion des catégories, « mot de passe oublié ».
 - **Qualité** : isolation des tests backend ; parsing IA tolérant.
-- **Aligner les numéros de version** sur `2.0.0`.
+- ~~Aligner les numéros de version sur `2.0.0`~~ — **fait en RC2**
+  (`v2.0.0-rc2`).
 
 ---
 
 ## Déclaration
 
-Tous les livrables de release sont produits et vérifiés contre le code tagué
-`v2.0.0-rc1`. Le code de la Release Candidate n'a pas été modifié. Aucune
-anomalie bloquante ni majeure n'est ouverte.
+Tous les livrables de release sont produits et vérifiés. La **RC2**
+(`v2.0.0-rc2`) aligne les numéros de version sur `2.0.0` — son unique objet —
+sans aucun changement fonctionnel, de comportement ou d'architecture ; la
+RC1 (`v2.0.0-rc1`) reste la photographie certifiée. Aucune anomalie
+bloquante ni majeure n'est ouverte.
 
-**ARTIZEN V2.0.0-RC1 est prête pour publication.**
+**ARTIZEN V2.0.0-RC2 est prête pour publication.**
 
 > Aucun commit, aucun tag, aucun artefact n'est poussé sur le dépôt distant.
 > La publication attend l'autorisation explicite du propriétaire.

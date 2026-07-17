@@ -4,18 +4,23 @@ Relevé au commit tagué `v2.0.0-rc1` (branche `v2`, HEAD `7f68131`).
 
 ## Version de la release
 
+Depuis la **RC2**, toutes les versions applicatives sont **alignées sur
+`2.0.0`**.
+
 | Élément | Valeur | Source |
 |---|---|---|
-| **Tag Git (autoritatif)** | **`v2.0.0-rc1`** | `git describe --tags` |
-| Version backend (métadonnée) | `0.1.0` | `backend/app/core/config.py::VERSION` |
-| Version frontend (pubspec) | `1.0.0+1` | `frontend/pubspec.yaml` |
-| Version affichée (écran Paramètres) | `1.0.0 (MVP)` | `settings_screen.dart` (codé en dur) |
+| **Tag Git — tip courant** | **`v2.0.0-rc2`** | `git describe --tags` |
+| Tag Git — photographie certifiée (gelée) | `v2.0.0-rc1` | `git tag` |
+| Version backend | `2.0.0` | `backend/app/core/config.py::VERSION` |
+| Version frontend (pubspec) | `2.0.0+1` | `frontend/pubspec.yaml` |
+| Version affichée (écran Paramètres) | `2.0.0` | `settings_screen.dart` |
 
-> ⚠️ **Incohérence connue (mineure, cosmétique).** Le tag `2.0.0-rc1` fait
-> foi ; les versions applicatives internes (`0.1.0` backend, `1.0.0`
-> frontend) ne sont que des métadonnées d'affichage (Swagger, écran
-> Paramètres) sans impact comportemental. À aligner sur `2.0.0` avant la
-> publication finale. Voir `docs/KNOWN_LIMITATIONS.md` (#8).
+> **Historique.** À la RC1, ces versions divergeaient (`0.1.0` backend,
+> `1.0.0` frontend, tag `2.0.0-rc1`) — incohérence **mineure** de métadonnée
+> d'affichage (Swagger, écran Paramètres), sans impact comportemental. La
+> **RC2** les aligne toutes sur `2.0.0` ; c'est son unique objet, avec les
+> mises à jour de documentation associées. La RC1 reste la photographie
+> certifiée, figée.
 
 ## Composants de la pile
 
@@ -36,4 +41,5 @@ Relevé au commit tagué `v2.0.0-rc1` (branche `v2`, HEAD `7f68131`).
 | Tag | Date | Portée |
 |---|---|---|
 | `v1.0.0-rc1` | 2026-07-17 | Release Candidate V1 (catalogue, clients, devis, copilote IA) |
-| `v2.0.0-rc1` | 2026-07-17 | Release Candidate V2 (cycle de vie du devis, PDF, duplication, UI) |
+| `v2.0.0-rc1` | 2026-07-17 | Release Candidate V2 (cycle de vie du devis, PDF, duplication, UI) — **photographie certifiée, figée** |
+| `v2.0.0-rc2` | 2026-07-17 | RC2 minimale : alignement des versions sur `2.0.0` + métadonnées. Aucun changement fonctionnel. |

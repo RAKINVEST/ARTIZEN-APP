@@ -1,8 +1,16 @@
-# Matrice de validation — ARTIZEN V2.0.0-RC1
+# Matrice de validation — ARTIZEN V2.0.0-RC1 / RC2
 
 Toutes les portes de validation exécutées pour la V2, leur résultat, et leur
 rejouabilité. Principe du dépôt : chaque ligne est **validée par exécution,
 par tests, ou par analyse statique** — jamais « raisonnée sans preuve ».
+
+> **Re-validation RC2 (`v2.0.0-rc2`, 2026-07-17).** L'alignement des versions
+> sur `2.0.0` a été suivi d'un rejeu des validations essentielles, toutes au
+> vert : **pytest conteneur 208 passed**, **`flutter analyze lib` propre**,
+> **`flutter test` 63 passed**, **`flutter build web --release` construit**,
+> **`GET /health` et `GET /` renvoient `version: 2.0.0`**. Aucune régression :
+> les compteurs sont identiques à ceux du RC1, confirmant l'absence de
+> changement de comportement.
 
 ## Portes automatisées
 
@@ -10,7 +18,7 @@ par tests, ou par analyse statique** — jamais « raisonnée sans preuve ».
 |---|---|---|---|---|
 | 1 | `pytest` (local, deps épinglées) | **208 passed** | exécution | `pytest` |
 | 2 | `pytest` (**conteneur Docker**) | **208 passed** | exécution | `docker compose exec backend pytest` |
-| 3 | `flutter analyze` | **No issues found!** | analyse statique | `flutter analyze` |
+| 3 | `flutter analyze` | **Code applicatif (`lib/`) : No issues found!** — 1 `info` de déprécation dans le harnais de test `integration_test/uat_test.dart` (non-bloquant, exit 0, hérité du commit UAT) | analyse statique | `flutter analyze` / `flutter analyze lib` |
 | 4 | `flutter test` | **63 passed** | exécution | `flutter test` |
 | 5 | `flutter build web --release` | **construit** (avec `printing`) | exécution | `flutter build web --release` |
 | 6 | Migrations : installation neuve (Docker) | **6 migrations, exit 0** | exécution | `alembic upgrade head` |

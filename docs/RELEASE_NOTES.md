@@ -92,8 +92,9 @@ Détail : `docs/release/07_V2_CERTIFICATION.md` (certification) et
 Voir `docs/KNOWN_LIMITATIONS.md`. En bref : rate limiting en mémoire par
 worker (Redis en V3), JWT en `localStorage` sur le web (cookie HttpOnly en
 V3), `python-jose` non maintenu (migration PyJWT en V3), pas d'édition en
-place du devis (par conception), cycle `users ↔ branding` (refactor V3), et
-la métadonnée de version applicative encore à `0.1.0` (cosmétique — Swagger).
+place du devis (par conception), cycle `users ↔ branding` (refactor V3).
+*(La divergence de métadonnée de version relevée au RC1 est corrigée en
+RC2 : backend, frontend et documentation alignés sur `2.0.0`.)*
 
 ## Périmètre volontairement hors V2
 

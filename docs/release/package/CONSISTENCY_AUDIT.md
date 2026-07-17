@@ -5,12 +5,20 @@ code du commit tagué `v2.0.0-rc1`** (HEAD `7f68131`), pas déduite. Toute
 anomalie est classée ; **bloquante/majeure → RC2**, **mineure → V2.x/V3**.
 Le code de la RC n'a **pas** été modifié pendant cet audit.
 
-## Verdict global
+> **Suite donnée (RC2, `v2.0.0-rc2`).** L'unique incohérence relevée ici
+> (dimension #11 — numéros de version divergents) a été **corrigée dans une
+> RC2 minimale** dédiée : alignement de la version backend, frontend et
+> documentation sur `2.0.0`, sans aucun autre changement. Ce document reste
+> le compte rendu de l'audit **au RC1** ; la résolution est signalée en
+> ligne. La photographie RC1 (`v2.0.0-rc1`) reste figée.
+
+## Verdict global (au RC1)
 
 **Aucune anomalie bloquante ni majeure.** 11 dimensions vérifiées, **10
 cohérentes**, 1 portant une incohérence **mineure** (numéros de version,
-cosmétique). **Aucune RC2 n'est ouverte.** Les points mineurs sont
-documentés (`docs/KNOWN_LIMITATIONS.md`) et reportés, non corrigés sur RC1.
+cosmétique) — **résolue depuis en RC2**. Les points mineurs sont documentés
+(`docs/KNOWN_LIMITATIONS.md`) ; aucun n'a été corrigé sur RC1 (gel), et seule
+la cohérence de version a justifié la RC2.
 
 ## Les 11 dimensions
 
@@ -26,13 +34,13 @@ documentés (`docs/KNOWN_LIMITATIONS.md`) et reportés, non corrigés sur RC1.
 | 8 | **Dépendances** | ✅ | `requirements.txt` entièrement épinglé (`==`) ; `pubspec.yaml` + `pubspec.lock` versionnés. Nouveautés V2 : `reportlab`, `printing`, `integration_test`. Épinglages critiques (`bcrypt==4.0.1`) commentés. |
 | 9 | **Git** | ✅ | Branche `v2`, HEAD `7f68131`. **Le code de la RC est intact** : seuls `CHANGELOG.md` et de nouveaux fichiers de documentation ajoutés — **aucun** changement sous `backend/app/` ou `frontend/lib/` (vérifié). Rien poussé sur `origin`. |
 | 10 | **Tags** | ✅ | `v1.0.0-rc1` (V1, sur `main`) et `v2.0.0-rc1` (V2). **`v2.0.0-rc1` pointe exactement sur HEAD** (`7f68131`). |
-| 11 | **Numéros de version** | 🟡 | **Incohérence mineure** : backend `settings.VERSION="0.1.0"`, frontend `pubspec` `1.0.0+1` / écran `"1.0.0 (MVP)"`, tag `2.0.0-rc1`. Purement métadonnée d'affichage (Swagger, écran Paramètres), **aucun impact comportemental**. → aligner sur `2.0.0` avant la publication finale. `KNOWN_LIMITATIONS.md` #8. |
+| 11 | **Numéros de version** | 🟡→✅ | **Au RC1, incohérence mineure** : backend `settings.VERSION="0.1.0"`, frontend `pubspec` `1.0.0+1` / écran `"1.0.0 (MVP)"`, tag `2.0.0-rc1`. Métadonnée d'affichage, **aucun impact comportemental**. **Corrigé en RC2** : tout aligné sur `2.0.0`. `KNOWN_LIMITATIONS.md` #8. |
 
 ## Anomalies découvertes pendant l'audit — classification
 
 | Anomalie | Classe | Décision |
 |---|---|---|
-| Numéros de version divergents (métadonnée) | 🟢 Mineure | Documentée (#8), reportée V2.0 finale. Pas de RC2. |
+| Numéros de version divergents (métadonnée) | 🟢 Mineure | **Corrigée en RC2** (`v2.0.0-rc2`) : alignement sur `2.0.0`. |
 | Commentaire périmé dans `branding_providers.dart` | 🟢 Mineure | Documentée (#15), reportée V2.x. Pas de RC2. |
 | Lacunes UI (identité, logo, détail client, catégories, mdp oublié) | 🟢 Mineure | Documentées (#1–5), reportées V3. Fonctionnellement contournables (API / import). Pas de RC2. |
 | Édition de devis en place absente | 🔵 Par conception | Aucune action. |

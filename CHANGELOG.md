@@ -6,6 +6,26 @@ Ce fichier commence à la V2 : la V1 a été construite en 10 étapes dont
 commit — un changelog rétroactif n'apporterait rien que `README.md` ne dise
 déjà mieux.
 
+## [v2.0.0-rc2] — 2026-07-17 (branche `v2`)
+
+**RC2 minimale — alignement des versions.** Unique objet : aligner les
+numéros de version applicatifs sur **`2.0.0`**. Aucune nouvelle
+fonctionnalité, aucun refactoring, aucun changement de comportement ni
+d'architecture. La RC1 (`v2.0.0-rc1`) reste la photographie certifiée, figée.
+
+### Modifié (métadonnées uniquement)
+
+- **Backend** : `app/core/config.py::VERSION` `0.1.0` → **`2.0.0`** (surface
+  dans Swagger, `GET /`, `GET /health`, log de démarrage).
+- **Frontend** : `pubspec.yaml` `version: 1.0.0+1` → **`2.0.0+1`** ; écran
+  Paramètres `« 1.0.0 (MVP) »` → **`2.0.0`**.
+- **Documentation** : `KNOWN_LIMITATIONS` (#8 résolu), `VERSIONS`,
+  `CONSISTENCY_AUDIT` (#11 résolu), `RELEASE_NOTES`, `FINAL_REPORT` alignés.
+
+Aucun test n'assied la valeur de version : la suite reste identique. Le reste
+du code de la Release Candidate est **strictement inchangé** par rapport à
+`v2.0.0-rc1`.
+
 ## [v2.0.0-rc1] — 2026-07-17 (branche `v2`)
 
 **Release Candidate V2, gelée.** Périmètre figé, certifié, et validé en

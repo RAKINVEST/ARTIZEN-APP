@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     # --- Application ---
     PROJECT_NAME: str = "Artizen"
-    VERSION: str = "0.1.0"
+    VERSION: str = "2.0.0"
     ENVIRONMENT: Literal["development", "staging", "production"] = "development"
     DEBUG: bool = False
     API_PREFIX: str = "/api"

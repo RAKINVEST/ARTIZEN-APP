@@ -29,7 +29,7 @@ sont planifiées pour une V2.x ou la V3 ; **aucune n'est appliquée sur RC1**
 
 | # | Limitation | Classe | Suite |
 |---|---|---|---|
-| 8 | **Les numéros de version divergent** (trois valeurs distinctes sur quatre emplacements) : backend `settings.VERSION = "0.1.0"` (Swagger, `/`, `/health`) ; frontend `pubspec.yaml` `version: 1.0.0+1` **et** écran Paramètres codé en dur **« 1.0.0 (MVP) »** ; tag Git **`v2.0.0-rc1`**. Purement métadonnée/affichage — aucun impact comportemental. À aligner sur `2.0.0` avant la publication finale. | 🟢 | V2.0 finale |
+| 8 | ~~**Les numéros de version divergent** (backend `0.1.0`, frontend `1.0.0`, tag `2.0.0-rc1`)~~. **✅ Résolu en RC2** (`v2.0.0-rc2`) : backend `config.py::VERSION`, `pubspec.yaml` et écran Paramètres alignés sur **`2.0.0`**. Métadonnée d'affichage seule, aucun impact comportemental. | 🟢 | **Fait (RC2)** |
 
 > Ces incohérences sont **cosmétiques** et n'affectent ni les données, ni la
 > sécurité, ni le comportement. Elles sont laissées telles quelles sur RC1
