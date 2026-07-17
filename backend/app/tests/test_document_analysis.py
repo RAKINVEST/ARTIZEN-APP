@@ -146,14 +146,34 @@ async def test_full_pipeline_execution(client: AsyncClient, company_id: str) -> 
     }
 
 
-async def test_invalid_pdf_handling(client: AsyncClient, company_id: str) -> None:
-    garbage = b"this is not a real PDF file"
+async def test_upload_rejects_content_that_is_not_a_pdf(
+    client: AsyncClient, company_id: str
+) -> None:
+    """Declaring "application/pdf" no longer makes a file a PDF: the upload
+    check reads the bytes. Previously the declared content type was taken
+    at face value, so arbitrary content was stored under a .pdf key and
+    only failed later, at /process."""
     upload_response = await client.post(
         "/api/document-analysis/upload",
         data={"company_id": company_id, "document_type": "quote"},
-        # Content-type claims PDF so it passes the shallow upload check —
-        # the actual structural validation only happens during /process.
-        files={"file": ("broken.pdf", io.BytesIO(garbage), "application/pdf")},
+        files={"file": ("broken.pdf", io.BytesIO(b"this is not a real PDF file"), "application/pdf")},
+    )
+
+    assert upload_response.status_code == 415
+    assert upload_response.json()["error"]["code"] == "unsupported_file_type"
+
+
+async def test_structurally_broken_pdf_fails_at_process(
+    client: AsyncClient, company_id: str
+) -> None:
+    """A file that really is a PDF (right signature) but is truncated
+    passes the upload check and fails structurally at /process — the
+    graceful-degradation path the magic-byte check must not swallow."""
+    truncated = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n"
+    upload_response = await client.post(
+        "/api/document-analysis/upload",
+        data={"company_id": company_id, "document_type": "quote"},
+        files={"file": ("broken.pdf", io.BytesIO(truncated), "application/pdf")},
     )
     assert upload_response.status_code == 201
     analysis_id = upload_response.json()["id"]

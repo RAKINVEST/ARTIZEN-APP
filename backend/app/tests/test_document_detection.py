@@ -59,11 +59,90 @@ async def test_siret_detector_no_siret() -> None:
     assert result.data["siret"] is None
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Facture N 20240101120000",
+        "Devis du 20240101120000 pour travaux",
+        "Reference 12345678901234",
+    ],
+)
+async def test_siret_detector_ignores_unlabeled_digits_that_fail_luhn(text: str) -> None:
+    """Unlabeled, the Luhn checksum is the only evidence there is — without
+    it, any 14-digit run qualifies, and a timestamp like "20240101120000"
+    was reported as a SIRET."""
+    result = await SiretDetector().detect(text)
+
+    assert result.detected is False
+    assert result.data["siret"] is None
+
+
+async def test_siret_detector_trusts_a_labeled_siret_even_if_luhn_fails() -> None:
+    """The label is strong evidence in itself: a bad checksum next to the
+    word "SIRET" is likelier a typo or an OCR slip than a coincidence. It
+    is reported, at lower confidence."""
+    result = await SiretDetector().detect("SIRET : 123 456 789 00012")
+
+    assert result.detected is True
+    assert result.data["siret"] == "12345678900012"
+    assert result.confidence == 0.6
+
+
+async def test_siret_detector_finds_unlabeled_siret_that_passes_luhn() -> None:
+    result = await SiretDetector().detect("Entreprise Dupont 35600000000048 Paris")
+
+    assert result.detected is True
+    assert result.data["siret"] == "35600000000048"
+
+
+async def test_siret_detector_skips_a_date_preceding_the_real_siret() -> None:
+    """Scanning stops at the first *valid* candidate, not the first
+    14-digit run — a document often carries a date or an invoice number
+    before the SIRET itself."""
+    result = await SiretDetector().detect("Emis le 20240101120000 - SARL X - 35600000000048")
+
+    assert result.data["siret"] == "35600000000048"
+
+
 async def test_vat_detector_finds_french_vat() -> None:
     result = await VatDetector().detect(_SAMPLE_TEXT)
 
     assert result.detected is True
     assert result.data["vat_number"] == "FR12345678901"
+
+
+@pytest.mark.parametrize(
+    "word",
+    ["DESIGNATION", "PLOMBERIE", "ELECTRICITE", "SERRURERIE"],
+)
+async def test_vat_detector_ignores_uppercase_french_words(word: str) -> None:
+    """The EU fallback matches a country code followed by an alphanumeric
+    body. Without a digit floor, ordinary uppercase words are valid
+    candidates — "DESIGNATION" reads as DE + SIGNATION, and it happens to
+    be the column header of essentially every French quote, so almost any
+    document reported a VAT number the artisan could then validate into
+    ``Company.vat_number``."""
+    result = await VatDetector().detect(f"SARL {word} DUPONT\n{word}   QTE   PRIX")
+
+    assert result.detected is False
+    assert result.data["vat_number"] is None
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("TVA intracom : DE123456789", "DE123456789"),
+        ("BE0123456789", "BE0123456789"),
+        ("IE1234567FA", "IE1234567FA"),
+        # 12-character body: the longest real format still has to match.
+        ("NL123456789B01", "NL123456789B01"),
+    ],
+)
+async def test_vat_detector_still_finds_real_eu_vat(text: str, expected: str) -> None:
+    result = await VatDetector().detect(text)
+
+    assert result.detected is True
+    assert result.data["vat_number"] == expected
 
 
 async def test_contact_detector_finds_email() -> None:

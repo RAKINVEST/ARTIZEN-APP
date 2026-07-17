@@ -400,11 +400,17 @@ ClientInput _$ClientInputFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$ClientInput {
   String get lastName => throw _privateConstructorUsedError;
+  @JsonKey(includeIfNull: true)
   String? get firstName => throw _privateConstructorUsedError;
+  @JsonKey(includeIfNull: true)
   String? get companyName => throw _privateConstructorUsedError;
+  @JsonKey(includeIfNull: true)
   String? get address => throw _privateConstructorUsedError;
+  @JsonKey(includeIfNull: true)
   String? get phone => throw _privateConstructorUsedError;
+  @JsonKey(includeIfNull: true)
   String? get email => throw _privateConstructorUsedError;
+  @JsonKey(includeIfNull: true)
   String? get notes => throw _privateConstructorUsedError;
 
   /// Serializes this ClientInput to a JSON map.
@@ -426,12 +432,12 @@ abstract class $ClientInputCopyWith<$Res> {
   @useResult
   $Res call({
     String lastName,
-    String? firstName,
-    String? companyName,
-    String? address,
-    String? phone,
-    String? email,
-    String? notes,
+    @JsonKey(includeIfNull: true) String? firstName,
+    @JsonKey(includeIfNull: true) String? companyName,
+    @JsonKey(includeIfNull: true) String? address,
+    @JsonKey(includeIfNull: true) String? phone,
+    @JsonKey(includeIfNull: true) String? email,
+    @JsonKey(includeIfNull: true) String? notes,
   });
 }
 
@@ -505,12 +511,12 @@ abstract class _$$ClientInputImplCopyWith<$Res>
   @useResult
   $Res call({
     String lastName,
-    String? firstName,
-    String? companyName,
-    String? address,
-    String? phone,
-    String? email,
-    String? notes,
+    @JsonKey(includeIfNull: true) String? firstName,
+    @JsonKey(includeIfNull: true) String? companyName,
+    @JsonKey(includeIfNull: true) String? address,
+    @JsonKey(includeIfNull: true) String? phone,
+    @JsonKey(includeIfNull: true) String? email,
+    @JsonKey(includeIfNull: true) String? notes,
   });
 }
 
@@ -576,12 +582,12 @@ class __$$ClientInputImplCopyWithImpl<$Res>
 class _$ClientInputImpl implements _ClientInput {
   const _$ClientInputImpl({
     required this.lastName,
-    this.firstName,
-    this.companyName,
-    this.address,
-    this.phone,
-    this.email,
-    this.notes,
+    @JsonKey(includeIfNull: true) this.firstName,
+    @JsonKey(includeIfNull: true) this.companyName,
+    @JsonKey(includeIfNull: true) this.address,
+    @JsonKey(includeIfNull: true) this.phone,
+    @JsonKey(includeIfNull: true) this.email,
+    @JsonKey(includeIfNull: true) this.notes,
   });
 
   factory _$ClientInputImpl.fromJson(Map<String, dynamic> json) =>
@@ -590,16 +596,22 @@ class _$ClientInputImpl implements _ClientInput {
   @override
   final String lastName;
   @override
+  @JsonKey(includeIfNull: true)
   final String? firstName;
   @override
+  @JsonKey(includeIfNull: true)
   final String? companyName;
   @override
+  @JsonKey(includeIfNull: true)
   final String? address;
   @override
+  @JsonKey(includeIfNull: true)
   final String? phone;
   @override
+  @JsonKey(includeIfNull: true)
   final String? email;
   @override
+  @JsonKey(includeIfNull: true)
   final String? notes;
 
   @override
@@ -654,12 +666,12 @@ class _$ClientInputImpl implements _ClientInput {
 abstract class _ClientInput implements ClientInput {
   const factory _ClientInput({
     required final String lastName,
-    final String? firstName,
-    final String? companyName,
-    final String? address,
-    final String? phone,
-    final String? email,
-    final String? notes,
+    @JsonKey(includeIfNull: true) final String? firstName,
+    @JsonKey(includeIfNull: true) final String? companyName,
+    @JsonKey(includeIfNull: true) final String? address,
+    @JsonKey(includeIfNull: true) final String? phone,
+    @JsonKey(includeIfNull: true) final String? email,
+    @JsonKey(includeIfNull: true) final String? notes,
   }) = _$ClientInputImpl;
 
   factory _ClientInput.fromJson(Map<String, dynamic> json) =
@@ -668,16 +680,22 @@ abstract class _ClientInput implements ClientInput {
   @override
   String get lastName;
   @override
+  @JsonKey(includeIfNull: true)
   String? get firstName;
   @override
+  @JsonKey(includeIfNull: true)
   String? get companyName;
   @override
+  @JsonKey(includeIfNull: true)
   String? get address;
   @override
+  @JsonKey(includeIfNull: true)
   String? get phone;
   @override
+  @JsonKey(includeIfNull: true)
   String? get email;
   @override
+  @JsonKey(includeIfNull: true)
   String? get notes;
 
   /// Create a copy of ClientInput

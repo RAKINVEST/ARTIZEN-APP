@@ -10,6 +10,7 @@ producers to guarantee this parses on every file, and a wrong guess here
 should never break the whole detection run.
 """
 
+import asyncio
 import logging
 from io import BytesIO
 
@@ -18,22 +19,34 @@ from pypdf.generic import ContentStream
 
 from app.document_detection.interfaces import DetectorResult, VisualDetector
 
+# Imported for its import-time side effect: it caps how large an image
+# Pillow will decode, which is what keeps a decompression bomb from being
+# expanded in full below. See the module docstring.
+from app.document_detection import image_limits  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 
 class LogoDetector(VisualDetector):
     async def detect(self, content: bytes) -> DetectorResult:
+        # pypdf parsing and Pillow decoding are synchronous and CPU-bound;
+        # off the loop so one large image doesn't stall every other request.
+        return await asyncio.to_thread(self._detect_sync, content)
+
+    def _detect_sync(self, content: bytes) -> DetectorResult:
         try:
             reader = PdfReader(BytesIO(content))
             if not reader.pages:
                 return DetectorResult(detected=False, confidence=0.0, data={"position": None})
             page = reader.pages[0]
-            images = list(page.images)
-            if not images:
+            # Indexed, not list(...): only the first image is a logo
+            # candidate, and materializing the sequence decodes every image
+            # on the page to reach it.
+            images = page.images
+            if len(images) == 0:
                 return DetectorResult(detected=False, confidence=0.0, data={"position": None})
 
-            image = images[0]
-            width, height = image.image.size
+            width, height = images[0].image.size
             page_width = float(page.mediabox.width)
             page_height = float(page.mediabox.height)
 

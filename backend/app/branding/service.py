@@ -13,6 +13,7 @@ missing here if the caller passed a bogus id, which is a genuine 404,
 not something to paper over by creating one.
 """
 
+import logging
 import uuid
 
 from fastapi import UploadFile
@@ -38,6 +39,8 @@ from app.core.exceptions import NotFoundError
 from app.storage import StorageProvider
 from app.utils.upload_validation import read_validated_upload
 
+logger = logging.getLogger(__name__)
+
 _LOGO_CONTENT_TYPES = {"image/png", "image/jpeg", "image/svg+xml"}
 _LOGO_MAX_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 
@@ -58,6 +61,7 @@ class BrandingService:
             upload, allowed_content_types=_LOGO_CONTENT_TYPES, max_size_bytes=_LOGO_MAX_SIZE_BYTES
         )
         profile = await self._get_or_create_profile(company_id)
+        previous_logo_key = profile.logo_path
         stored = await self._storage.save(
             category="logos",
             filename=upload.filename or "logo",
@@ -65,6 +69,23 @@ class BrandingService:
             content=content,
         )
         profile.logo_path = stored.key
+
+        # Reassigning logo_path drops the only reference to the previous
+        # file, so without this the old logo stays on disk forever: every
+        # re-upload leaked up to _LOGO_MAX_SIZE_BYTES into a volume with no
+        # purge path. Deleted after the new key is in place, and never at
+        # the cost of the request: the artisan's new logo is saved either
+        # way, an orphan file is a janitorial problem, not their problem.
+        if previous_logo_key and previous_logo_key != stored.key:
+            try:
+                await self._storage.delete(previous_logo_key)
+            except OSError:
+                logger.warning(
+                    "branding.previous_logo_delete_failed company_id=%s key=%s",
+                    company_id,
+                    previous_logo_key,
+                    exc_info=True,
+                )
         return StoredFileInfo(
             filename=stored.filename,
             content_type=stored.content_type,

@@ -14,7 +14,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class QuoteLineCreate(BaseModel):
     catalog_item_id: uuid.UUID
-    quantity: Decimal = Field(gt=0)
+    # Bounded to exactly what QuoteLine.quantity's Numeric(10, 2) column can
+    # hold. Without this, PostgreSQL silently rounds the persisted quantity
+    # while QuoteCalculator has already computed total_ht from the unrounded
+    # value: "0.333 × 300.00" persists as "0.33 × 300.00 = 99.90", a line the
+    # artisan cannot justify. A quantity that doesn't fit must be refused
+    # (422), never silently altered.
+    quantity: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
 
 
 class QuoteCreate(BaseModel):

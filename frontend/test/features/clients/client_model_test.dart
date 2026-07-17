@@ -57,14 +57,22 @@ void main() {
   });
 
   group('ClientInput', () {
-    test('toJson omits null fields (required for safe partial updates)', () {
+    test('toJson sends null fields explicitly, so a cleared field is cleared', () {
+      // This asserted the opposite until it was found to be the cause of a
+      // real bug. Omitting nulls only makes sense for a *partial* update,
+      // where an absent key means "don't touch" (the backend's
+      // exclude_unset). This model is a full form snapshot — the edit form
+      // always sends every field — so there is no untouched field to
+      // protect, and dropping the null meant an artisan could never clear
+      // a wrong email: it silently came back on the next load.
       const input = ClientInput(lastName: 'Martin', phone: '0611223344');
 
       final json = input.toJson();
 
-      expect(json, {'last_name': 'Martin', 'phone': '0611223344'});
-      expect(json.containsKey('first_name'), isFalse);
-      expect(json.containsKey('email'), isFalse);
+      expect(json['last_name'], 'Martin');
+      expect(json['phone'], '0611223344');
+      expect(json.containsKey('email'), isTrue);
+      expect(json['email'], isNull);
     });
   });
 }

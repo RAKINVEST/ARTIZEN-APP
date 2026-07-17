@@ -8,12 +8,14 @@ class ItemTile extends StatelessWidget {
     required this.item,
     required this.onTap,
     required this.onDeactivate,
+    required this.onReactivate,
     super.key,
   });
 
   final CatalogItem item;
   final VoidCallback onTap;
   final VoidCallback onDeactivate;
+  final VoidCallback onReactivate;
 
   @override
   Widget build(BuildContext context) {
@@ -30,13 +32,21 @@ class ItemTile extends StatelessWidget {
           '${item.active ? '' : ' · désactivé'}',
           style: item.active ? null : TextStyle(color: theme.colorScheme.outline),
         ),
+        // A deactivated item used to have no action at all here, which made
+        // deactivating a one-way door: the item stayed listed, greyed out,
+        // and unusable forever. The way back has to live where the way out
+        // is.
         trailing: item.active
             ? IconButton(
                 icon: const Icon(Icons.visibility_off_outlined),
                 tooltip: 'Désactiver',
                 onPressed: onDeactivate,
               )
-            : null,
+            : IconButton(
+                icon: const Icon(Icons.restore_outlined),
+                tooltip: 'Réactiver',
+                onPressed: onReactivate,
+              ),
       ),
     );
   }

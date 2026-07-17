@@ -1,0 +1,5 @@
+### command: alembic upgrade head
+### utc: 2026-07-17T11:59:01Z
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+### exit: 0

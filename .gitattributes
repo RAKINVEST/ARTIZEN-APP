@@ -1,0 +1,46 @@
+# Normalize line endings so a checkout is usable on every OS.
+#
+# Why this file exists: `backend/entrypoint.sh` is executed by bash *inside
+# the Linux container*, but it is checked out on developer machines. Git
+# stores it with LF, and on Windows `core.autocrlf=true` (the default that
+# Git for Windows installs) rewrites it to CRLF on checkout. bash then
+# reads the trailing \r as part of each command:
+#
+#   entrypoint.sh: line 2: set: -: invalid option
+#   entrypoint.sh: line 3: $'\r': command not found
+#   entrypoint.sh: line 26: syntax error: unexpected end of file
+#
+# The container restart-loops, and `docker compose up` — the single command
+# the README promises — never works on a Windows checkout. It is not
+# reproducible on macOS/Linux, which is exactly why it survived.
+#
+# `eol=lf` overrides autocrlf for these paths, whatever the developer's
+# global Git config.
+
+# Default: let Git decide what is text, and normalize it in the repository.
+* text=auto
+
+# Executed inside Linux containers — must stay LF, always.
+*.sh text eol=lf
+backend/entrypoint.sh text eol=lf
+
+# Docker tooling reads these; keep them LF for the same reason.
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+.dockerignore text eol=lf
+docker-compose.yml text eol=lf
+
+# Python/Dart run through interpreters that accept either, but keeping the
+# repository normalized avoids whole-file diffs when developers on
+# different platforms touch the same file.
+*.py text eol=lf
+*.dart text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Binary: never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.pdf binary

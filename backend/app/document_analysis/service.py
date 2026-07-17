@@ -42,9 +42,13 @@ class DocumentAnalysisService:
         *,
         company_id: uuid.UUID,
         document_type: DocumentType,
-        document_template_id: uuid.UUID | None,
         upload: UploadFile,
     ) -> DocumentAnalysis:
+        """A new analysis is never linked to a template on creation:
+        ``document_template_id`` is set later, and only by
+        ``TemplateImportService``, once it has created the template itself.
+        Accepting one here meant trusting a client-supplied reference to
+        another module's row — see the route's docstring."""
         content = await read_validated_upload(
             upload, allowed_content_types=_PDF_CONTENT_TYPES, max_size_bytes=_PDF_MAX_SIZE_BYTES
         )
@@ -61,7 +65,6 @@ class DocumentAnalysisService:
 
         analysis = DocumentAnalysis(
             company_id=company_id,
-            document_template_id=document_template_id,
             document_type=document_type,
             filename=filename,
             file_hash=file_hash,

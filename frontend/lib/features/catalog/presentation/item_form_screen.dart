@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/decimal_input.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../data/catalog_models.dart';
 import 'catalog_providers.dart';
@@ -22,6 +23,7 @@ class ItemFormScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(itemId == null ? 'Nouvel article' : 'Modifier l\'article')),
       body: AsyncValueView(
         value: categoriesAsync,
+        onRetry: () => ref.read(categoriesNotifierProvider.notifier).refresh(),
         builder: (context, categories) {
           if (categories.isEmpty) {
             return const Padding(
@@ -86,8 +88,10 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
       description: _description.text.trim().isEmpty ? null : _description.text.trim(),
       itemType: _itemType,
       unit: _unit.text.trim(),
-      unitPriceHt: _unitPriceHt.text.trim(),
-      vatRate: _vatRate.text.trim(),
+      // Normalized, not just trimmed: the backend's Decimal rejects the
+      // comma a French keyboard produces.
+      unitPriceHt: DecimalInput.normalize(_unitPriceHt.text),
+      vatRate: DecimalInput.normalize(_vatRate.text),
       estimatedDurationMinutes: _duration.text.trim().isEmpty ? null : int.tryParse(_duration.text.trim()),
     );
     try {
@@ -187,7 +191,7 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
                   controller: _vatRate,
                   decoration: const InputDecoration(labelText: 'TVA *', suffixText: '%'),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  validator: _validateDecimal,
+                  validator: _validateVatRate,
                 ),
               ),
             ],
@@ -204,10 +208,16 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
     );
   }
 
-  String? _validateDecimal(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Requis';
-    final parsed = double.tryParse(value.trim().replaceAll(',', '.'));
-    if (parsed == null || parsed < 0) return 'Nombre invalide';
+  String? _validateDecimal(String? value) => DecimalInput.validate(value);
+
+  String? _validateVatRate(String? value) {
+    final error = DecimalInput.validate(value);
+    if (error != null) return error;
+    // Mirrors the backend's `le=100` bound, so an impossible rate is caught
+    // on the field instead of coming back as an opaque 422.
+    if (double.parse(DecimalInput.normalize(value!)) > 100) {
+      return 'La TVA ne peut pas dépasser 100 %';
+    }
     return null;
   }
 }

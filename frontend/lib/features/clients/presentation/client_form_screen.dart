@@ -23,6 +23,10 @@ class ClientFormScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Modifier le client')),
       body: AsyncValueView(
         value: clientAsync,
+        // Without this the error state has no action: a dropped connection
+        // while opening a client left a dead screen whose only way out was
+        // the back button.
+        onRetry: () => ref.invalidate(clientByIdProvider(clientId!)),
         builder: (context, client) => _ClientForm(clientId: clientId, initial: client),
       ),
     );

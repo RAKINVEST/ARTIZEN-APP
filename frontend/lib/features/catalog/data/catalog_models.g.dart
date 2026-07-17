@@ -98,19 +98,20 @@ _$CatalogItemInputImpl _$$CatalogItemInputImplFromJson(
   vatRate: json['vat_rate'] as String,
   estimatedDurationMinutes: (json['estimated_duration_minutes'] as num?)
       ?.toInt(),
+  active: json['active'] as bool?,
 );
 
 Map<String, dynamic> _$$CatalogItemInputImplToJson(
   _$CatalogItemInputImpl instance,
 ) => <String, dynamic>{
   'category_id': instance.categoryId,
-  if (instance.code case final value?) 'code': value,
+  'code': instance.code,
   'designation': instance.designation,
-  if (instance.description case final value?) 'description': value,
+  'description': instance.description,
   'item_type': _$ItemTypeEnumMap[instance.itemType]!,
   'unit': instance.unit,
   'unit_price_ht': instance.unitPriceHt,
   'vat_rate': instance.vatRate,
-  if (instance.estimatedDurationMinutes case final value?)
-    'estimated_duration_minutes': value,
+  'estimated_duration_minutes': instance.estimatedDurationMinutes,
+  if (instance.active case final value?) 'active': value,
 };

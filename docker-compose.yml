@@ -21,6 +21,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
+    # This compose file is the LOCAL DEVELOPMENT setup, and this line is
+    # what makes it one: --reload watches the bind-mounted source below.
+    # The image's own CMD is the production server (no --reload, several
+    # workers) — deploying the image without this override is what you
+    # want, and is now the default rather than something to remember.
+    command:
+      ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     env_file:
       - .env
     environment:
@@ -44,4 +51,11 @@ services:
 
 volumes:
   artizen_postgres_data:
+  # NOTE — the backend container now runs as the non-root "artizen" user.
+  # Docker copies the image's ownership of /data/storage onto this volume
+  # only when it initializes it EMPTY. A volume created before that change
+  # is still root-owned, and uploads will fail with EACCES. On an existing
+  # install, either `docker compose down -v` (destroys stored files) or
+  # chown it once:
+  #   docker compose run --rm --user root backend chown -R artizen /data/storage
   artizen_storage_data:

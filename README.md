@@ -27,9 +27,15 @@ description libre ("Remplacement d'un chauffe-eau Atlantic 200 litres
 avec groupe de sécurité et deux heures de main-d'œuvre") en une
 proposition de lignes de devis, en ne faisant jamais que *sélectionner*
 des articles déjà existants du catalogue de l'entreprise — l'IA ne
-calcule, n'invente et ne crée jamais rien elle-même ; `QuoteCalculator`
-reste le seul endroit où un montant est calculé, et la création du devis
-reste un choix explicite de l'utilisateur via l'écran "Assistant IA".
+choisit **aucun prix, aucune TVA, aucun montant**, et ne crée jamais rien
+en base ; `QuoteCalculator` reste le seul endroit où un montant est
+calculé, et la création du devis reste un choix explicite de
+l'utilisateur via l'écran "Assistant IA". Une nuance, à énoncer plutôt
+qu'à laisser croire : la *quantité* proposée, elle, est bien inférée par
+l'IA à partir de la description — c'est la seule valeur numérique qu'elle
+produise. Elle est bornée par le schéma, relue par l'artisan, et ne
+devient une ligne de devis que s'il la valide ; mais « l'IA n'invente
+rien » serait faux si on l'étendait aux quantités.
 L'**Étape 8** ajoute **template_import** : un artisan peut importer un
 ancien devis PDF, qu'Artizen analyse (pipeline `document_analysis` +
 heuristiques `document_detection`, réutilisés tels quels) pour proposer
@@ -75,7 +81,7 @@ décrit plus bas.
 | ORM             | SQLAlchemy 2.x (async, `asyncpg`)                |
 | Migrations      | Alembic                                          |
 | Validation      | Pydantic v2                                      |
-| Auth            | JWT (utilitaires prêts, endpoints à venir)        |
+| Auth            | JWT réel — `POST /auth/register`, `POST /auth/login`, `GET /auth/me` ; multi-tenant appliqué sur tous les modules (Étape 10) |
 | IA              | Couche d'abstraction multi-fournisseurs — premier fournisseur actif : Anthropic Claude (`ai/providers/anthropic_provider.py`) |
 | Stockage        | Couche d'abstraction multi-fournisseurs (local aujourd'hui) |
 | Conteneurisation| Docker / Docker Compose                          |
@@ -125,6 +131,41 @@ Tous les endpoints métier (branding, et les futurs modules) sont montés
 sous le préfixe `API_PREFIX` (`/api` par défaut) ; seul `/health` reste
 hors préfixe, car il est consommé par des outils d'infrastructure
 (orchestrateur, load balancer) plutôt que par des clients métier.
+
+### Fins de ligne : pourquoi `.gitattributes` n'est pas cosmétique
+
+`backend/entrypoint.sh` est exécuté par bash **dans le conteneur Linux**,
+mais il est checkouté sur des postes Windows où Git for Windows active
+`core.autocrlf=true` par défaut. Sans garde, le script arrive en CRLF et
+bash lit le `` comme faisant partie de chaque commande :
+
+```
+entrypoint.sh: line 3: $'': command not found
+entrypoint.sh: line 26: syntax error: unexpected end of file
+```
+
+Le conteneur redémarre en boucle et `docker compose up` — la commande
+unique promise plus haut — ne fonctionne tout simplement pas. Le bug est
+invisible sur macOS/Linux, ce qui est précisément pourquoi il a survécu.
+
+`.gitattributes` (`*.sh text eol=lf`) force le LF quelle que soit la
+configuration Git du développeur. **Ne pas le supprimer.**
+
+### Utilisateur non-root : le conteneur se répare lui-même
+
+L'application tourne en `artizen` (uid 1000), jamais en root. Mais Docker
+n'applique l'appartenance du répertoire de l'image à un volume nommé qu'à
+son initialisation **à vide** : un volume `artizen_storage_data` créé par
+une version antérieure reste détenu par root, et tous les uploads
+échoueraient en `EACCES` — alors que le conteneur se déclare *healthy*,
+puisque `/health` ne fait qu'un `SELECT 1` et ne touche jamais au stockage.
+
+`entrypoint.sh` traite ce cas : il démarre en root, corrige
+l'appartenance **uniquement si elle est fausse**, puis abandonne ses
+privilèges via `setpriv` et se ré-exécute en `artizen`. Aucune action
+manuelle n'est requise, ni sur une installation neuve, ni sur une
+existante. C'est pourquoi le `Dockerfile` n'a **pas** de directive `USER` :
+la bascule doit avoir lieu après la réparation, pas avant.
 
 ### Arrêter / réinitialiser
 

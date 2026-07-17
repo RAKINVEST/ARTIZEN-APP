@@ -3,11 +3,13 @@ import 'package:dio/dio.dart';
 import 'auth_token_storage.dart';
 
 /// Injects `Authorization: Bearer <token>` on every request once a token
-/// exists. No backend route checks it yet (the backend has no auth-gated
-/// endpoints either, see its own README), but the plumbing is real and
-/// active today — wiring up real login later only means making
-/// [AuthTokenStorage.saveToken] receive a genuine JWT instead of the
-/// simulated one `features/auth` writes now.
+/// exists.
+///
+/// This header is load-bearing: every business route on the backend
+/// requires it (`CurrentUserDep`), and the company a request reads and
+/// writes is derived from the token — never from anything the client
+/// sends. Without it the call is refused, so this interceptor is the only
+/// reason any screen returns data.
 class AuthInterceptor extends Interceptor {
   AuthInterceptor(this._tokenStorage);
 

@@ -30,3 +30,12 @@ def setup_logging() -> None:
     logging.getLogger("sqlalchemy.engine").setLevel(
         logging.INFO if settings.DEBUG else logging.WARNING
     )
+
+    # Pinned for secrecy, not noise: these propagate to the root logger,
+    # so LOG_LEVEL=DEBUG would make the HTTP layer under the Anthropic SDK
+    # dump request headers — including the "x-api-key" carrying the AI
+    # provider credential — straight into stdout, and from there into
+    # whatever collects container logs. Nothing below WARNING from these
+    # libraries is worth that risk.
+    for third_party_logger in ("anthropic", "httpx", "httpcore"):
+        logging.getLogger(third_party_logger).setLevel(logging.WARNING)

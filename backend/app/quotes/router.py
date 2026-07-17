@@ -48,3 +48,16 @@ async def get_quote(
     quote = await service.get(quote_id)
     ensure_same_company(quote.company_id, quote_id, current_user.company_id)
     return quote
+
+
+@router.delete("/{quote_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_quote(
+    service: QuoteServiceDep, current_user: CurrentUserDep, quote_id: uuid.UUID
+) -> None:
+    """Hard delete, unlike a catalog item's soft delete: a quote is a
+    document the artisan authored, not a reference other rows point to, so
+    there is no history to protect by keeping it. It is also the only way
+    to undo one — see ``QuoteService.delete``."""
+    existing = await service.get(quote_id)
+    ensure_same_company(existing.company_id, quote_id, current_user.company_id)
+    await service.delete(quote_id)

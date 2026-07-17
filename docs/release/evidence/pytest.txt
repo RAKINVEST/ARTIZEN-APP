@@ -1,0 +1,20 @@
+### command: pytest
+### utc: 2026-07-17T11:59:03Z
+........................................................................ [ 50%]
+......................................................................   [100%]
+============================== warnings summary ===============================
+app/tests/test_branding.py: 10 warnings
+app/tests/test_catalog.py: 42 warnings
+app/tests/test_clients.py: 17 warnings
+app/tests/test_document_analysis.py: 23 warnings
+app/tests/test_document_detection.py: 8 warnings
+app/tests/test_quote_assistant.py: 42 warnings
+app/tests/test_quotes.py: 45 warnings
+app/tests/test_template_import.py: 31 warnings
+app/tests/test_users.py: 1 warning
+  C:\Users\UTILIS~1\AppData\Local\Temp\claude\c--Users-Utilisateur-Documents-GitHub-ARTIZEN-APP\b066c3fc-8186-419f-9dcf-c29e10d6e9ae\scratchpad\venv313\Lib\site-packages\jose\jwt.py:311: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = timegm(datetime.utcnow().utctimetuple())
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+142 passed, 219 warnings in 27.60s
+### exit: 0

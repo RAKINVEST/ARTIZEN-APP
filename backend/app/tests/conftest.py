@@ -1,11 +1,23 @@
+import os
 import uuid
 from collections.abc import AsyncIterator
 
-import pytest
-from httpx import ASGITransport, AsyncClient
+# Set before app.main is imported, and therefore before app.core.config
+# builds its settings singleton — by the time `app` exists the middleware
+# stack is already fixed, so this cannot be done from a fixture.
+#
+# Every test registers its own account (see below), from a single address:
+# ~95 registrations in a burst is precisely the pattern AuthRateLimitMiddleware
+# exists to refuse, and with it on, everything past the tenth test fails with
+# a 429. The limiter itself is covered directly, without the HTTP stack, in
+# test_rate_limit.py.
+os.environ.setdefault("AUTH_RATE_LIMIT_ENABLED", "false")
 
-from app.database.session import engine
-from app.main import app
+import pytest  # noqa: E402
+from httpx import ASGITransport, AsyncClient  # noqa: E402
+
+from app.database.session import engine  # noqa: E402
+from app.main import app  # noqa: E402
 
 _TEST_PASSWORD = "TestPassword123!"
 

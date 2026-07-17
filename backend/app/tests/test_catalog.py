@@ -186,3 +186,86 @@ async def test_deactivate_item(client: AsyncClient, company_id: str, category_id
 
     get_response = await client.get(f"/api/catalog/items/{item_id}")
     assert get_response.json()["active"] is False
+
+
+async def test_create_item_rejects_another_companys_category(
+    client: AsyncClient, second_client: AsyncClient, category_id: str
+) -> None:
+    """category_id is the one field on an item that references another row
+    and comes straight from the client. The foreign key only proves the
+    category exists — this proves it is the caller's.
+
+    Left unchecked, company B could hang an item off company A's category,
+    and since CatalogItem.category_id is RESTRICT, A could then never
+    delete that category again: a permanent 409 on their own data, with no
+    way to see why.
+    """
+    response = await second_client.post(
+        "/api/catalog/items",
+        json={
+            "category_id": category_id,
+            "designation": "Article greffe sur la categorie d'autrui",
+            "item_type": "service",
+            "unit": "h",
+            "unit_price_ht": "50.00",
+            "vat_rate": "20.00",
+        },
+    )
+
+    assert response.status_code == 404
+
+
+async def test_update_item_cannot_repoint_to_another_companys_category(
+    client: AsyncClient, second_client: AsyncClient, category_id: str
+) -> None:
+    """Same hole on the update path: the router confirms the *item* belongs
+    to the caller, which says nothing about the category it is moved to."""
+    own_category = await second_client.post(
+        "/api/catalog/categories", json={"name": "Categorie B"}
+    )
+    own_item = await second_client.post(
+        "/api/catalog/items",
+        json={
+            "category_id": own_category.json()["id"],
+            "designation": "Article de B",
+            "item_type": "service",
+            "unit": "h",
+            "unit_price_ht": "50.00",
+            "vat_rate": "20.00",
+        },
+    )
+
+    response = await second_client.put(
+        f"/api/catalog/items/{own_item.json()['id']}",
+        json={"category_id": category_id},
+    )
+
+    assert response.status_code == 404
+
+
+async def test_update_item_keeps_working_within_its_own_company(
+    second_client: AsyncClient,
+) -> None:
+    """The guard must not block the legitimate move it looks like: an
+    artisan reclassifying their own item into their own other category."""
+    first = await second_client.post("/api/catalog/categories", json={"name": "Avant"})
+    second = await second_client.post("/api/catalog/categories", json={"name": "Apres"})
+    item = await second_client.post(
+        "/api/catalog/items",
+        json={
+            "category_id": first.json()["id"],
+            "designation": "Article a reclasser",
+            "item_type": "service",
+            "unit": "h",
+            "unit_price_ht": "50.00",
+            "vat_rate": "20.00",
+        },
+    )
+
+    response = await second_client.put(
+        f"/api/catalog/items/{item.json()['id']}",
+        json={"category_id": second.json()["id"]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["category_id"] == second.json()["id"]

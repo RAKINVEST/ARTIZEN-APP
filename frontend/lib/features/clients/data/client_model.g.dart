@@ -49,10 +49,10 @@ _$ClientInputImpl _$$ClientInputImplFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$$ClientInputImplToJson(_$ClientInputImpl instance) =>
     <String, dynamic>{
       'last_name': instance.lastName,
-      if (instance.firstName case final value?) 'first_name': value,
-      if (instance.companyName case final value?) 'company_name': value,
-      if (instance.address case final value?) 'address': value,
-      if (instance.phone case final value?) 'phone': value,
-      if (instance.email case final value?) 'email': value,
-      if (instance.notes case final value?) 'notes': value,
+      'first_name': instance.firstName,
+      'company_name': instance.companyName,
+      'address': instance.address,
+      'phone': instance.phone,
+      'email': instance.email,
+      'notes': instance.notes,
     };

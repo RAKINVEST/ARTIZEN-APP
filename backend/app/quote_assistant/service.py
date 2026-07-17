@@ -25,6 +25,15 @@ from app.quotes.repository import QuoteLineRepository
 
 logger = logging.getLogger(__name__)
 
+# The catalog sent to the AI must be bounded — the whole thing goes into the
+# prompt. This limit is stated here rather than inherited from
+# CatalogItemRepository.list_by_company's paging default, which silently
+# capped the copilot at 100 items: past that, an artisan's own item was
+# simply absent from the prompt, the AI matched nothing, and the feature
+# looked merely bad instead of broken. Reaching the cap is logged, never
+# silent.
+_MAX_CATALOG_ITEMS = 1000
+
 
 class QuoteAssistantService:
     def __init__(
@@ -50,7 +59,16 @@ class QuoteAssistantService:
             len(description),
         )
 
-        active_items = await self._catalog_items.list_by_company(company_id, active_only=True)
+        active_items = await self._catalog_items.list_by_company(
+            company_id, active_only=True, limit=_MAX_CATALOG_ITEMS
+        )
+        if len(active_items) == _MAX_CATALOG_ITEMS:
+            logger.warning(
+                "quote_assistant.catalog_truncated company_id=%s limit=%d "
+                "(items beyond the limit are invisible to the copilot)",
+                company_id,
+                _MAX_CATALOG_ITEMS,
+            )
         usage_counts = await self._quote_lines.get_usage_counts_by_company(company_id)
         company_name = await self._branding.get_company_name(company_id)
 

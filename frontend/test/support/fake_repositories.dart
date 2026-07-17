@@ -82,6 +82,11 @@ class FakeCatalogRepository implements CatalogRepository {
   Future<CatalogItem> deactivateItem(String id) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<CatalogItem> reactivateItem(String id) async {
+    throw UnimplementedError();
+  }
 }
 
 class FakeQuotesRepository implements QuotesRepository {

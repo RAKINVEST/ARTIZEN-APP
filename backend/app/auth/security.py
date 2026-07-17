@@ -1,12 +1,11 @@
 """JWT and password-hashing primitives.
 
-These helpers are pure infrastructure: no ``User`` model or login endpoint
-exists yet (that is business logic, out of scope for the foundation
-phase), but every future auth feature will be built on top of these two
-functions so the hashing scheme and token format only need to be decided
-once.
+Pure infrastructure, shared by ``app.users`` (which owns the ``User``
+model and the /auth routes): the hashing scheme and token format are
+decided here, once, and nothing else in the app needs to know them.
 """
 
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -17,6 +16,11 @@ from app.core.config import settings
 
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# A hash of a random value nobody will ever submit. Its only purpose is to
+# be verified against — see spend_dummy_verify. Built at import so no real
+# credential is ever hard-coded here.
+_DUMMY_HASH = _pwd_context.hash(secrets.token_urlsafe(32))
+
 
 def hash_password(password: str) -> str:
     return _pwd_context.hash(password)
@@ -24,6 +28,21 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return _pwd_context.verify(plain_password, hashed_password)
+
+
+def spend_dummy_verify() -> None:
+    """Burn one bcrypt verification against a throwaway hash.
+
+    Login answers "invalid email or password" either way, but the work it
+    does differs: an unknown email short-circuits before bcrypt runs, while
+    a known one pays for a full verification. That gap is measurable from
+    outside — tens of milliseconds — and turns a deliberately uniform
+    message back into an oracle for whether an account exists.
+
+    Callers spend the same work on the unknown-email path so both answers
+    cost the same.
+    """
+    _pwd_context.verify("dummy", _DUMMY_HASH)
 
 
 def create_access_token(

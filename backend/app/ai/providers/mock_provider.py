@@ -37,7 +37,6 @@ import re
 from app.ai.base import AIProvider
 from app.ai.schemas import AIMessage, AIResponse
 
-_JSON_ARRAY_PATTERN = re.compile(r"\[.*\]", re.DOTALL)
 # Allows internal hyphens so French compound trade terms ("chauffe-eau",
 # "porte-fenêtre") stay a single token instead of splitting into two
 # unrelated words that would otherwise inflate/deflate overlap counts.
@@ -61,17 +60,27 @@ def _words(text: str) -> set[str]:
 def _extract_candidates(text: str) -> tuple[list[dict], str]:
     """Finds the first JSON array embedded in `text` (the catalog the
     prompt lists), returning it alongside the remaining free text (the
-    description to match against)."""
-    match = _JSON_ARRAY_PATTERN.search(text)
-    if not match:
+    description to match against).
+
+    Uses the JSON decoder to find where the array actually ends rather
+    than a regex: the description that follows the catalog is arbitrary
+    user text and may well contain brackets ("chauffe-eau [urgent]"), as
+    may a designation inside the catalog itself. A regex spanning from the
+    first "[" to a "]" either overshoots into the description or stops
+    short inside a string — both leave the JSON unparseable, and the demo
+    mode (the only mode available without an API key) then answers "no
+    match found" for a perfectly ordinary description, silently.
+    """
+    start = text.find("[")
+    if start == -1:
         return [], text
     try:
-        candidates = json.loads(match.group(0))
+        candidates, end = json.JSONDecoder().raw_decode(text, start)
     except ValueError:
         return [], text
     if not isinstance(candidates, list):
         return [], text
-    free_text = text[: match.start()] + text[match.end() :]
+    free_text = text[:start] + text[end:]
     return candidates, free_text
 
 

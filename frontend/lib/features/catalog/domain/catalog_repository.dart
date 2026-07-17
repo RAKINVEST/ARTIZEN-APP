@@ -20,4 +20,11 @@ abstract class CatalogRepository {
   Future<CatalogItem> createItem(CatalogItemInput input, {required String companyId});
   Future<CatalogItem> updateItem(String id, CatalogItemInput input);
   Future<CatalogItem> deactivateItem(String id);
+
+  /// The way back from [deactivateItem]. Its own method rather than a
+  /// flag on [updateItem]: reactivating is a single-field change, and
+  /// [CatalogItemInput] demands a whole item (designation, price, VAT...),
+  /// which the caller doesn't have and shouldn't have to reconstruct just
+  /// to flip a boolean — the same reason [deactivateItem] takes only an id.
+  Future<CatalogItem> reactivateItem(String id);
 }

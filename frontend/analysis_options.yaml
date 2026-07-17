@@ -13,6 +13,14 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+  errors:
+    # Freezed models declare their fields as constructor parameters, and
+    # `@JsonKey` officially targets fields/getters — so the analyzer flags
+    # every `@JsonKey` on a freezed parameter even though freezed forwards
+    # it correctly onto the field it generates. This is the workaround
+    # freezed itself documents; without it there is no way to configure a
+    # single field's JSON behaviour and still keep `flutter analyze` clean.
+    invalid_annotation_target: ignore
 
 linter:
   # The lint rules applied to this project can be customized in the

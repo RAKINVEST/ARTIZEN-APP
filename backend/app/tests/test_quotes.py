@@ -1,13 +1,19 @@
 """Tests for the quotes module: quote creation, HT/VAT/TTC calculation,
-rounding, and the inactive-catalog-item guard.
+rounding, the inactive-catalog-item guard, and the schema bounds that keep
+a persisted line consistent with what the calculator computed.
 """
 
+import uuid
 from decimal import Decimal
 
 import pytest
 from httpx import AsyncClient
+from pydantic import ValidationError
 
+from app.catalog.models import ItemType
+from app.catalog.schemas import CatalogItemCreate
 from app.quotes.calculator import QuoteCalculator
+from app.quotes.schemas import QuoteLineCreate
 
 
 @pytest.fixture
@@ -150,6 +156,75 @@ async def test_inactive_catalog_item_rejected(
     assert response.json()["error"]["code"] == "inactive_catalog_item"
 
 
+async def test_delete_quote_removes_it_and_its_lines(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    """Deleting is the only way to undo a mistyped quote — there is no
+    update path. It must actually be gone afterwards."""
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    created = await client.post(
+        "/api/quotes",
+        json={"client_id": client_id, "lines": [{"catalog_item_id": item_id, "quantity": "2"}]},
+    )
+    quote_id = created.json()["id"]
+
+    delete_response = await client.delete(f"/api/quotes/{quote_id}")
+
+    assert delete_response.status_code == 204
+    assert (await client.get(f"/api/quotes/{quote_id}")).status_code == 404
+
+
+async def test_delete_quote_leaves_the_catalog_item_alone(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    """The lines cascade, but the catalog item they referenced must not:
+    QuoteLine.catalog_item_id is RESTRICT precisely so a quote can never
+    take an item down with it."""
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    created = await client.post(
+        "/api/quotes",
+        json={"client_id": client_id, "lines": [{"catalog_item_id": item_id, "quantity": "1"}]},
+    )
+
+    await client.delete(f"/api/quotes/{created.json()['id']}")
+
+    assert (await client.get(f"/api/catalog/items/{item_id}")).status_code == 200
+
+
+async def test_delete_quote_of_another_company_is_a_404(
+    client: AsyncClient,
+    second_client: AsyncClient,
+    company_id: str,
+    client_id: str,
+    category_id: str,
+) -> None:
+    """404 rather than 403: confirming the quote exists would already leak
+    it. And the quote must survive the attempt."""
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    created = await client.post(
+        "/api/quotes",
+        json={"client_id": client_id, "lines": [{"catalog_item_id": item_id, "quantity": "1"}]},
+    )
+    quote_id = created.json()["id"]
+
+    response = await second_client.delete(f"/api/quotes/{quote_id}")
+
+    assert response.status_code == 404
+    assert (await client.get(f"/api/quotes/{quote_id}")).status_code == 200
+
+
+async def test_delete_unknown_quote_is_a_404(client: AsyncClient) -> None:
+    response = await client.delete(f"/api/quotes/{uuid.uuid4()}")
+
+    assert response.status_code == 404
+
+
 def test_calculator_rounding_uses_half_up() -> None:
     # 0.67 * 1.50 = 1.0050 exactly: a genuine rounding tie. ROUND_HALF_UP
     # must give 1.01; Python's default (banker's rounding) would give 1.00.
@@ -174,3 +249,72 @@ def test_calculator_quote_totals_sum_lines() -> None:
     assert totals.total_ht == Decimal("250.00")
     assert totals.total_vat == Decimal("45.00")
     assert totals.total_ttc == Decimal("295.00")
+
+
+def test_calculator_handles_quote_without_lines() -> None:
+    # sum()'s Decimal("0.00") start value is what keeps this from being a
+    # TypeError on an int 0 — worth pinning, since it's invisible at the
+    # call site.
+    totals = QuoteCalculator().calculate_quote([])
+
+    assert totals.total_ht == Decimal("0.00")
+    assert totals.total_vat == Decimal("0.00")
+    assert totals.total_ttc == Decimal("0.00")
+
+
+@pytest.mark.parametrize("quantity", ["0.333", "1.005", "0.004"])
+def test_quote_line_rejects_quantity_finer_than_the_column(quantity: str) -> None:
+    """QuoteLine.quantity is Numeric(10, 2). The calculator used to compute
+    total_ht from the full-precision value while PostgreSQL rounded the
+    quantity it stored, so the persisted line no longer multiplied out:
+    "0.333 × 300.00" was saved as "0.33 × 300.00 = 99.90" — a line the
+    artisan cannot justify to a customer. Worse, "0.004" passed gt=0 and
+    then stored as 0.00: a quantity of nothing, billed 0.40 €.
+
+    A quantity the column can't hold must be refused, never rounded behind
+    the artisan's back."""
+    with pytest.raises(ValidationError):
+        QuoteLineCreate(catalog_item_id=uuid.uuid4(), quantity=Decimal(quantity))
+
+
+@pytest.mark.parametrize("quantity", ["1", "2.5", "0.01", "99999999.99"])
+def test_quote_line_accepts_quantity_the_column_can_hold(quantity: str) -> None:
+    line = QuoteLineCreate(catalog_item_id=uuid.uuid4(), quantity=Decimal(quantity))
+
+    assert line.quantity == Decimal(quantity)
+
+
+def test_quote_line_rejects_quantity_beyond_column_range() -> None:
+    # Numeric(10, 2) tops out at 99_999_999.99; without max_digits this
+    # reached PostgreSQL and failed as a raw "numeric field overflow" 500
+    # instead of a 422.
+    with pytest.raises(ValidationError):
+        QuoteLineCreate(catalog_item_id=uuid.uuid4(), quantity=Decimal("100000000"))
+
+
+@pytest.mark.parametrize("vat_rate", ["101", "500", "-1"])
+def test_catalog_item_rejects_impossible_vat_rate(vat_rate: str) -> None:
+    # An unbounded rate put a 500 %-VAT quote in front of a real customer.
+    with pytest.raises(ValidationError):
+        CatalogItemCreate(
+            category_id=uuid.uuid4(),
+            designation="Test",
+            item_type=ItemType.SERVICE,
+            unit="h",
+            unit_price_ht=Decimal("100.00"),
+            vat_rate=Decimal(vat_rate),
+        )
+
+
+@pytest.mark.parametrize("vat_rate", ["0", "2.1", "5.5", "10", "20", "100"])
+def test_catalog_item_accepts_legal_vat_rates(vat_rate: str) -> None:
+    item = CatalogItemCreate(
+        category_id=uuid.uuid4(),
+        designation="Test",
+        item_type=ItemType.SERVICE,
+        unit="h",
+        unit_price_ht=Decimal("100.00"),
+        vat_rate=Decimal(vat_rate),
+    )
+
+    assert item.vat_rate == Decimal(vat_rate)

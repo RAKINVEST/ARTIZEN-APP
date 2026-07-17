@@ -927,14 +927,30 @@ CatalogItemInput _$CatalogItemInputFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$CatalogItemInput {
   String get categoryId => throw _privateConstructorUsedError;
+  @JsonKey(includeIfNull: true)
   String? get code => throw _privateConstructorUsedError;
   String get designation => throw _privateConstructorUsedError;
+  @JsonKey(includeIfNull: true)
   String? get description => throw _privateConstructorUsedError;
   ItemType get itemType => throw _privateConstructorUsedError;
   String get unit => throw _privateConstructorUsedError;
   String get unitPriceHt => throw _privateConstructorUsedError;
   String get vatRate => throw _privateConstructorUsedError;
-  int? get estimatedDurationMinutes => throw _privateConstructorUsedError;
+  @JsonKey(includeIfNull: true)
+  int? get estimatedDurationMinutes => throw _privateConstructorUsedError; // The backend has always accepted `active` on update; the client just
+  // never sent it. Deactivating was therefore a one-way door: DELETE sets
+  // active=False, and nothing could ever set it back — an item taken out
+  // of circulation by a mis-tap was gone for good, even though it stayed
+  // visible in the catalog, greyed out.
+  //
+  // Keeps the omit-when-null behaviour, unlike its neighbours above.
+  // CatalogItem.active is NOT NULL, and the backend applies
+  // exclude_unset — so sending "active": null from a form that simply
+  // doesn't touch it would mean setattr(item, "active", None), an
+  // IntegrityError surfacing as a 500 on every ordinary item edit.
+  // Absent means "leave it alone"; only the reactivate path sends a
+  // real boolean.
+  bool? get active => throw _privateConstructorUsedError;
 
   /// Serializes this CatalogItemInput to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -955,14 +971,15 @@ abstract class $CatalogItemInputCopyWith<$Res> {
   @useResult
   $Res call({
     String categoryId,
-    String? code,
+    @JsonKey(includeIfNull: true) String? code,
     String designation,
-    String? description,
+    @JsonKey(includeIfNull: true) String? description,
     ItemType itemType,
     String unit,
     String unitPriceHt,
     String vatRate,
-    int? estimatedDurationMinutes,
+    @JsonKey(includeIfNull: true) int? estimatedDurationMinutes,
+    bool? active,
   });
 }
 
@@ -990,6 +1007,7 @@ class _$CatalogItemInputCopyWithImpl<$Res, $Val extends CatalogItemInput>
     Object? unitPriceHt = null,
     Object? vatRate = null,
     Object? estimatedDurationMinutes = freezed,
+    Object? active = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -1029,6 +1047,10 @@ class _$CatalogItemInputCopyWithImpl<$Res, $Val extends CatalogItemInput>
                 ? _value.estimatedDurationMinutes
                 : estimatedDurationMinutes // ignore: cast_nullable_to_non_nullable
                       as int?,
+            active: freezed == active
+                ? _value.active
+                : active // ignore: cast_nullable_to_non_nullable
+                      as bool?,
           )
           as $Val,
     );
@@ -1046,14 +1068,15 @@ abstract class _$$CatalogItemInputImplCopyWith<$Res>
   @useResult
   $Res call({
     String categoryId,
-    String? code,
+    @JsonKey(includeIfNull: true) String? code,
     String designation,
-    String? description,
+    @JsonKey(includeIfNull: true) String? description,
     ItemType itemType,
     String unit,
     String unitPriceHt,
     String vatRate,
-    int? estimatedDurationMinutes,
+    @JsonKey(includeIfNull: true) int? estimatedDurationMinutes,
+    bool? active,
   });
 }
 
@@ -1080,6 +1103,7 @@ class __$$CatalogItemInputImplCopyWithImpl<$Res>
     Object? unitPriceHt = null,
     Object? vatRate = null,
     Object? estimatedDurationMinutes = freezed,
+    Object? active = freezed,
   }) {
     return _then(
       _$CatalogItemInputImpl(
@@ -1119,6 +1143,10 @@ class __$$CatalogItemInputImplCopyWithImpl<$Res>
             ? _value.estimatedDurationMinutes
             : estimatedDurationMinutes // ignore: cast_nullable_to_non_nullable
                   as int?,
+        active: freezed == active
+            ? _value.active
+            : active // ignore: cast_nullable_to_non_nullable
+                  as bool?,
       ),
     );
   }
@@ -1129,14 +1157,15 @@ class __$$CatalogItemInputImplCopyWithImpl<$Res>
 class _$CatalogItemInputImpl implements _CatalogItemInput {
   const _$CatalogItemInputImpl({
     required this.categoryId,
-    this.code,
+    @JsonKey(includeIfNull: true) this.code,
     required this.designation,
-    this.description,
+    @JsonKey(includeIfNull: true) this.description,
     required this.itemType,
     required this.unit,
     required this.unitPriceHt,
     required this.vatRate,
-    this.estimatedDurationMinutes,
+    @JsonKey(includeIfNull: true) this.estimatedDurationMinutes,
+    this.active,
   });
 
   factory _$CatalogItemInputImpl.fromJson(Map<String, dynamic> json) =>
@@ -1145,10 +1174,12 @@ class _$CatalogItemInputImpl implements _CatalogItemInput {
   @override
   final String categoryId;
   @override
+  @JsonKey(includeIfNull: true)
   final String? code;
   @override
   final String designation;
   @override
+  @JsonKey(includeIfNull: true)
   final String? description;
   @override
   final ItemType itemType;
@@ -1159,11 +1190,27 @@ class _$CatalogItemInputImpl implements _CatalogItemInput {
   @override
   final String vatRate;
   @override
+  @JsonKey(includeIfNull: true)
   final int? estimatedDurationMinutes;
+  // The backend has always accepted `active` on update; the client just
+  // never sent it. Deactivating was therefore a one-way door: DELETE sets
+  // active=False, and nothing could ever set it back — an item taken out
+  // of circulation by a mis-tap was gone for good, even though it stayed
+  // visible in the catalog, greyed out.
+  //
+  // Keeps the omit-when-null behaviour, unlike its neighbours above.
+  // CatalogItem.active is NOT NULL, and the backend applies
+  // exclude_unset — so sending "active": null from a form that simply
+  // doesn't touch it would mean setattr(item, "active", None), an
+  // IntegrityError surfacing as a 500 on every ordinary item edit.
+  // Absent means "leave it alone"; only the reactivate path sends a
+  // real boolean.
+  @override
+  final bool? active;
 
   @override
   String toString() {
-    return 'CatalogItemInput(categoryId: $categoryId, code: $code, designation: $designation, description: $description, itemType: $itemType, unit: $unit, unitPriceHt: $unitPriceHt, vatRate: $vatRate, estimatedDurationMinutes: $estimatedDurationMinutes)';
+    return 'CatalogItemInput(categoryId: $categoryId, code: $code, designation: $designation, description: $description, itemType: $itemType, unit: $unit, unitPriceHt: $unitPriceHt, vatRate: $vatRate, estimatedDurationMinutes: $estimatedDurationMinutes, active: $active)';
   }
 
   @override
@@ -1188,7 +1235,8 @@ class _$CatalogItemInputImpl implements _CatalogItemInput {
                   other.estimatedDurationMinutes,
                   estimatedDurationMinutes,
                 ) ||
-                other.estimatedDurationMinutes == estimatedDurationMinutes));
+                other.estimatedDurationMinutes == estimatedDurationMinutes) &&
+            (identical(other.active, active) || other.active == active));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1204,6 +1252,7 @@ class _$CatalogItemInputImpl implements _CatalogItemInput {
     unitPriceHt,
     vatRate,
     estimatedDurationMinutes,
+    active,
   );
 
   /// Create a copy of CatalogItemInput
@@ -1226,14 +1275,15 @@ class _$CatalogItemInputImpl implements _CatalogItemInput {
 abstract class _CatalogItemInput implements CatalogItemInput {
   const factory _CatalogItemInput({
     required final String categoryId,
-    final String? code,
+    @JsonKey(includeIfNull: true) final String? code,
     required final String designation,
-    final String? description,
+    @JsonKey(includeIfNull: true) final String? description,
     required final ItemType itemType,
     required final String unit,
     required final String unitPriceHt,
     required final String vatRate,
-    final int? estimatedDurationMinutes,
+    @JsonKey(includeIfNull: true) final int? estimatedDurationMinutes,
+    final bool? active,
   }) = _$CatalogItemInputImpl;
 
   factory _CatalogItemInput.fromJson(Map<String, dynamic> json) =
@@ -1242,10 +1292,12 @@ abstract class _CatalogItemInput implements CatalogItemInput {
   @override
   String get categoryId;
   @override
+  @JsonKey(includeIfNull: true)
   String? get code;
   @override
   String get designation;
   @override
+  @JsonKey(includeIfNull: true)
   String? get description;
   @override
   ItemType get itemType;
@@ -1256,7 +1308,22 @@ abstract class _CatalogItemInput implements CatalogItemInput {
   @override
   String get vatRate;
   @override
-  int? get estimatedDurationMinutes;
+  @JsonKey(includeIfNull: true)
+  int? get estimatedDurationMinutes; // The backend has always accepted `active` on update; the client just
+  // never sent it. Deactivating was therefore a one-way door: DELETE sets
+  // active=False, and nothing could ever set it back — an item taken out
+  // of circulation by a mis-tap was gone for good, even though it stayed
+  // visible in the catalog, greyed out.
+  //
+  // Keeps the omit-when-null behaviour, unlike its neighbours above.
+  // CatalogItem.active is NOT NULL, and the backend applies
+  // exclude_unset — so sending "active": null from a form that simply
+  // doesn't touch it would mean setattr(item, "active", None), an
+  // IntegrityError surfacing as a 500 on every ordinary item edit.
+  // Absent means "leave it alone"; only the reactivate path sends a
+  // real boolean.
+  @override
+  bool? get active;
 
   /// Create a copy of CatalogItemInput
   /// with the given fields replaced by the non-null parameter values.

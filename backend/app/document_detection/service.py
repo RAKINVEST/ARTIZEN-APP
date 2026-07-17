@@ -11,6 +11,7 @@ aggregator directly.
 import logging
 import uuid
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.authorization import ensure_same_company
@@ -45,8 +46,21 @@ class DocumentDetectionService:
         ensure_same_company(analysis.company_id, analysis_id, company_id)
 
         existing = await self._detections.get_by_analysis_id(analysis_id)
-        if existing is not None:
+        if existing is not None and existing.created_at >= analysis.updated_at:
             return existing
+        if existing is not None:
+            # The analysis was re-processed after this detection ran
+            # (POST /process has no state guard, so it is replayable), which
+            # left the cached result describing text that no longer exists.
+            # Compared here rather than invalidated from document_analysis:
+            # that module must not import this one — the dependency only
+            # runs this way round.
+            logger.info(
+                "document_detection.stale_cache analysis_id=%s detected_at=%s reprocessed_at=%s",
+                analysis_id,
+                existing.created_at,
+                analysis.updated_at,
+            )
 
         if analysis.status != DocumentStatus.COMPLETED:
             raise DocumentNotProcessedError(
@@ -65,5 +79,28 @@ class DocumentDetectionService:
             fields["confidence_score"],
         )
 
+        if existing is not None:
+            # Refreshed in place: document_analysis_id is unique, so a
+            # second row for the same analysis is not an option.
+            for field, value in fields.items():
+                setattr(existing, field, value)
+            await self._session.flush()
+            await self._session.refresh(existing)
+            return existing
+
         detection = DocumentDetectionResult(document_analysis_id=analysis.id, **fields)
-        return await self._detections.create(detection)
+        try:
+            return await self._detections.create(detection)
+        except IntegrityError:
+            # Two concurrent GETs both found no cached result and both ran
+            # the detectors; the unique constraint lets exactly one insert
+            # win. The loser re-reads the winner's row instead of failing
+            # the request — the client asked for the detection, not for
+            # which request computed it. Easy to trigger: the Flutter
+            # screen fires preview and detection together.
+            await self._session.rollback()
+            winner = await self._detections.get_by_analysis_id(analysis_id)
+            if winner is None:
+                raise
+            logger.info("document_detection.concurrent_insert analysis_id=%s", analysis_id)
+            return winner

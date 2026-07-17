@@ -62,9 +62,12 @@ flutter run -d web-server --web-port 3000
 ```
 
 Puis ouvrir `http://localhost:3000` dans un navigateur. Le port **3000**
-n'est pas arbitraire : `docker-compose.yml` du backend configure
-`CORS_ORIGINS=http://localhost:3000` — un autre port serait bloqué par
-CORS.
+n'est pas arbitraire : le backend n'autorise que les origines listées dans
+`CORS_ORIGINS`, qui vaut `http://localhost:3000` — un autre port serait
+bloqué par CORS. Cette valeur vient du fichier `.env` de la racine (recopié
+depuis `.env.example`), que `docker-compose.yml` charge via `env_file` ;
+elle n'est pas écrite dans le compose. Pour servir le frontend ailleurs,
+c'est donc `.env` qu'il faut modifier, puis redémarrer le backend.
 
 `lib/core/api/api_config.dart` lit l'URL de l'API via une variable de
 compilation :

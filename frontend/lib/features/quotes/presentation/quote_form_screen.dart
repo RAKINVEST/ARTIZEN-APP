@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/decimal_input.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../catalog/presentation/catalog_providers.dart';
@@ -139,6 +140,7 @@ class _ClientPickerSheet extends ConsumerWidget {
         height: MediaQuery.of(context).size.height * 0.7,
         child: AsyncValueView(
           value: clients,
+          onRetry: () => ref.read(clientsNotifierProvider.notifier).refresh(),
           builder: (context, items) => ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 16),
             itemCount: items.length,
@@ -166,6 +168,29 @@ class _ItemPickerSheet extends ConsumerStatefulWidget {
 class _ItemPickerSheetState extends ConsumerState<_ItemPickerSheet> {
   CatalogItem? _selected;
   final _quantityController = TextEditingController(text: '1');
+  String? _quantityError;
+
+  /// Validates and normalizes here rather than letting the raw text reach
+  /// the draft: an invalid quantity used to travel all the way to
+  /// `POST /quotes`, where it failed as a 422 on the *whole* quote —
+  /// after the artisan had composed every line, and without saying which
+  /// one was wrong.
+  void _addSelectedItem() {
+    final error = DecimalInput.validate(
+      _quantityController.text,
+      exclusiveMin: true,
+    );
+    if (error != null) {
+      setState(() => _quantityError = error);
+      return;
+    }
+    Navigator.of(context).pop(
+      QuoteDraftLine(
+        item: _selected!,
+        quantity: DecimalInput.normalize(_quantityController.text),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -192,6 +217,7 @@ class _ItemPickerSheetState extends ConsumerState<_ItemPickerSheet> {
               Expanded(
                 child: AsyncValueView(
                   value: items,
+                  onRetry: () => ref.read(itemsNotifierProvider.notifier).refresh(),
                   builder: (context, list) {
                     final activeItems = list.where((item) => item.active).toList();
                     return ListView.builder(
@@ -218,17 +244,19 @@ class _ItemPickerSheetState extends ConsumerState<_ItemPickerSheet> {
                   Expanded(
                     child: TextField(
                       controller: _quantityController,
-                      decoration: const InputDecoration(labelText: 'Quantité'),
+                      decoration: InputDecoration(
+                        labelText: 'Quantité',
+                        errorText: _quantityError,
+                      ),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) {
+                        if (_quantityError != null) setState(() => _quantityError = null);
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
                   FilledButton(
-                    onPressed: _selected == null
-                        ? null
-                        : () => Navigator.of(context).pop(
-                              QuoteDraftLine(item: _selected!, quantity: _quantityController.text.trim()),
-                            ),
+                    onPressed: _selected == null ? null : _addSelectedItem,
                     child: const Text('Ajouter'),
                   ),
                 ],

@@ -30,7 +30,10 @@ class QuoteSuggestionRequest(BaseModel):
     # user (see quote_assistant/router.py). Optional here so callers don't
     # need to send a value that would be ignored anyway.
     company_id: uuid.UUID | None = None
-    description: str = Field(min_length=1)
+    # Bounded: the description is forwarded verbatim to the AI provider, so
+    # an unbounded field bills a multi-megabyte prompt to the company's API
+    # budget and may blow the context window.
+    description: str = Field(min_length=1, max_length=5000)
 
 
 class QuoteSuggestionItemRead(BaseModel):
@@ -48,11 +51,23 @@ class QuoteSuggestionRead(BaseModel):
 
 class RawSuggestionItem(BaseModel):
     catalog_item_id: uuid.UUID
-    quantity: Decimal = Field(gt=0)
+    # The quantity is the one number the AI genuinely infers rather than
+    # selects, so it gets an upper bound: a proposal of 1e9 units of
+    # anything is a malfunction, not a suggestion.
+    #
+    # Deliberately no decimal_places here, unlike QuoteLineCreate. Parsing
+    # is all-or-nothing (see CatalogMatcherClaude._parse), so every
+    # constraint added at this layer is a new way for one odd number to
+    # discard an otherwise good suggestion. A quantity too fine to persist
+    # is caught later, on the quote the artisan actually submits.
+    quantity: Decimal = Field(gt=0, max_digits=10)
     reason: str = ""
 
 
 class RawSuggestionResponse(BaseModel):
-    items: list[RawSuggestionItem] = Field(default_factory=list)
+    # Capped: every proposed item costs one catalog lookup in
+    # MatchValidator, so an unbounded list turns a derailed AI answer (or a
+    # prompt injection) into an amplification vector.
+    items: list[RawSuggestionItem] = Field(default_factory=list, max_length=50)
     confidence: float = Field(ge=0, le=1)
     comment: str = ""

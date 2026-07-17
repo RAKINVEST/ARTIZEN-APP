@@ -13,9 +13,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.endpoints import health
 from app.api.router import api_router
+from app.core.body_size_limit import MaxBodySizeMiddleware
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import setup_logging
+from app.core.rate_limit import AuthRateLimitMiddleware
 from app.database.session import engine
 
 setup_logging()
@@ -45,6 +47,18 @@ if settings.CORS_ORIGINS:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+if settings.AUTH_RATE_LIMIT_ENABLED:
+    app.add_middleware(
+        AuthRateLimitMiddleware,
+        max_requests=settings.AUTH_RATE_LIMIT_MAX_REQUESTS,
+        window_seconds=settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
+
+# Added last so it runs first: middlewares wrap in reverse registration
+# order, and this one is only worth anything if it refuses an oversized
+# body before any of the machinery below starts reading it.
+app.add_middleware(MaxBodySizeMiddleware)
 
 register_exception_handlers(app)
 

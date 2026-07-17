@@ -1,10 +1,16 @@
 """Orchestrates all nine detectors and computes the aggregate result.
 
-The PDF bytes are loaded once by the caller (``DocumentDetectionService``)
-and passed here only for the two visual detectors; the seven text
-detectors reuse the already-extracted text mutualized from
-``document_analysis`` — nothing here re-fetches or re-parses the PDF
-more than once per detector category.
+The PDF bytes are loaded from storage once by the caller
+(``DocumentDetectionService``) and passed here only for the two visual
+detectors; the seven text detectors reuse the already-extracted text
+mutualized from ``document_analysis``.
+
+Known cost, not a claim of efficiency: the bytes are fetched once, but
+``LogoDetector`` and ``ColorDetector`` each build their own ``PdfReader``
+and each decode page 1's first image — the same image, twice. Mutualizing
+that decode is a worthwhile optimization (see docs/AUDIT-V1.md); what
+keeps it from being dangerous today is ``document_detection.image_limits``,
+which bounds how large an image either one will decode.
 """
 
 import logging

@@ -14,7 +14,13 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.security import create_access_token, decode_access_token, hash_password, verify_password
+from app.auth.security import (
+    create_access_token,
+    decode_access_token,
+    hash_password,
+    spend_dummy_verify,
+    verify_password,
+)
 from app.branding.models import Company
 from app.branding.repository import CompanyRepository
 from app.core.exceptions import UnauthorizedError
@@ -50,7 +56,13 @@ class AuthService:
 
     async def login(self, data: UserLogin) -> TokenRead:
         user = await self._users.get_by_email(data.email)
-        if user is None or not verify_password(data.password, user.hashed_password):
+        if user is None:
+            # Same work as the branch below, so an unknown email and a wrong
+            # password take the same time to answer — otherwise the uniform
+            # error message above is undone by a stopwatch.
+            spend_dummy_verify()
+            raise UnauthorizedError("Invalid email or password.")
+        if not verify_password(data.password, user.hashed_password):
             raise UnauthorizedError("Invalid email or password.")
         if not user.is_active:
             raise UnauthorizedError("This account has been deactivated.")

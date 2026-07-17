@@ -73,6 +73,20 @@ class CatalogRepositoryImpl implements CatalogRepository {
     final response = await _dio.delete<Map<String, dynamic>>('/catalog/items/$id');
     return CatalogItem.fromJson(response.data!);
   }
+
+  @override
+  Future<CatalogItem> reactivateItem(String id) async {
+    // A bare {"active": true} body, not a CatalogItemInput: the backend's
+    // CatalogItemUpdate is a partial model (every field optional) and
+    // applies exclude_unset, so this touches `active` and nothing else.
+    // Sending a full item here would risk overwriting fields the caller
+    // never meant to change.
+    final response = await _dio.put<Map<String, dynamic>>(
+      '/catalog/items/$id',
+      data: {'active': true},
+    );
+    return CatalogItem.fromJson(response.data!);
+  }
 }
 
 final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {

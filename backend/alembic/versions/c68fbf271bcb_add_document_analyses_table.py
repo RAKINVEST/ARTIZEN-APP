@@ -56,3 +56,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_document_analyses_company_id'), table_name='document_analyses')
     op.drop_table('document_analyses')
     # ### end Alembic commands ###
+    # See bd7d5c7f9cc8's downgrade: DROP TABLE leaves PostgreSQL ENUM types
+    # in place, so they have to go explicitly or the next upgrade fails.
+    sa.Enum(name='document_analysis_status').drop(op.get_bind(), checkfirst=True)
+    sa.Enum(name='document_analysis_type').drop(op.get_bind(), checkfirst=True)

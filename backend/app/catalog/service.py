@@ -20,6 +20,7 @@ from app.catalog.schemas import (
     CatalogItemCreate,
     CatalogItemUpdate,
 )
+from app.core.authorization import ensure_same_company
 from app.core.exceptions import ConflictError, NotFoundError
 
 
@@ -69,7 +70,30 @@ class CatalogService:
 
     # --- Items ---
 
+    async def _ensure_category_belongs_to(
+        self, category_id: uuid.UUID, company_id: uuid.UUID
+    ) -> None:
+        """The category is the one field on an item that points at another
+        row, and it arrives straight from the client. The foreign key only
+        proves the row exists — not that it is *this* company's.
+
+        Without this, an item could be attached to another company's
+        category, which then pins that company: CatalogItem.category_id is
+        RESTRICT, so the victim could never delete their own category
+        again (a permanent 409 they cannot explain or fix). Exploiting it
+        needs a category UUID no route ever discloses, which is why this
+        is a hole rather than a breach — but the contract says company_id
+        never comes from the client, and until now that only held for the
+        row itself, not for what it referenced.
+        """
+        category = await self._categories.get(category_id)
+        if category is None:
+            raise NotFoundError(f"Catalog category {category_id} not found.")
+        ensure_same_company(category.company_id, category_id, company_id)
+
     async def create_item(self, data: CatalogItemCreate) -> CatalogItem:
+        if data.company_id is not None:
+            await self._ensure_category_belongs_to(data.category_id, data.company_id)
         return await self._items.create(CatalogItem(**data.model_dump()))
 
     async def get_item(self, item_id: uuid.UUID) -> CatalogItem:
@@ -94,6 +118,13 @@ class CatalogService:
 
     async def update_item(self, item_id: uuid.UUID, data: CatalogItemUpdate) -> CatalogItem:
         item = await self.get_item(item_id)
+        # Same check as create_item, and needed for the same reason: the
+        # router has already confirmed the *item* is this company's, but
+        # category_id can still be repointed at anyone's category.
+        # item.company_id is the trustworthy side here — the router derived
+        # it from the JWT before letting the update through.
+        if data.category_id is not None and data.category_id != item.category_id:
+            await self._ensure_category_belongs_to(data.category_id, item.company_id)
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(item, field, value)
         await self._session.flush()

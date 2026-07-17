@@ -78,6 +78,12 @@ class _ItemsTab extends ConsumerWidget {
                           await ref.read(itemsNotifierProvider.notifier).deactivateItem(item.id);
                         }
                       },
+                      // No confirmation dialog, unlike deactivating:
+                      // putting an item back is harmless and reversible,
+                      // and a prompt would only stand between the artisan
+                      // and undoing a mis-tap.
+                      onReactivate: () =>
+                          ref.read(itemsNotifierProvider.notifier).reactivateItem(item.id),
                     );
                   },
                 ),

@@ -64,17 +64,37 @@ class CatalogItem with _$CatalogItem {
 }
 
 @freezed
+/// Nullable fields opt out of build.yaml's `include_if_null: false` for
+/// the same reason as [ClientInput] (see `client_model.dart` for the full
+/// story): this is a full form snapshot, not a partial update, so a field
+/// the artisan clears has to be *sent* as null to actually be cleared.
+///
+/// `active` is the exception, and deliberately keeps the global behaviour.
 class CatalogItemInput with _$CatalogItemInput {
   const factory CatalogItemInput({
     required String categoryId,
-    String? code,
+    @JsonKey(includeIfNull: true) String? code,
     required String designation,
-    String? description,
+    @JsonKey(includeIfNull: true) String? description,
     required ItemType itemType,
     required String unit,
     required String unitPriceHt,
     required String vatRate,
-    int? estimatedDurationMinutes,
+    @JsonKey(includeIfNull: true) int? estimatedDurationMinutes,
+    // The backend has always accepted `active` on update; the client just
+    // never sent it. Deactivating was therefore a one-way door: DELETE sets
+    // active=False, and nothing could ever set it back — an item taken out
+    // of circulation by a mis-tap was gone for good, even though it stayed
+    // visible in the catalog, greyed out.
+    //
+    // Keeps the omit-when-null behaviour, unlike its neighbours above.
+    // CatalogItem.active is NOT NULL, and the backend applies
+    // exclude_unset — so sending "active": null from a form that simply
+    // doesn't touch it would mean setattr(item, "active", None), an
+    // IntegrityError surfacing as a 500 on every ordinary item edit.
+    // Absent means "leave it alone"; only the reactivate path sends a
+    // real boolean.
+    bool? active,
   }) = _CatalogItemInput;
 
   factory CatalogItemInput.fromJson(Map<String, dynamic> json) => _$CatalogItemInputFromJson(json);

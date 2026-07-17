@@ -26,7 +26,10 @@ class Quote(Base, UUIDMixin, TimestampMixin):
     )
     # RESTRICT: a client with existing quotes shouldn't be deletable by
     # accident (mirrors CatalogItem's protection against deleting a
-    # category that still has items).
+    # category that still has items). ClientService.delete translates the
+    # resulting IntegrityError into a 409 — the database guard is only half
+    # the protection, and for a while this comment claimed a translation
+    # that did not exist, so deleting such a client returned a bare 500.
     client_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("clients.id", ondelete="RESTRICT"), index=True
     )

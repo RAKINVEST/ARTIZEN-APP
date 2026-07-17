@@ -1,0 +1,42 @@
+### command: python break_it.py (deliberate break attempt, in-process ASGI + real PostgreSQL)
+### utc: 2026-07-17T12:01:28Z
+PASS | quantity 0.333 refused (was silent corruption)       | 422
+PASS | quantity 0.004 refused (was 0.00 billed 0.40EUR)     | 422
+PASS | quantity overflow refused, not a 500                 | 422
+PASS | negative quantity refused                            | 422
+PASS | quote with zero lines refused                        | 422
+PASS | VAT 500% refused (was sent to the customer)          | 422
+PASS | VAT 1000% refused, not a numeric overflow 500        | 422
+PASS | 5000-char password -> 422, never a 500 oracle        | 422
+2026-07-17 14:01:32 | WARNING  | app.core.exceptions | Handled application error on /api/auth/login: Invalid email or password.
+PASS | unknown email -> uniform 401                         | 401
+2026-07-17 14:01:32 | WARNING  | app.core.exceptions | Handled application error on /api/clients: Invalid or expired token.
+PASS | malformed JWT -> 401/403, never 500                  | 401
+PASS | empty JWT -> 401/403, never 500                      | 403
+2026-07-17 14:01:32 | WARNING  | app.core.exceptions | Handled application error on /api/clients: Invalid or expired token.
+PASS | alg=none forged JWT -> 401/403, never 500            | 401
+2026-07-17 14:01:32 | WARNING  | app.core.exceptions | Handled application error on /api/document-analysis/upload: File content does not match the declared type 'application/pdf'.
+PASS | fake PDF (declared type lies) -> 415                 | 415
+2026-07-17 14:01:32 | WARNING  | app.core.exceptions | Handled application error on /api/document-analysis/upload: File content does not match the declared type 'application/pdf'.
+PASS | 0-byte upload -> 415                                 | 415
+2026-07-17 14:01:32 | WARNING  | app.core.exceptions | Handled application error on /api/document-analysis/upload: Unsupported file type 'image/svg+xml'. Allowed: application/pdf.
+PASS | SVG rejected on the PDF endpoint -> 415              | 415
+2026-07-17 14:01:32 | WARNING  | app.core.exceptions | Handled application error on /api/clients/19304343-acf8-4a96-affc-f8f21ea5b22a: Resource 19304343-acf8-4a96-affc-f8f21ea5b22a not found.
+PASS | other company's client -> 404 (never 403)            | 404
+2026-07-17 14:01:32 | WARNING  | app.core.exceptions | Handled application error on /api/catalog/items/b1b4d648-d6af-4470-9557-6c430584c43a: Resource b1b4d648-d6af-4470-9557-6c430584c43a not found.
+PASS | other company's item -> 404 (never 403)              | 404
+2026-07-17 14:01:32 | WARNING  | app.core.exceptions | Handled application error on /api/catalog/items: Resource c8421686-6f2f-4de5-95d8-ecd7d18ca433 not found.
+PASS | grafting an item onto another company's category -> 404 | 404
+PASS | quote deletable (a typo is no longer permanent)      | 204
+2026-07-17 14:01:32 | WARNING  | app.core.exceptions | Handled application error on /api/quotes/ca163cef-acc2-443c-a02e-7d72c2e107d9: Quote ca163cef-acc2-443c-a02e-7d72c2e107d9 not found.
+PASS | deleted quote is really gone -> 404                  | 404
+2026-07-17 14:01:32 | WARNING  | app.core.exceptions | Handled application error on /api/clients/19304343-acf8-4a96-affc-f8f21ea5b22a: Client 19304343-acf8-4a96-affc-f8f21ea5b22a still has quotes and cannot be deleted.
+PASS | deleting a client with quotes -> 409, not a raw 500  | 409
+ LIMIT $2::INTEGER OFFSET $3::INTEGER
+PASS | AI description with brackets still works (mock)      | 200
+PASS | 6000-char description -> 422 (bounded prompt)        | 422
+PASS | empty description -> 422                             | 422
+
+======================================================================
+24/24 passed
+### exit: 0

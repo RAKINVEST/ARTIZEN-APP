@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/decimal_input.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
@@ -335,6 +336,27 @@ class _ManualItemPickerSheet extends ConsumerStatefulWidget {
 class _ManualItemPickerSheetState extends ConsumerState<_ManualItemPickerSheet> {
   CatalogItem? _selected;
   final _quantityController = TextEditingController(text: '1');
+  String? _quantityError;
+
+  /// See `_ItemPickerSheetState._addSelectedItem` in quote_form_screen.dart:
+  /// same reason, same guard — a comma or a third decimal must be caught
+  /// on the field, not as a 422 on the finished quote.
+  void _addSelectedItem() {
+    final error = DecimalInput.validate(
+      _quantityController.text,
+      exclusiveMin: true,
+    );
+    if (error != null) {
+      setState(() => _quantityError = error);
+      return;
+    }
+    Navigator.of(context).pop(
+      _ManualItemSelection(
+        item: _selected!,
+        quantity: DecimalInput.normalize(_quantityController.text),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -389,20 +411,19 @@ class _ManualItemPickerSheetState extends ConsumerState<_ManualItemPickerSheet> 
                   Expanded(
                     child: TextField(
                       controller: _quantityController,
-                      decoration: const InputDecoration(labelText: 'Quantité'),
+                      decoration: InputDecoration(
+                        labelText: 'Quantité',
+                        errorText: _quantityError,
+                      ),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) {
+                        if (_quantityError != null) setState(() => _quantityError = null);
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
                   FilledButton(
-                    onPressed: _selected == null
-                        ? null
-                        : () => Navigator.of(context).pop(
-                              _ManualItemSelection(
-                                item: _selected!,
-                                quantity: _quantityController.text.trim(),
-                              ),
-                            ),
+                    onPressed: _selected == null ? null : _addSelectedItem,
                     child: const Text('Ajouter'),
                   ),
                 ],

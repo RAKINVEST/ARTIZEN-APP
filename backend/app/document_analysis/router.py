@@ -29,13 +29,23 @@ async def upload_document(
     service: DocumentAnalysisServiceDep,
     current_user: CurrentUserDep,
     document_type: DocumentType = Form(...),
-    document_template_id: uuid.UUID | None = Form(None),
     file: UploadFile = File(...),
 ) -> DocumentAnalysisRead:
+    """No ``document_template_id`` here, deliberately.
+
+    It used to be accepted from the client and stored unchecked: the
+    foreign key proves the template exists, not that it is this company's,
+    so an analysis could be pinned to another company's template. Nothing
+    ever sent it — the only writer is ``TemplateImportService``, which sets
+    it server-side once it has created the template it links to — so the
+    parameter was pure attack surface. Validating it instead would mean
+    ``document_analysis`` reaching into ``branding``'s tables to check
+    ownership, a business-module-to-business-module dependency the
+    architecture rules out.
+    """
     analysis = await service.upload(
         company_id=current_user.company_id,
         document_type=document_type,
-        document_template_id=document_template_id,
         upload=file,
     )
     return DocumentAnalysisRead.model_validate(analysis)

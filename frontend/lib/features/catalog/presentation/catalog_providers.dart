@@ -31,9 +31,14 @@ final categoriesNotifierProvider = AsyncNotifierProvider<CategoriesNotifier, Lis
 );
 
 class ItemsNotifier extends AsyncNotifier<List<CatalogItem>> {
+  /// The catalog screen deliberately lists deactivated items too — they
+  /// render greyed out and labelled "désactivé" (see `ItemTile`), so the
+  /// artisan can still see what they took out of circulation. Only the
+  /// quote form filters them out, where offering them would be wrong.
+  static const bool _activeOnly = false;
+
   List<CatalogItem> _all = [];
   String _query = '';
-  bool _activeOnly = false;
 
   @override
   Future<List<CatalogItem>> build() async {
@@ -62,11 +67,6 @@ class ItemsNotifier extends AsyncNotifier<List<CatalogItem>> {
     state = AsyncValue.data(_filtered());
   }
 
-  Future<void> setActiveOnly(bool activeOnly) async {
-    _activeOnly = activeOnly;
-    await refresh();
-  }
-
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -92,6 +92,11 @@ class ItemsNotifier extends AsyncNotifier<List<CatalogItem>> {
 
   Future<void> deactivateItem(String id) async {
     await ref.read(catalogRepositoryProvider).deactivateItem(id);
+    await refresh();
+  }
+
+  Future<void> reactivateItem(String id) async {
+    await ref.read(catalogRepositoryProvider).reactivateItem(id);
     await refresh();
   }
 }

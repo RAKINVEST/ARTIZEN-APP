@@ -5,9 +5,17 @@ import uuid
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
+# bcrypt hashes at most 72 bytes and passlib raises above 4096. Bounding
+# both password fields keeps a long input from silently losing its tail on
+# register, and from raising an unhandled error on login — which turned a
+# uniform "invalid credentials" 401 into a 500 whenever the email existed,
+# i.e. a plain user-enumeration oracle.
+_MAX_PASSWORD_LENGTH = 72
+
+
 class UserRegister(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=8, max_length=_MAX_PASSWORD_LENGTH)
     full_name: str | None = None
     # Seeds Company.name for the new tenant this registration creates.
     # Optional: an artisan can always set it properly later via
@@ -17,7 +25,9 @@ class UserRegister(BaseModel):
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str
+    # No min_length here: login must not reveal the password policy, and a
+    # too-short password is simply wrong credentials (401), not a 422.
+    password: str = Field(max_length=_MAX_PASSWORD_LENGTH)
 
 
 class UserRead(BaseModel):

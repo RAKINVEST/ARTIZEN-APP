@@ -38,7 +38,7 @@ class DashboardScreen extends ConsumerWidget {
                     child: _StatCard(
                       icon: Icons.people_outline,
                       label: 'Clients',
-                      value: '${data.clientCount}',
+                      value: data.clientCount.display,
                       onTap: () => context.go('/clients'),
                     ),
                   ),
@@ -47,7 +47,7 @@ class DashboardScreen extends ConsumerWidget {
                     child: _StatCard(
                       icon: Icons.inventory_2_outlined,
                       label: 'Articles catalogue',
-                      value: '${data.catalogItemCount}',
+                      value: data.catalogItemCount.display,
                       onTap: () => context.go('/catalog'),
                     ),
                   ),
@@ -57,7 +57,7 @@ class DashboardScreen extends ConsumerWidget {
               _StatCard(
                 icon: Icons.description_outlined,
                 label: 'Devis',
-                value: '${data.quoteCount}',
+                value: data.quoteCount.display,
                 onTap: () => context.go('/quotes'),
               ),
               const SizedBox(height: 24),
