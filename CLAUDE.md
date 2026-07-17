@@ -110,7 +110,7 @@ module pour Alembic — c'est `models/` qui dépend des modules, jamais l'invers
 **Divergence connue, non corrigée : `users ↔ branding` est un cycle.** `users` importe
 `branding.repository.CompanyRepository` (l'inscription crée une `Company`, qui vit dans
 `branding`) et `branding/router.py` importe `users.deps.CurrentUserDep`. Aucun cycle à l'import
-— l'app démarre, 142 tests le prouvent — mais c'est la seule entorse réelle au « sens unique ».
+— l'app démarre, toute la suite pytest le prouve — mais c'est la seule entorse réelle au « sens unique ».
 La cause est que `Company` appartient à `branding` alors que l'inscription en crée une. La
 déplacer serait un refactoring : à traiter en V2, pas avant. Voir `docs/release/`.
 
@@ -149,11 +149,20 @@ repository), `presentation/` (providers Riverpod + écrans). Miroir des modules 
 - `core/widgets/` fournit un mécanisme unique pour les 4 états (loading / error / empty / data).
 - Navigation : `StatefulShellRoute` pour la barre du bas, routes racine pour le reste.
 
-## État de la V1
+## État — V1 certifiée, V2 en Release Candidate
 
-[docs/AUDIT-V1.md](docs/AUDIT-V1.md) est le point d'entrée : ce qui a été corrigé, ce qui reste
-(5 items bloquants, dont l'absence totale de rate limiting), et **quelles portes de validation
-n'ont jamais été exécutées**. À lire avant de déclarer quoi que ce soit prêt.
+La **V1** est figée sur `main` (tag `v1.0.0-rc1`) : 48 anomalies fermées, plus **aucune bloquante ni
+majeure** ouverte. Le rate limiting sur `/auth/*` **existe et est actif par défaut**
+(`core/rate_limit.py`, `AUTH_RATE_LIMIT_ENABLED=True`) — ne pas croire une éventuelle mention
+contraire dans un vieux document. Détail : [docs/AUDIT-V1.md](docs/AUDIT-V1.md).
+
+La **V2** (branche `v2`) ajoute le cycle de vie du devis (numéro + statut), la génération de PDF,
+la duplication, et leur interface Flutter. Périmètre figé, validé en Docker. Suivi :
+[CHANGELOG.md](CHANGELOG.md), [docs/ROADMAP.md](docs/ROADMAP.md), triage de périmètre dans
+[docs/release/06_V2_SCOPE_TRIAGE.md](docs/release/06_V2_SCOPE_TRIAGE.md).
+
+Les documents `docs/release/01`–`05` sont les artefacts de **certification V1**, exacts à la date du
+tag `v1.0.0-rc1` — ils décrivent la V1, pas l'état courant de `v2`.
 
 ## Pièges connus
 

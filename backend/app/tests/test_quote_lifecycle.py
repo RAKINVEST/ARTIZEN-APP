@@ -457,3 +457,71 @@ async def test_duplicating_an_unknown_quote_is_a_404(client: AsyncClient) -> Non
     response = await client.post(f"/api/quotes/{uuid.uuid4()}/duplicate")
 
     assert response.status_code == 404
+
+
+# --- Document mapper coverage (V2): the header of the commercial document ---
+
+
+async def test_pdf_shows_a_company_clients_name_and_contact(
+    client: AsyncClient, item_id: str
+) -> None:
+    """A company client is addressed by its company name, with the personal
+    contact underneath — the _client_party company branch, previously
+    exercised by no test."""
+    company_client = await client.post(
+        "/api/clients",
+        json={"last_name": "Durand", "first_name": "Paul", "company_name": "Boulangerie Durand SARL"},
+    )
+    quote = await _create_quote(client, company_client.json()["id"], item_id)
+
+    text = PdfReader(io.BytesIO((await client.get(f"/api/quotes/{quote['id']}/pdf")).content)).pages[0].extract_text()
+
+    assert "Boulangerie Durand SARL" in text
+    assert "Paul Durand" in text  # the contact, under the company name
+
+
+async def test_pdf_shows_the_issuers_legal_identity(
+    client: AsyncClient, company_id: str, item_id: str, client_id: str
+) -> None:
+    """The _company_party detail lines (legal name, SIRET, VAT) — the issuer
+    block a French quote must carry."""
+    await client.put(
+        "/api/branding/company",
+        json={"legal_name": "SARL Test Legal", "siret": "35600000000048", "vat_number": "FR12345678901"},
+    )
+    quote = await _create_quote(client, client_id, item_id)
+
+    text = PdfReader(io.BytesIO((await client.get(f"/api/quotes/{quote['id']}/pdf")).content)).pages[0].extract_text()
+
+    assert "SARL Test Legal" in text
+    assert "35600000000048" in text
+    assert "FR12345678901" in text
+
+
+async def test_pdf_renders_when_the_stored_logo_has_gone_missing(
+    client: AsyncClient, company_id: str, item_id: str, client_id: str
+) -> None:
+    """_load_logo's degradation path: the profile points at a logo whose
+    file is no longer in storage. The quote must still be sendable — the
+    artisan loses the logo, never the document. Previously untested."""
+    # Set a logo, then delete its file underneath the profile so logo_path
+    # points at nothing.
+    png = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06"
+        b"\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05"
+        b"\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    await client.post("/api/branding/logo", files={"file": ("l.png", io.BytesIO(png), "image/png")})
+    # Remove the file directly from the storage root (the profile row still
+    # references it).
+    from pathlib import Path
+
+    from app.core.config import settings
+
+    logo_path = (await client.get("/api/branding/profile")).json()["brand"]["logo_path"]
+    (Path(settings.STORAGE_LOCAL_ROOT) / logo_path).unlink(missing_ok=True)
+
+    quote = await _create_quote(client, client_id, item_id)
+
+    # The PDF still renders — degradation, not failure.
+    assert (await client.get(f"/api/quotes/{quote['id']}/pdf")).status_code == 200

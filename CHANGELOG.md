@@ -162,21 +162,21 @@ entreprise, compteurs cohérents, et `downgrade` → `upgrade` complet.*
 
 | Porte | Résultat |
 |---|---|
-| `pytest` | **201 passed** (142 → 201) |
+| `pytest` | **208 passed** (142 → 208) |
 | `flutter analyze` | ✅ **No issues found!** |
 | `flutter test` | **63 passed** (53 → 63) |
 | `flutter build web --release` | ✅ construit avec `printing` |
 | Migration + rollback | ✅ aller-retour complet sur données réelles |
 | Tentative de casse — cycle de vie | ✅ **18/18** |
 | Tentative de casse — moteur PDF | ✅ **14/14** |
-| **pytest dans le conteneur** | ✅ **201 passed** |
+| **pytest dans le conteneur** | ✅ **208 passed** |
 | **QA fonctionnelle HTTP contre Docker** | ✅ **21/21** (V2.1) + **19/19** (duplication) |
 | **Build image (reportlab)** | ✅ wheel universelle, aucune lib système |
 | **Migration + rollback en Docker** | ✅ 6 migrations à vide, aller-retour propre |
 
 **Docker : validé.** Après réparation de l'environnement WSL, toute la pile
 V2 a été rejouée en conteneur — build avec `reportlab`, installation neuve
-(6 migrations), pytest (194), QA fonctionnelle (21/21), rollback. Un bug
+(6 migrations), pytest **208** dans le conteneur, QA fonctionnelle (21/21), rollback. Un bug
 spécifique à Docker a été trouvé et corrigé au passage (voir ci-dessus).
 
 ## [v1.0.0-rc1] — 2026-07-17

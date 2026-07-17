@@ -45,8 +45,11 @@ la consigne ordonne de reporter. Le périmètre fonctionnel de la V2 est
 
 La suite n'est donc **pas** du développement mais de la stabilisation :
 
-1. **Preuve consolidée** que toute la surface V2 tient ensemble (fait ce
-   jour — voir `01_PROOF_OF_VALIDATION.md`).
+1. **Preuve consolidée** que toute la surface V2 tient ensemble : 208 pytest
+   conteneur, 21/21 (parcours V2.1), 19/19 (duplication), 14/14 (sécurité
+   V2), 11/11 (durcissements V1 re-vérifiés sur v2). Détail dans le
+   `CHANGELOG.md` et `docs/release/07_V2_CERTIFICATION.md`. (Note :
+   `01_PROOF_OF_VALIDATION.md` documente la certification **V1**, pas V2.)
 2. **Synchronisation documentaire** (ROADMAP, README, CHANGELOG, guides).
 3. **Audit final de cohérence code ↔ doc**, puis certification RC V2.
 

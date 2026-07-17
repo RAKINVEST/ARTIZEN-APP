@@ -12,7 +12,7 @@ from pydantic import ValidationError
 
 from app.catalog.models import ItemType
 from app.catalog.schemas import CatalogItemCreate
-from app.quotes.calculator import QuoteCalculator
+from app.quotes.calculator import QuoteCalculator, VatBucket
 from app.quotes.schemas import QuoteLineCreate
 
 
@@ -318,3 +318,59 @@ def test_catalog_item_accepts_legal_vat_rates(vat_rate: str) -> None:
     )
 
     assert item.vat_rate == Decimal(vat_rate)
+
+
+# --- V2: VAT breakdown (the per-rate summary a French document must show) ---
+
+
+def test_vat_breakdown_groups_a_single_rate() -> None:
+    breakdown = QuoteCalculator().calculate_vat_breakdown(
+        [(Decimal("20.00"), Decimal("100.00"), Decimal("20.00"))]
+    )
+
+    assert breakdown == [
+        VatBucket(rate=Decimal("20.00"), base_ht=Decimal("100.00"), vat_amount=Decimal("20.00"))
+    ]
+
+
+def test_vat_breakdown_merges_lines_at_the_same_rate() -> None:
+    """Two lines at 20% must collapse into one bucket — the summary shows
+    one row per rate, not one per line. This is the merge branch, which no
+    test reached before."""
+    breakdown = QuoteCalculator().calculate_vat_breakdown(
+        [
+            (Decimal("20.00"), Decimal("100.00"), Decimal("20.00")),
+            (Decimal("20.00"), Decimal("50.00"), Decimal("10.00")),
+        ]
+    )
+
+    assert breakdown == [
+        VatBucket(rate=Decimal("20.00"), base_ht=Decimal("150.00"), vat_amount=Decimal("30.00"))
+    ]
+
+
+def test_vat_breakdown_keeps_distinct_rates_separate_and_sorted() -> None:
+    """Mixed rates stay in their own buckets, sorted ascending so the
+    document reads the same regardless of line entry order."""
+    breakdown = QuoteCalculator().calculate_vat_breakdown(
+        [
+            (Decimal("20.00"), Decimal("450.00"), Decimal("90.00")),
+            (Decimal("10.00"), Decimal("150.00"), Decimal("15.00")),
+            (Decimal("5.50"), Decimal("40.00"), Decimal("2.20")),
+            (Decimal("20.00"), Decimal("50.00"), Decimal("10.00")),  # merges into 20%
+        ]
+    )
+
+    assert breakdown == [
+        VatBucket(rate=Decimal("5.50"), base_ht=Decimal("40.00"), vat_amount=Decimal("2.20")),
+        VatBucket(rate=Decimal("10.00"), base_ht=Decimal("150.00"), vat_amount=Decimal("15.00")),
+        VatBucket(rate=Decimal("20.00"), base_ht=Decimal("500.00"), vat_amount=Decimal("100.00")),
+    ]
+    # The buckets sum back to the quote totals — the breakdown is a
+    # partition of the VAT, not a separate computation of it.
+    assert sum(b.base_ht for b in breakdown) == Decimal("690.00")
+    assert sum(b.vat_amount for b in breakdown) == Decimal("117.20")
+
+
+def test_vat_breakdown_of_no_lines_is_empty() -> None:
+    assert QuoteCalculator().calculate_vat_breakdown([]) == []

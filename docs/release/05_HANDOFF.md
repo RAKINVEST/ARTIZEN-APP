@@ -1,5 +1,10 @@
 # 05 — Rapport de continuité (HANDOFF)
 
+> ⚠️ **Artefact de certification V1**, figé à la date du tag `v1.0.0-rc1` (2026-07-17).
+> Ce document décrit la **V1**, pas l'état courant de la branche `v2`. Pour la V2, voir
+> `CHANGELOG.md`, `docs/ROADMAP.md` et `docs/release/07_V2_CERTIFICATION.md`.
+
+
 **Écrit le 2026-07-17.** Destiné à quelqu'un qui reprend le projet sans
 avoir vu la conversation qui a produit cet état — humain ou agent.
 
