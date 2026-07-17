@@ -33,15 +33,17 @@ Ce n'est pas une opinion : c'est ce que le README annonce lui-même comme
 par le README) sont un PDF. Les paiements suivent une facture. Sans
 génération de document, la chaîne s'arrête au premier maillon.
 
-## Jalon V2.1 — Rendre le devis livrable
+## Jalon V2.1 — Rendre le devis livrable ✅ LIVRÉ
 
 Un devis qu'on peut identifier, corriger, et envoyer.
 
-| # | Item | Pourquoi maintenant | Décision produit requise ? |
-|---|---|---|---|
-| **1** | **Cycle de vie du devis** : `status` + `quote_number` | Un PDF envoyé à un client a besoin d'un numéro. « Devis 3f2a-8b1c-… » n'est pas envoyable. Et l'audit a établi que `status` doit précéder **toute** route d'écriture — voir ci-dessous. | ⚠️ **OUI** — format de numérotation et jeu de statuts sont visibles par le client final |
-| **2** | **Génération du PDF de devis** (`app/pdf/`, port `DocumentRenderer`) | Le trou décrit plus haut. | ⚠️ **Partielle** — mise en page |
-| **3** | **Endpoint de comptage** (`GET /clients/count`, …) | Supprime le « 100+ » du dashboard au profit du vrai total. Recommandation #2 de l'audit. | Non |
+| # | Item | État |
+|---|---|---|
+| **1** | **Cycle de vie du devis** : `status` + `quote_number` | ✅ Livré, validé Docker (commit `1bdd8b7`) |
+| **2** | **Génération du PDF de devis** (`app/pdf/`, réutilisable) | ✅ Livré (`737bf14`) |
+| **2b** | **Interface Flutter** (statuts, PDF, identité) | ✅ Livré (`a0018e5`) |
+| **3** | **Duplication d'un devis en nouveau brouillon** | ✅ Livré (`51ceed6`) — le chemin d'édition d'un devis |
+| ~~4~~ | ~~Endpoint de comptage exact~~ | ⏭️ **Reporté V3** — le « 100+ » est déjà honnête (corrigé en V1) ; valeur quasi nulle, voir `docs/release/06_V2_SCOPE_TRIAGE.md` |
 
 ### Pourquoi `status` doit précéder toute route de modification
 
@@ -69,24 +71,20 @@ garantie **en base** (`UNIQUE (company_id, quote_number)`), jamais un
 `SELECT MAX(...)+1` applicatif — qui créerait une race sur deux créations
 simultanées.
 
-## Jalon V2.2 — Dette de sécurité et d'architecture
+## ⏭️ Reporté V3 — décision de stabilisation (2026-07-17)
 
-Aucune décision produit. Chaque item est adossé à une preuve de l'audit V1.
+Ces items figuraient dans la V2 ; le triage de stabilisation les a
+reclassés **V3**. Chacun est un cas « valeur faible ou nulle côté
+utilisateur / risque de régression élevé sur un chemin critique juste
+avant la RC ». Analyse complète et critères : `docs/release/06_V2_SCOPE_TRIAGE.md`.
 
-| # | Item | Preuve / motif |
-|---|---|---|
-| 4 | **Remplacer `python-jose` par PyJWT** | Non maintenu depuis 2021. 219 avertissements de dépréciation à chaque `pytest`. |
-| 5 | **Cookie `HttpOnly` + `SameSite`** pour le web | Sur web, `flutter_secure_storage` retombe en localStorage : tout XSS lit le JWT. `allow_credentials` est déjà actif. |
-| 6 | **Rate limiting partagé** (Redis) + `X-Forwarded-For` | Le compteur est en mémoire *par worker* : le plafond réel est ~4× celui configuré, et l'IP du socket est fausse derrière un proxy. |
-| 7 | **Casser le cycle `users ↔ branding`** | Seule entorse réelle au « sens unique » du README. `Company` vit dans `branding` alors que l'inscription en crée une. |
-| 8 | **`ApiClient` dans `core/api/`** | Les 7 features importent Dio directement, contre le contrat « `core/api/` est la seule couche qui connaît Dio ». |
-
-## Jalon V2.3 — Qualité IA
-
-| # | Item | Note |
-|---|---|---|
-| 9 | **Parsing IA tolérant aux réponses partielles** | Un article malformé fait perdre toute la réponse (502). ⚠️ La correction **doit** faire remonter les items rejetés jusqu'à `SuggestionScorer`, sinon le score devient trop optimiste. |
-| 10 | **Double pénalité des doublons** | Mesuré : 0.40 au lieu de 0.85 pour un article proposé deux fois. ⚠️ **Arbitrage produit** : trancher entre les deux valeurs. |
+| Item | Pourquoi reporté |
+|---|---|
+| Remplacer `python-jose` par PyJWT | Touche toute l'auth ; l'auth **fonctionne** et la crypto est vérifiée. Warnings issus de la lib, pas du code Artizen. |
+| Cookie `HttpOnly` pour le web | Refactor auth transverse (chaque requête authentifiée). Limite localStorage documentée. |
+| Rate limiting partagé (Redis) | Ajoute une infra à opérer ; le compteur en mémoire fonctionne. |
+| Parsing IA tolérant / double pénalité doublons | Change un comportement testé sur le chemin IA ; arbitrage produit. |
+| Cycle `users ↔ branding` / `ApiClient` Dio | Refactors d'architecture, zéro valeur utilisateur, gros rayon d'action. |
 
 ## Hors périmètre V2 — nommé pour mémoire
 

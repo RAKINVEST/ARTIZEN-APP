@@ -8,6 +8,17 @@ déjà mieux.
 
 ## [Non publié] — V2 en cours (branche `v2`)
 
+### Décision de périmètre (stabilisation, 2026-07-17)
+
+Le périmètre fonctionnel de la V2 est **figé et complet** : cycle de vie du
+devis, PDF, interface, duplication — tout livré et validé en Docker. Les
+items restants de la roadmap initiale (PyJWT, cookie HttpOnly, rate limiting
+partagé, comptage exact, qualité IA, refactors d'architecture) sont
+**reportés V3** : chacun est « valeur faible / risque élevé sur un chemin
+critique » à ce stade. Analyse : `docs/release/06_V2_SCOPE_TRIAGE.md`. La
+suite est de la stabilisation, pas du développement.
+
+
 ### Ajouté
 
 - **Cycle de vie du devis.** Un devis a désormais un numéro et un statut.
