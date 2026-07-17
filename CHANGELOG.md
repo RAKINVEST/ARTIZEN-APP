@@ -89,6 +89,21 @@ déjà mieux.
   `FOR UPDATE` dans `change_status` et `delete`. *Vérifié : le perdant
   reçoit 409, le gagnant 200.*
 
+### Corrigé — trouvé par la validation Docker (jamais visible en local)
+
+- **`PermissionError` sur l'upload de logo, dans Docker uniquement.**
+  L'auto-réparation du volume (V1) ne vérifiait que la propriété de la
+  **racine** `/data/storage`. Sur un volume initialisé à vide, la racine
+  appartient à `artizen` et le contrôle passait — mais les
+  **sous-répertoires** créés à la demande par `LocalStorageProvider.save`
+  (`logos/`, `templates/`, `document_analysis/`), s'ils avaient été créés
+  par un conteneur root antérieur, restaient détenus par root. Le processus
+  non-root échouait alors en `EACCES` sur le sous-répertoire, la racine
+  paraissant saine. **Latent depuis la V1** ; le PDF l'a révélé en lisant le
+  logo. `entrypoint.sh` vérifie désormais l'arbre entier
+  (`find -not -user`), pas seulement la racine. *Reproduit contre un volume
+  corrompu, puis auto-réparé ; 5 tests de stockage ajoutés.*
+
 ### Migration `6cc7943bff6a`
 
 Réécrite à la main sur trois points qu'`alembic revision --autogenerate`
@@ -121,11 +136,15 @@ entreprise, compteurs cohérents, et `downgrade` → `upgrade` complet.*
 | Migration + rollback | ✅ aller-retour complet sur données réelles |
 | Tentative de casse — cycle de vie | ✅ **18/18** |
 | Tentative de casse — moteur PDF | ✅ **14/14** |
-| Docker | ❌ **non exécuté** — voir ci-dessous |
+| **pytest dans le conteneur** | ✅ **194 passed** |
+| **QA fonctionnelle HTTP contre Docker** | ✅ **21/21** |
+| **Build image (reportlab)** | ✅ wheel universelle, aucune lib système |
+| **Migration + rollback en Docker** | ✅ 6 migrations à vide, aller-retour propre |
 
-**Limitation :** Docker Desktop est arrêté sur la machine de développement
-(noyau WSL 2 installé sans redémarrage). Les validations Docker de la V2
-n'ont donc pas été rejouées. Voir `docs/release/01_PROOF_OF_VALIDATION.md`.
+**Docker : validé.** Après réparation de l'environnement WSL, toute la pile
+V2 a été rejouée en conteneur — build avec `reportlab`, installation neuve
+(6 migrations), pytest (194), QA fonctionnelle (21/21), rollback. Un bug
+spécifique à Docker a été trouvé et corrigé au passage (voir ci-dessus).
 
 ## [v1.0.0-rc1] — 2026-07-17
 

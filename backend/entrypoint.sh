@@ -20,11 +20,19 @@ set -e
 # SIGTERM on `docker compose stop`.
 if [ "$(id -u)" = "0" ]; then
   storage_root="${STORAGE_LOCAL_ROOT:-/data/storage}"
+  artizen_uid="$(id -u artizen)"
   mkdir -p "$storage_root"
-  # Only when it's actually wrong: `chown -R` on a volume with thousands of
-  # uploaded files would add seconds to every single start.
-  if [ "$(stat -c '%u' "$storage_root")" != "$(id -u artizen)" ]; then
-    echo "Storage at $storage_root is not owned by artizen — fixing ownership..."
+  # Check the whole tree, not just the root. Checking only the root missed a
+  # real case: on a volume Docker initialized empty, the root is created
+  # owned by artizen, so the check passed — but the subdirectories that
+  # `LocalStorageProvider.save` creates (logos/, templates/,
+  # document_analysis/) were made by an earlier root-running container and
+  # stayed root-owned. Uploads then failed with EACCES on the subdir while
+  # the root looked fine. `find -not -user` stops at the first offender, so
+  # this stays cheap when everything is already correct and only pays for a
+  # recursive chown when something actually needs fixing.
+  if [ -n "$(find "$storage_root" -not -user "$artizen_uid" -print -quit 2>/dev/null)" ]; then
+    echo "Storage under $storage_root has files not owned by artizen — fixing ownership..."
     chown -R artizen:artizen "$storage_root"
   fi
   # setpriv changes the uid/gid and nothing else — HOME keeps pointing at
