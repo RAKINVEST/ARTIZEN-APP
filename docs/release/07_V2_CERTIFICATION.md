@@ -89,11 +89,12 @@ qu'ils cessent d'induire en erreur sur la branche v2.
 
 ## Ce qui n'a **pas** été prouvé
 
-- **Le parcours manuel bout en bout dans un navigateur** contre le backend
-  réel. Aucun test Flutter n'appelle le backend (fakes/mocks — limite
-  documentée depuis l'origine). `flutter build web` compile ; personne n'a
-  cliqué. C'est le trou de validation le plus important qui subsiste, et
-  aucune automatisation ne le comble.
+- ~~**Le parcours manuel bout en bout dans un navigateur** contre le backend
+  réel.~~ **Comblé depuis** par la phase UAT : le parcours artisan complet
+  a été piloté dans un vrai Chrome contre la pile Docker réelle, ses effets
+  vérifiés en base, dans les logs et sous l'angle multi-tenant. Voir
+  `08_USER_ACCEPTANCE_TEST.md`. C'était le trou de validation le plus
+  important ; il ne l'est plus.
 - **La montée en charge sous concurrence réelle** : les comportements
   concurrents critiques (numérotation, transitions) ont des tests
   `asyncio.gather`, mais pas d'épreuve de charge.

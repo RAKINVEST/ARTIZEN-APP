@@ -51,6 +51,8 @@ dev_dependencies:
 
   # Mocking for repository/provider tests
   mocktail: ^1.0.4
+  integration_test:
+    sdk: flutter
 
 flutter:
   uses-material-design: true
