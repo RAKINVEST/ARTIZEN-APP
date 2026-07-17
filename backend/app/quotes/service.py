@@ -11,6 +11,7 @@ so this module is naturally "downstream" of both.
 """
 
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,10 +19,37 @@ from app.catalog.repository import CatalogItemRepository
 from app.clients.repository import ClientRepository
 from app.core.exceptions import NotFoundError
 from app.quotes.calculator import LineTotals, QuoteCalculator
-from app.quotes.exceptions import InactiveCatalogItemError
-from app.quotes.models import Quote, QuoteLine
-from app.quotes.repository import QuoteLineRepository, QuoteRepository
+from app.quotes.exceptions import (
+    InactiveCatalogItemError,
+    InvalidQuoteTransitionError,
+    QuoteNotEditableError,
+)
+from app.quotes.models import QUOTE_TRANSITIONS, Quote, QuoteLine, QuoteStatus
+from app.quotes.repository import (
+    QuoteCounterRepository,
+    QuoteLineRepository,
+    QuoteRepository,
+)
 from app.quotes.schemas import QuoteCreate, QuoteLineRead, QuoteRead
+
+#: "DEV-2026-0001". Prefix + year + zero-padded sequence, the sequence
+#: restarting each year. Chosen because it is what French artisans
+#: actually use, it carries its own date, and it extends to invoices as
+#: "FAC-2026-0001" without inventing a second scheme.
+QUOTE_NUMBER_PREFIX = "DEV"
+_SEQUENCE_WIDTH = 4
+
+
+def format_quote_number(year: int, sequence: int) -> str:
+    """Pure, so the format can be tested without a database or a clock.
+
+    Padding is a minimum, not a ceiling: the 10000th quote of a year
+    becomes DEV-2026-10000 rather than silently colliding with a truncated
+    number. Unlikely for one artisan, but the failure mode of the
+    alternative is a duplicate document number — not something to leave to
+    chance.
+    """
+    return f"{QUOTE_NUMBER_PREFIX}-{year}-{sequence:0{_SEQUENCE_WIDTH}d}"
 
 
 class QuoteService:
@@ -29,6 +57,7 @@ class QuoteService:
         self._session = session
         self._quotes = QuoteRepository(session)
         self._lines = QuoteLineRepository(session)
+        self._counters = QuoteCounterRepository(session)
         self._catalog_items = CatalogItemRepository(session)
         self._clients = ClientRepository(session)
         self._calculator = QuoteCalculator()
@@ -71,10 +100,21 @@ class QuoteService:
 
         quote_totals = self._calculator.calculate_quote(line_totals)
 
+        # Numbered at creation, not at send: the number is how the artisan
+        # refers to the quote from the moment it exists — including while
+        # still a draft, on the phone, before anything is sent. A deleted
+        # draft therefore leaves a gap, which is fine for quotes. Invoices
+        # inheriting this scheme will not have that latitude (art. 242
+        # nonies A CGI) and will need to number at issue instead.
+        year = datetime.now(timezone.utc).year
+        sequence = await self._counters.next_number(data.company_id, year)
+
         quote = await self._quotes.create(
             Quote(
                 company_id=data.company_id,
                 client_id=data.client_id,
+                quote_number=format_quote_number(year, sequence),
+                status=QuoteStatus.DRAFT,
                 total_ht=quote_totals.total_ht,
                 total_vat=quote_totals.total_vat,
                 total_ttc=quote_totals.total_ttc,
@@ -92,27 +132,82 @@ class QuoteService:
             raise NotFoundError(f"Quote {quote_id} not found.")
         return await self._build_read(quote)
 
-    async def delete(self, quote_id: uuid.UUID) -> None:
-        """Deleting is the only way to undo a quote, and until now there
-        wasn't one: no PUT, no PATCH, no DELETE, so a mistyped quantity was
-        permanent and the artisan's only recourse was a second quote next
-        to the wrong one.
+    async def change_status(self, quote_id: uuid.UUID, new_status: QuoteStatus) -> QuoteRead:
+        """Move a quote along its commercial life, or refuse to.
 
-        Deliberately delete-and-recreate rather than an update path. An
-        update would have to recompute every total through
-        ``QuoteCalculator`` — which has no recalculation entry point for an
-        existing quote — and nothing in the current design would force a
+        Transitions come from ``QUOTE_TRANSITIONS`` rather than from a
+        chain of ifs, so the rule is one readable table instead of logic
+        scattered across a method. What it forbids matters more than what
+        it allows: nothing goes back to DRAFT. Once a PDF has left for the
+        customer, the document they hold is a fact — a quote that could
+        return to DRAFT could be edited and then silently disagree with
+        the paper on their desk.
+
+        The row is locked, not merely read: this is a read-decide-write,
+        and the transition table alone cannot make it safe. Two concurrent
+        requests would both read 'sent', both find their own move legal,
+        and both write — so "accepté" could answer 200 and still lose to a
+        simultaneous "refusé". Found by trying to break it, not by reading
+        it. With the lock, the second request reads the first one's result
+        and refuses properly.
+        """
+        quote = await self._quotes.get_for_update(quote_id)
+        if quote is None:
+            raise NotFoundError(f"Quote {quote_id} not found.")
+
+        if new_status == quote.status:
+            # Idempotent: re-sending "sent" for a sent quote is not an
+            # error, it is a client retrying.
+            return await self._build_read(quote)
+
+        allowed = QUOTE_TRANSITIONS.get(quote.status, frozenset())
+        if new_status not in allowed:
+            raise InvalidQuoteTransitionError(
+                f"A quote cannot go from '{quote.status.value}' to "
+                f"'{new_status.value}'."
+                + (
+                    f" Allowed from here: {', '.join(sorted(s.value for s in allowed))}."
+                    if allowed
+                    else " This status is final."
+                )
+            )
+
+        quote.status = new_status
+        await self._session.flush()
+        await self._session.refresh(quote)
+        return await self._build_read(quote)
+
+    async def delete(self, quote_id: uuid.UUID) -> None:
+        """Deletes a quote — only while it is still a DRAFT.
+
+        Deleting is how a mistyped quote gets undone: there is no update
+        path, deliberately. An update would have to recompute every total
+        through ``QuoteCalculator``, which has no recalculation entry point
+        for an existing quote, and nothing in the design would force a
         future caller to do so. Recreating goes back through ``create``,
-        where the totals are computed the only way they are ever computed.
-        Editing in place waits for the quote lifecycle (status: only a
-        draft is editable) — see docs/AUDIT-V1.md.
+        where totals are computed the only way they are ever computed.
+
+        Past DRAFT it refuses: a sent quote is a document the customer
+        holds, and an accepted one is a commercial commitment. Neither is
+        the artisan's to erase — the trace has to survive, which is also
+        what the invoices to come will require of their own numbering.
 
         Quote.lines cascade at the database level (QuoteLine.quote_id is
         ondelete="CASCADE"), so no line is orphaned.
+
+        Locked for the same reason as ``change_status``: reading the status
+        and then deleting is a read-decide-write. Without the lock, a delete
+        racing a send could read 'draft', pass the check, and erase a quote
+        that has just been sent to a customer.
         """
-        quote = await self._quotes.get(quote_id)
+        quote = await self._quotes.get_for_update(quote_id)
         if quote is None:
             raise NotFoundError(f"Quote {quote_id} not found.")
+        if quote.status != QuoteStatus.DRAFT:
+            raise QuoteNotEditableError(
+                f"Quote {quote.quote_number} is '{quote.status.value}' and can no "
+                "longer be deleted. Only a draft can."
+            )
         await self._quotes.delete(quote)
 
     async def list(
@@ -143,6 +238,8 @@ class QuoteService:
             id=quote.id,
             company_id=quote.company_id,
             client_id=quote.client_id,
+            quote_number=quote.quote_number,
+            status=quote.status,
             total_ht=quote.total_ht,
             total_vat=quote.total_vat,
             total_ttc=quote.total_ttc,

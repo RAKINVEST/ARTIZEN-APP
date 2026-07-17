@@ -11,6 +11,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.quotes.models import QuoteStatus
+
 
 class QuoteLineCreate(BaseModel):
     catalog_item_id: uuid.UUID
@@ -47,10 +49,22 @@ class QuoteLineRead(BaseModel):
     total_ttc: Decimal
 
 
+class QuoteStatusUpdate(BaseModel):
+    """The only mutation a quote accepts. Deliberately not a full update:
+    the lines and totals of a quote are never edited — see
+    ``QuoteService.delete``."""
+
+    status: QuoteStatus
+
+
 class QuoteRead(BaseModel):
     id: uuid.UUID
     company_id: uuid.UUID
     client_id: uuid.UUID
+    # The identity the artisan and their customer use ("DEV-2026-0001"),
+    # as opposed to `id`, which is a UUID nobody reads out loud.
+    quote_number: str
+    status: QuoteStatus
     total_ht: Decimal
     total_vat: Decimal
     total_ttc: Decimal

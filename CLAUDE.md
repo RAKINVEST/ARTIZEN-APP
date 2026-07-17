@@ -53,18 +53,30 @@ Ces règles traversent tout le code. Les enfreindre casse la promesse du produit
    Nuance exacte : la **quantité** est bien inférée par l'IA (seule valeur numérique qu'elle
    produise). Bornée par le schéma et relue par l'artisan — ne pas étendre « l'IA n'invente rien »
    aux quantités, ce serait faux.
-2. **`quotes/calculator.py` est le seul endroit où un montant est calculé.** Tout en `Decimal`,
+2. **Un devis ne se modifie pas — il se supprime et se recrée (V2).** Seul un `draft` est
+   supprimable ; `sent`/`accepted`/`refused` sont figés (409). Il n'existe **ni `PUT` ni `PATCH`**
+   sur `/quotes` : `QuoteCalculator` n'a aucune entrée de recalcul pour un devis existant, donc
+   toute route d'écriture pourrait laisser un total qui ne correspond plus à ses lignes. La
+   recréation repasse par `create`, seul endroit où un total est calculé.
+   `PUT /quotes/{id}/status` ne touche jamais un montant. Les transitions vivent dans
+   `QUOTE_TRANSITIONS` (models.py) ; rien ne revient jamais à `draft`.
+   Le numéro (`DEV-2026-0001`) vient de `QuoteCounter`, verrouillé `FOR UPDATE` — **jamais un
+   `SELECT MAX+1`**, qui donnerait deux fois le même numéro sur deux créations simultanées.
+   `change_status` et `delete` verrouillent aussi la ligne du devis : ce sont des
+   read-decide-write, et sans verrou une transition perdue répond quand même 200.
+
+3. **`quotes/calculator.py` est le seul endroit où un montant est calculé.** Tout en `Decimal`,
    jamais `float`. Arrondi `ROUND_HALF_UP` **par ligne**, puis somme des lignes (convention française).
    Ne jamais recalculer un montant ailleurs, ni côté Flutter — le client affiche ce que le backend renvoie.
-3. **Une réponse d'IA n'est jamais crue sur parole.** `match_validator.py` re-valide chaque article
+4. **Une réponse d'IA n'est jamais crue sur parole.** `match_validator.py` re-valide chaque article
    proposé contre le vrai catalogue (existe / bonne entreprise / actif / non-doublon), même si le prompt
    restreignait déjà Claude. Un article invalide est écarté sans faire échouer la suggestion entière,
    et chaque rejet est journalisé avec sa raison.
-4. **`company_id` vient toujours du JWT, jamais du client.** Les routeurs écrasent la valeur reçue
+5. **`company_id` vient toujours du JWT, jamais du client.** Les routeurs écrasent la valeur reçue
    (`model_copy(update=...)`) et les `GET` de collection n'acceptent aucun `company_id` en query param.
-5. **Un mismatch de tenant renvoie 404, jamais 403** (`core/authorization.py::ensure_same_company`) —
+6. **Un mismatch de tenant renvoie 404, jamais 403** (`core/authorization.py::ensure_same_company`) —
    un 403 confirmerait à une entreprise l'existence d'une ressource d'une autre.
-6. **Rien n'est appliqué sans confirmation explicite.** `template_import` propose une configuration
+7. **Rien n'est appliqué sans confirmation explicite.** `template_import` propose une configuration
    d'identité relue et validée par l'artisan ; il ne l'applique jamais automatiquement.
 
 ## Architecture

@@ -17,7 +17,7 @@ from fastapi import APIRouter, status
 
 from app.core.authorization import ensure_same_company
 from app.quotes.deps import QuoteServiceDep
-from app.quotes.schemas import QuoteCreate, QuoteRead
+from app.quotes.schemas import QuoteCreate, QuoteRead, QuoteStatusUpdate
 from app.users.deps import CurrentUserDep
 
 router = APIRouter(prefix="/quotes", tags=["quotes"])
@@ -50,14 +50,42 @@ async def get_quote(
     return quote
 
 
+@router.put("/{quote_id}/status", response_model=QuoteRead)
+async def change_quote_status(
+    service: QuoteServiceDep,
+    current_user: CurrentUserDep,
+    quote_id: uuid.UUID,
+    payload: QuoteStatusUpdate,
+) -> QuoteRead:
+    """The only mutation a quote accepts — and note what it is *not*.
+
+    There is still no `PUT /quotes/{id}`: lines and totals are never
+    edited, because ``QuoteCalculator`` has no recalculation entry point
+    for an existing quote and nothing would force a caller through it.
+    Correcting a quote means deleting the draft and creating another, which
+    goes back through ``create`` where totals are computed the only way
+    they ever are. This route moves the quote through its commercial life;
+    it never touches an amount.
+    """
+    existing = await service.get(quote_id)
+    ensure_same_company(existing.company_id, quote_id, current_user.company_id)
+    return await service.change_status(quote_id, payload.status)
+
+
 @router.delete("/{quote_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_quote(
     service: QuoteServiceDep, current_user: CurrentUserDep, quote_id: uuid.UUID
 ) -> None:
-    """Hard delete, unlike a catalog item's soft delete: a quote is a
-    document the artisan authored, not a reference other rows point to, so
-    there is no history to protect by keeping it. It is also the only way
-    to undo one — see ``QuoteService.delete``."""
+    """Hard delete — but only while the quote is still a draft.
+
+    Unlike a catalog item's soft delete: nothing references a quote, so
+    there are no dependent rows to protect. What is protected is the
+    document itself. A draft is the artisan's scratch pad and deleting it
+    is how a mistyped quote gets undone (there is no update path — see
+    ``QuoteService.delete``). Past 'draft', the customer holds a PDF and
+    the trace has to survive; the service answers 409 rather than erasing
+    it.
+    """
     existing = await service.get(quote_id)
     ensure_same_company(existing.company_id, quote_id, current_user.company_id)
     await service.delete(quote_id)
