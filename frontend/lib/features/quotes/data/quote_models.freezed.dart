@@ -383,6 +383,11 @@ mixin _$Quote {
   String get id => throw _privateConstructorUsedError;
   String get companyId => throw _privateConstructorUsedError;
   String get clientId => throw _privateConstructorUsedError;
+
+  /// "DEV-2026-0001" — what the artisan and their customer actually use.
+  /// `id` is a UUID nobody reads out loud.
+  String get quoteNumber => throw _privateConstructorUsedError;
+  QuoteStatus get status => throw _privateConstructorUsedError;
   String get totalHt => throw _privateConstructorUsedError;
   String get totalVat => throw _privateConstructorUsedError;
   String get totalTtc => throw _privateConstructorUsedError;
@@ -408,6 +413,8 @@ abstract class $QuoteCopyWith<$Res> {
     String id,
     String companyId,
     String clientId,
+    String quoteNumber,
+    QuoteStatus status,
     String totalHt,
     String totalVat,
     String totalTtc,
@@ -435,6 +442,8 @@ class _$QuoteCopyWithImpl<$Res, $Val extends Quote>
     Object? id = null,
     Object? companyId = null,
     Object? clientId = null,
+    Object? quoteNumber = null,
+    Object? status = null,
     Object? totalHt = null,
     Object? totalVat = null,
     Object? totalTtc = null,
@@ -456,6 +465,14 @@ class _$QuoteCopyWithImpl<$Res, $Val extends Quote>
                 ? _value.clientId
                 : clientId // ignore: cast_nullable_to_non_nullable
                       as String,
+            quoteNumber: null == quoteNumber
+                ? _value.quoteNumber
+                : quoteNumber // ignore: cast_nullable_to_non_nullable
+                      as String,
+            status: null == status
+                ? _value.status
+                : status // ignore: cast_nullable_to_non_nullable
+                      as QuoteStatus,
             totalHt: null == totalHt
                 ? _value.totalHt
                 : totalHt // ignore: cast_nullable_to_non_nullable
@@ -498,6 +515,8 @@ abstract class _$$QuoteImplCopyWith<$Res> implements $QuoteCopyWith<$Res> {
     String id,
     String companyId,
     String clientId,
+    String quoteNumber,
+    QuoteStatus status,
     String totalHt,
     String totalVat,
     String totalTtc,
@@ -524,6 +543,8 @@ class __$$QuoteImplCopyWithImpl<$Res>
     Object? id = null,
     Object? companyId = null,
     Object? clientId = null,
+    Object? quoteNumber = null,
+    Object? status = null,
     Object? totalHt = null,
     Object? totalVat = null,
     Object? totalTtc = null,
@@ -545,6 +566,14 @@ class __$$QuoteImplCopyWithImpl<$Res>
             ? _value.clientId
             : clientId // ignore: cast_nullable_to_non_nullable
                   as String,
+        quoteNumber: null == quoteNumber
+            ? _value.quoteNumber
+            : quoteNumber // ignore: cast_nullable_to_non_nullable
+                  as String,
+        status: null == status
+            ? _value.status
+            : status // ignore: cast_nullable_to_non_nullable
+                  as QuoteStatus,
         totalHt: null == totalHt
             ? _value.totalHt
             : totalHt // ignore: cast_nullable_to_non_nullable
@@ -581,6 +610,8 @@ class _$QuoteImpl implements _Quote {
     required this.id,
     required this.companyId,
     required this.clientId,
+    required this.quoteNumber,
+    required this.status,
     required this.totalHt,
     required this.totalVat,
     required this.totalTtc,
@@ -598,6 +629,13 @@ class _$QuoteImpl implements _Quote {
   final String companyId;
   @override
   final String clientId;
+
+  /// "DEV-2026-0001" — what the artisan and their customer actually use.
+  /// `id` is a UUID nobody reads out loud.
+  @override
+  final String quoteNumber;
+  @override
+  final QuoteStatus status;
   @override
   final String totalHt;
   @override
@@ -619,7 +657,7 @@ class _$QuoteImpl implements _Quote {
 
   @override
   String toString() {
-    return 'Quote(id: $id, companyId: $companyId, clientId: $clientId, totalHt: $totalHt, totalVat: $totalVat, totalTtc: $totalTtc, lines: $lines, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Quote(id: $id, companyId: $companyId, clientId: $clientId, quoteNumber: $quoteNumber, status: $status, totalHt: $totalHt, totalVat: $totalVat, totalTtc: $totalTtc, lines: $lines, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -632,6 +670,9 @@ class _$QuoteImpl implements _Quote {
                 other.companyId == companyId) &&
             (identical(other.clientId, clientId) ||
                 other.clientId == clientId) &&
+            (identical(other.quoteNumber, quoteNumber) ||
+                other.quoteNumber == quoteNumber) &&
+            (identical(other.status, status) || other.status == status) &&
             (identical(other.totalHt, totalHt) || other.totalHt == totalHt) &&
             (identical(other.totalVat, totalVat) ||
                 other.totalVat == totalVat) &&
@@ -651,6 +692,8 @@ class _$QuoteImpl implements _Quote {
     id,
     companyId,
     clientId,
+    quoteNumber,
+    status,
     totalHt,
     totalVat,
     totalTtc,
@@ -678,6 +721,8 @@ abstract class _Quote implements Quote {
     required final String id,
     required final String companyId,
     required final String clientId,
+    required final String quoteNumber,
+    required final QuoteStatus status,
     required final String totalHt,
     required final String totalVat,
     required final String totalTtc,
@@ -694,6 +739,13 @@ abstract class _Quote implements Quote {
   String get companyId;
   @override
   String get clientId;
+
+  /// "DEV-2026-0001" — what the artisan and their customer actually use.
+  /// `id` is a UUID nobody reads out loud.
+  @override
+  String get quoteNumber;
+  @override
+  QuoteStatus get status;
   @override
   String get totalHt;
   @override

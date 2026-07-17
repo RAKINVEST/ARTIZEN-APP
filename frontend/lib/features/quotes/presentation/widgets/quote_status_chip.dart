@@ -1,0 +1,50 @@
+import 'package:flutter/material.dart';
+
+import '../../data/quote_models.dart';
+
+/// The status, readable at a glance.
+///
+/// Colour carries the same meaning everywhere it appears (list and detail),
+/// and never alone: the label is always there. An artisan checking a quote
+/// on a phone in daylight should not have to distinguish two greys, and a
+/// colour-blind artisan should not have to distinguish anything at all.
+class QuoteStatusChip extends StatelessWidget {
+  const QuoteStatusChip({required this.status, this.compact = false, super.key});
+
+  final QuoteStatus status;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (background, foreground, icon) = switch (status) {
+      QuoteStatus.draft => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant, Icons.edit_outlined),
+      QuoteStatus.sent => (scheme.primaryContainer, scheme.onPrimaryContainer, Icons.send_outlined),
+      QuoteStatus.accepted => (const Color(0xFFD8F3DC), const Color(0xFF1B4332), Icons.check_circle_outline),
+      QuoteStatus.refused => (scheme.errorContainer, scheme.onErrorContainer, Icons.cancel_outlined),
+    };
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10, vertical: compact ? 3 : 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: compact ? 13 : 15, color: foreground),
+          const SizedBox(width: 5),
+          Text(
+            status.label,
+            style: TextStyle(
+              color: foreground,
+              fontSize: compact ? 11 : 12.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

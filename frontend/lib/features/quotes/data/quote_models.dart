@@ -24,6 +24,40 @@ class QuoteLine with _$QuoteLine {
   factory QuoteLine.fromJson(Map<String, dynamic> json) => _$QuoteLineFromJson(json);
 }
 
+/// Mirrors the backend's `QuoteStatus`. The commercial life of a quote.
+///
+/// Only [draft] is mutable, and only [draft] can be deleted — the backend
+/// answers 409 otherwise. That is not a UI convention to be re-decided
+/// here: past `draft` the customer holds a PDF, and the document they hold
+/// must never disagree with the one in the app.
+@JsonEnum(fieldRename: FieldRename.snake)
+enum QuoteStatus {
+  draft,
+  sent,
+  accepted,
+  refused;
+
+  /// What the artisan reads. The wire values stay English to match the
+  /// backend; only the label is translated.
+  String get label => switch (this) {
+        QuoteStatus.draft => 'Brouillon',
+        QuoteStatus.sent => 'Envoyé',
+        QuoteStatus.accepted => 'Accepté',
+        QuoteStatus.refused => 'Refusé',
+      };
+
+  /// Mirrors the backend's `QUOTE_TRANSITIONS`. Duplicated on purpose:
+  /// the app must not offer a button the server will refuse. The backend
+  /// stays the authority — this only decides what to *show*.
+  List<QuoteStatus> get nextStates => switch (this) {
+        QuoteStatus.draft => const [QuoteStatus.sent],
+        QuoteStatus.sent => const [QuoteStatus.accepted, QuoteStatus.refused],
+        QuoteStatus.accepted || QuoteStatus.refused => const [],
+      };
+
+  bool get isEditable => this == QuoteStatus.draft;
+}
+
 /// Mirrors `QuoteRead`.
 @freezed
 class Quote with _$Quote {
@@ -31,6 +65,10 @@ class Quote with _$Quote {
     required String id,
     required String companyId,
     required String clientId,
+    /// "DEV-2026-0001" — what the artisan and their customer actually use.
+    /// `id` is a UUID nobody reads out loud.
+    required String quoteNumber,
+    required QuoteStatus status,
     required String totalHt,
     required String totalVat,
     required String totalTtc,

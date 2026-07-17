@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:artizen/features/branding/data/branding_models.dart';
 import 'package:artizen/features/branding/domain/branding_repository.dart';
 import 'package:artizen/features/catalog/data/catalog_models.dart';
@@ -106,6 +108,21 @@ class FakeQuotesRepository implements QuotesRepository {
     required String clientId,
     required List<QuoteLineInput> lines,
   }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Quote> changeStatus(String id, QuoteStatus status) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Uint8List> downloadPdf(String id) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> delete(String id) async {
     throw UnimplementedError();
   }
 }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../shared/providers/current_company_provider.dart';
+import '../../quotes/presentation/widgets/quote_status_chip.dart';
 import 'dashboard_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -73,8 +74,15 @@ class DashboardScreen extends ConsumerWidget {
                   Card(
                     child: ListTile(
                       leading: const Icon(Icons.description_outlined),
-                      title: Text('Devis · ${quote.lines.length} ligne(s)'),
-                      subtitle: Text('Total TTC : ${CurrencyFormatter.format(quote.totalTtc)}'),
+                      // Same identity as everywhere else: the number and
+                      // the status. The line count told the artisan nothing
+                      // they were looking for.
+                      title: Text(
+                        quote.quoteNumber,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(CurrencyFormatter.format(quote.totalTtc)),
+                      trailing: QuoteStatusChip(status: quote.status, compact: true),
                       onTap: () => context.push('/quotes/${quote.id}'),
                     ),
                   ),

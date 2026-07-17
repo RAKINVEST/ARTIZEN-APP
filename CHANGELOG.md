@@ -48,6 +48,30 @@ déjà mieux.
   - **Dégradation systématique** : logo illisible, couleur invalide, aucune
     identité configurée — l'artisan perd le logo, jamais son document.
 
+- **Interface Flutter du cycle de vie et du PDF.** Le jalon n'était pas
+  livrable sans elle : le backend savait tout faire, l'artisan ne pouvait
+  rien en faire.
+  - **Le numéro remplace le décompte de lignes** partout — liste, détail,
+    dashboard. « Devis · 3 ligne(s) » ne distinguait aucune ligne d'une
+    autre ; `DEV-2026-0042` est ce que l'artisan cherche des yeux et dit au
+    téléphone.
+  - **`QuoteStatusChip`** : couleur *et* libellé, jamais la couleur seule
+    — lisible en plein soleil comme par un artisan daltonien.
+  - **Actions pilotées par `QuoteStatus.nextStates`**, miroir de la table
+    de transitions du backend. Un devis terminal n'affiche **aucun** bouton
+    plutôt que des boutons grisés qui font douter l'artisan.
+  - **Confirmation sur « Marquer comme envoyé » seulement** : c'est l'étape
+    irréversible. Enregistrer la réponse du client n'en demande pas — il
+    rapporte un fait.
+  - **Garde anti-double-clic** : le backend refuse la seconde transition
+    (409), mais un artisan ne doit pas rencontrer cette erreur pour un
+    doigt qui glisse.
+  - **PDF via `printing`** : aperçu, impression et partage dans une seule
+    feuille — l'artisan veut regarder, imprimer *ou* envoyer, et cela
+    dépend du moment. Les octets transitent par Dio (`responseType.bytes`)
+    parce que l'endpoint exige l'en-tête `Authorization` : un simple lien
+    aurait pris un 403.
+
 ### Modifié
 
 - **`DELETE /quotes/{id}` n'accepte plus que les brouillons** (409 sinon).
@@ -91,6 +115,9 @@ entreprise, compteurs cohérents, et `downgrade` → `upgrade` complet.*
 | Porte | Résultat |
 |---|---|
 | `pytest` | **189 passed** (142 → 189) |
+| `flutter analyze` | ✅ **No issues found!** |
+| `flutter test` | **62 passed** (53 → 62) |
+| `flutter build web --release` | ✅ construit avec `printing` |
 | Migration + rollback | ✅ aller-retour complet sur données réelles |
 | Tentative de casse — cycle de vie | ✅ **18/18** |
 | Tentative de casse — moteur PDF | ✅ **14/14** |

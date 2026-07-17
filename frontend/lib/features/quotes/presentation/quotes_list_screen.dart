@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/async_value_view.dart';
 import 'quotes_providers.dart';
+import 'widgets/quote_status_chip.dart';
 
 class QuotesListScreen extends ConsumerWidget {
   const QuotesListScreen({super.key});
@@ -44,9 +45,22 @@ class QuotesListScreen extends ConsumerWidget {
                 child: ListTile(
                   onTap: () => context.push('/quotes/${quote.id}'),
                   leading: const CircleAvatar(child: Icon(Icons.description_outlined)),
-                  title: Text('Devis · ${quote.lines.length} ligne(s)'),
-                  subtitle: Text('Total TTC : ${CurrencyFormatter.format(quote.totalTtc)}'),
-                  trailing: const Icon(Icons.chevron_right),
+                  // The number, not the line count: "DEV-2026-0042" is what
+                  // the artisan is scanning the list for. "Devis · 3
+                  // ligne(s)" told them nothing that distinguished one row
+                  // from the next.
+                  title: Text(
+                    quote.quoteNumber,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(CurrencyFormatter.format(quote.totalTtc)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      QuoteStatusChip(status: quote.status, compact: true),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
                 ),
               );
             },

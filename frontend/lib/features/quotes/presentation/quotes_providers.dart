@@ -36,6 +36,23 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
     await refresh();
     return quote;
   }
+
+  /// Moves the quote along its commercial life.
+  ///
+  /// Invalidates the single-quote provider too: the detail screen watches
+  /// `quoteByIdProvider`, and refreshing only the list would leave the
+  /// artisan looking at the status they just changed away from.
+  Future<Quote> changeStatus(String id, QuoteStatus status) async {
+    final quote = await ref.read(quotesRepositoryProvider).changeStatus(id, status);
+    ref.invalidate(quoteByIdProvider(id));
+    await refresh();
+    return quote;
+  }
+
+  Future<void> deleteQuote(String id) async {
+    await ref.read(quotesRepositoryProvider).delete(id);
+    await refresh();
+  }
 }
 
 final quotesNotifierProvider = AsyncNotifierProvider<QuotesNotifier, List<Quote>>(

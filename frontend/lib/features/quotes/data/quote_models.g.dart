@@ -38,6 +38,8 @@ _$QuoteImpl _$$QuoteImplFromJson(Map<String, dynamic> json) => _$QuoteImpl(
   id: json['id'] as String,
   companyId: json['company_id'] as String,
   clientId: json['client_id'] as String,
+  quoteNumber: json['quote_number'] as String,
+  status: $enumDecode(_$QuoteStatusEnumMap, json['status']),
   totalHt: json['total_ht'] as String,
   totalVat: json['total_vat'] as String,
   totalTtc: json['total_ttc'] as String,
@@ -53,6 +55,8 @@ Map<String, dynamic> _$$QuoteImplToJson(_$QuoteImpl instance) =>
       'id': instance.id,
       'company_id': instance.companyId,
       'client_id': instance.clientId,
+      'quote_number': instance.quoteNumber,
+      'status': _$QuoteStatusEnumMap[instance.status]!,
       'total_ht': instance.totalHt,
       'total_vat': instance.totalVat,
       'total_ttc': instance.totalTtc,
@@ -60,6 +64,13 @@ Map<String, dynamic> _$$QuoteImplToJson(_$QuoteImpl instance) =>
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt.toIso8601String(),
     };
+
+const _$QuoteStatusEnumMap = {
+  QuoteStatus.draft: 'draft',
+  QuoteStatus.sent: 'sent',
+  QuoteStatus.accepted: 'accepted',
+  QuoteStatus.refused: 'refused',
+};
 
 _$QuoteLineInputImpl _$$QuoteLineInputImplFromJson(Map<String, dynamic> json) =>
     _$QuoteLineInputImpl(
