@@ -10,3 +10,8 @@ class HealthResponse(BaseModel):
     version: str
     environment: str
     database: Literal["ok", "unavailable"]
+    # V3 foundations monitoring. Redis is optional infrastructure, so its
+    # absence is reported but does NOT flip the overall status to degraded —
+    # the app is fully usable (async features excepted) without it.
+    redis: Literal["ok", "unavailable"] = "unavailable"
+    queue_depth: int | None = None

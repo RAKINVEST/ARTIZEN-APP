@@ -18,7 +18,10 @@ from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import setup_logging
 from app.core.rate_limit import AuthRateLimitMiddleware
+from app.core.security_headers import SecurityHeadersMiddleware
 from app.database.session import engine
+from app.redis_client import close_redis
+from app.tasks.queue import close_pool
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -30,6 +33,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
     logger.info("Shutting down %s", settings.PROJECT_NAME)
     await engine.dispose()
+    await close_pool()
+    await close_redis()
 
 
 app = FastAPI(
@@ -53,7 +58,10 @@ if settings.AUTH_RATE_LIMIT_ENABLED:
         AuthRateLimitMiddleware,
         max_requests=settings.AUTH_RATE_LIMIT_MAX_REQUESTS,
         window_seconds=settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        backend=settings.RATE_LIMIT_BACKEND,
     )
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Added last so it runs first: middlewares wrap in reverse registration
 # order, and this one is only worth anything if it refuses an oversized

@@ -14,7 +14,10 @@ Pillow==11.0.0
 reportlab==4.2.5
 pydantic==2.10.4
 pydantic-settings==2.7.0
-python-jose[cryptography]==3.3.0
+# JWT: PyJWT replaces the unmaintained python-jose (last release 2021). Same
+# HS256 tokens, exp validation, and alg=none rejection (enforced by passing
+# an explicit algorithms= allow-list on decode). See V3 audit / foundations.
+PyJWT==2.10.1
 passlib[bcrypt]==1.7.4
 # passlib 1.7.4 (its last release) self-tests bcrypt with a >72-byte secret
 # during backend detection; bcrypt>=4.1 correctly rejects that as invalid,
@@ -24,5 +27,12 @@ bcrypt==4.0.1
 email-validator==2.2.0
 httpx==0.28.1
 anthropic==0.40.0
+# --- V3 foundations: async task queue + shared cache/broker ---
+# redis-py (asyncio) is the shared store for the task broker, the cross-worker
+# rate limiter, and future caching. arq is a lightweight asyncio task queue
+# built on redis — the right fit for a fully-async FastAPI app (no sync Celery
+# worker to bolt on). Both degrade gracefully when Redis is absent.
+redis==5.2.1
+arq==0.26.3
 pytest==8.3.4
 pytest-asyncio==0.25.0

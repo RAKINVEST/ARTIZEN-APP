@@ -21,16 +21,23 @@ consequences:
   together with ``X-Forwarded-For`` handling when one is put in front (see
   docs/AUDIT-V1.md).
 
-A shared store (Redis) keyed the same way is the V2 shape. Deliberately
-not built now: it would add infrastructure to operate for a product that
-has no deployment yet, and this closes the actual hole today.
+A shared store (Redis) keyed the same way is now available (V3 foundations):
+set ``RATE_LIMIT_BACKEND=redis`` and the counter lives in Redis, shared across
+all workers and replicas, closing the ~4x-ceiling gap. It degrades to the
+in-memory counter if Redis is unreachable, and the test suite always builds
+the deterministic in-memory limiter (the backend is a constructor argument).
+The ``X-Forwarded-For`` trust issue still stands and is a reverse-proxy
+concern.
 """
 
+import logging
 import time
 from collections import defaultdict, deque
 
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
+
+logger = logging.getLogger(__name__)
 
 # Generous for a human (a mistyped password a few times over), useless for
 # enumeration: probing a 10 000-address list would take ~14 hours per IP.
@@ -50,10 +57,16 @@ class AuthRateLimitMiddleware:
         app: ASGIApp,
         max_requests: int = _MAX_REQUESTS,
         window_seconds: int = _WINDOW_SECONDS,
+        backend: str = "memory",
     ) -> None:
         self._app = app
         self._max_requests = max_requests
         self._window_seconds = window_seconds
+        # "memory" = per-worker (V2). "redis" = shared across workers/replicas,
+        # closing the ~4x-ceiling gap. The backend is a constructor argument so
+        # the test suite always builds the deterministic in-memory limiter,
+        # whatever the environment sets for production.
+        self._backend = backend
         self._hits: dict[str, deque[float]] = defaultdict(deque)
 
     def _is_protected(self, scope: Scope) -> bool:
@@ -90,14 +103,44 @@ class AuthRateLimitMiddleware:
         for key in [key for key, hits in self._hits.items() if not hits or hits[-1] <= cutoff]:
             del self._hits[key]
 
+    def _memory_over_limit(self, key: str) -> bool:
+        now = time.monotonic()
+        self._evict_idle(now)
+        return self._is_over_limit(key, now)
+
+    async def _redis_over_limit(self, key: str) -> bool:
+        """Shared fixed-window counter in Redis: INCR the current window's
+        bucket, set its TTL on creation, refuse past the ceiling. Same
+        allow-``max``-then-refuse semantics as the in-memory path (count starts
+        at 1, so the (max+1)th request is the first over)."""
+        from app.redis_client import get_redis
+
+        bucket = int(time.time() // self._window_seconds)
+        redis_key = f"ratelimit:auth:{key}:{bucket}"
+        redis = get_redis()
+        count = await redis.incr(redis_key)
+        if count == 1:
+            await redis.expire(redis_key, self._window_seconds)
+        return count > self._max_requests
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http" or not self._is_protected(scope):
             await self._app(scope, receive, send)
             return
 
-        now = time.monotonic()
-        self._evict_idle(now)
-        if self._is_over_limit(self._client_key(scope), now):
+        key = self._client_key(scope)
+        if self._backend == "redis":
+            try:
+                over_limit = await self._redis_over_limit(key)
+            except Exception:
+                # A missing/failing broker must never lock users out: fall back
+                # to the per-worker counter, which still bounds the hole.
+                logger.warning("rate_limit.redis_unavailable — falling back to in-memory")
+                over_limit = self._memory_over_limit(key)
+        else:
+            over_limit = self._memory_over_limit(key)
+
+        if over_limit:
             await JSONResponse(
                 status_code=429,
                 headers={"Retry-After": str(self._window_seconds)},

@@ -1,0 +1,115 @@
+name: CI
+
+# Runs the same checks a developer runs locally, on every push to a long-lived
+# branch and on every PR. The backend job stands up the real Postgres + Redis
+# the app expects (there is no test double for them — see the README's "tests
+# without isolation" note); the frontend job compiles and tests the Flutter
+# client. Nothing here deploys or publishes.
+
+on:
+  push:
+    branches: [main, v2, "develop/v3"]
+  pull_request:
+
+concurrency:
+  # A newer push to the same ref cancels the in-flight run — no point paying for
+  # CI on a commit that has already been superseded.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (pytest)
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: artizen
+          POSTGRES_PASSWORD: artizen
+          POSTGRES_DB: artizen
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U artizen -d artizen"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # The app reads these from the environment via pydantic-settings; here
+      # they point at the service containers above, reachable on localhost.
+      ENVIRONMENT: development
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: artizen
+      POSTGRES_PASSWORD: artizen
+      POSTGRES_DB: artizen
+      REDIS_URL: redis://localhost:6379/0
+      # Development-mode secret: the production placeholder guard only fires
+      # when ENVIRONMENT=production, so any value works here.
+      SECRET_KEY: ci-secret-key-not-used-in-production-safe
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Apply migrations
+        working-directory: backend
+        run: alembic upgrade head
+
+      - name: Run tests
+        working-directory: backend
+        run: pytest -q
+
+  frontend:
+    name: Frontend (analyze + test + build web)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install packages
+        working-directory: frontend
+        run: flutter pub get
+
+      - name: Generate code (Freezed / json_serializable)
+        working-directory: frontend
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Analyze
+        working-directory: frontend
+        run: flutter analyze
+
+      - name: Test
+        working-directory: frontend
+        run: flutter test
+
+      # Proves the release web bundle compiles. The Android APK is a heavier
+      # build (Android SDK + Gradle) and stays a local/release-pipeline gate,
+      # documented in docs/v3/05_FONDATIONS_TECHNIQUES.md.
+      - name: Build web
+        working-directory: frontend
+        run: flutter build web --release

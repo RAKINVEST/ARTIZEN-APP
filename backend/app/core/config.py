@@ -121,6 +121,11 @@ class Settings(BaseSettings):
     AUTH_RATE_LIMIT_ENABLED: bool = True
     AUTH_RATE_LIMIT_MAX_REQUESTS: int = 10
     AUTH_RATE_LIMIT_WINDOW_SECONDS: int = 60
+    # "memory" (per-worker, the V2 behaviour) or "redis" (shared across all
+    # workers/replicas). Default stays "memory" so nothing is required to run
+    # or to test; production sets "redis" to close the ~4x-ceiling gap. The
+    # redis backend degrades to the in-memory one if Redis is unreachable.
+    RATE_LIMIT_BACKEND: Literal["memory", "redis"] = "memory"
 
     # --- AI providers (abstraction layer, see app/ai) ---
     DEFAULT_AI_PROVIDER: Literal["openai", "anthropic", "mistral"] = "anthropic"
@@ -131,6 +136,12 @@ class Settings(BaseSettings):
     # --- Storage (abstraction layer, see app/branding/storage.py) ---
     STORAGE_PROVIDER: Literal["local"] = "local"
     STORAGE_LOCAL_ROOT: str = "/data/storage"
+
+    # --- Redis (V3 foundations: task broker, cache, shared rate limit) ---
+    # Optional: when unreachable, the app still starts and every dependent
+    # feature degrades gracefully (in-memory rate limit, tasks refused with a
+    # clear error). "redis" is the compose service name; override for local.
+    REDIS_URL: str = "redis://redis:6379/0"
 
 
 @lru_cache

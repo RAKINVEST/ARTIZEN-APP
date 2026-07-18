@@ -9,7 +9,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from jose import JWTError, jwt
+import jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
@@ -61,6 +61,9 @@ def create_access_token(
 
 def decode_access_token(token: str) -> dict[str, Any] | None:
     try:
+        # The explicit algorithms allow-list is what rejects an `alg: none`
+        # (or any other) token: PyJWT will only accept HS256 here. Expiry is
+        # verified by default.
         return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-    except JWTError:
+    except jwt.PyJWTError:
         return None
