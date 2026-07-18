@@ -155,6 +155,10 @@ class Settings(BaseSettings):
     # Per-stage guards, upstream of the composite score:
     VOICE_STT_MIN_SEGMENT_CONFIDENCE: float = 0.60  # below -> ask to repeat
     VOICE_MATCH_MIN_SIMILARITY: float = 0.45  # below -> "hors catalogue", never forced
+    # Dialogue circuit breaker, NOT the normal stop condition (Blueprint §5.3,
+    # adjustment #2): questions stop when no mandatory slot is left unresolved.
+    # This cap only guards against an extraction that loops without converging.
+    VOICE_MAX_QUESTIONS: int = 8
 
     @field_validator("VOICE_CONFIDENCE_CLARIFY")
     @classmethod
