@@ -14,6 +14,7 @@ import '../../features/catalog/presentation/item_form_screen.dart';
 import '../../features/clients/presentation/client_form_screen.dart';
 import '../../features/clients/presentation/clients_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
+import '../../features/landing/presentation/landing_screen.dart';
 import '../../features/quote_assistant/presentation/quote_assistant_screen.dart';
 import '../../features/quotes/presentation/quote_detail_screen.dart';
 import '../../features/quotes/presentation/quote_form_screen.dart';
@@ -26,15 +27,23 @@ import 'app_shell.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Routes reachable while signed out. `/reset-password` and `/forgot-password`
-/// belong here so a logged-out user following the reset-email link isn't
-/// bounced to `/login` before they can set a new password.
-const _publicRoutes = {'/login', '/register', '/forgot-password', '/reset-password'};
+/// Routes reachable while signed out. `/` is the public marketing landing;
+/// `/reset-password` and `/forgot-password` belong here so a logged-out user
+/// following the reset-email link isn't bounced to `/login` before they can
+/// set a new password.
+const _publicRoutes = {'/', '/login', '/register', '/forgot-password', '/reset-password'};
 
 /// Routes a signed-in user is sent away from (they've already authenticated).
-/// Narrower than [_publicRoutes] on purpose: a logged-in user *may* still open
-/// the reset screens (e.g. from an email link), so those are not bounced.
-const _signedInRedirectRoutes = {'/login', '/register'};
+/// `/` and the auth screens send an authenticated user to their dashboard; the
+/// password-reset screens deliberately don't, since a logged-in user *may*
+/// still open them (e.g. from an email link).
+const _signedInRedirectRoutes = {'/', '/login', '/register'};
+
+/// The route the app first shows when launched without a deep link (bare
+/// domain on the web, cold start elsewhere). Defaults to the public landing
+/// page; widget tests override it to start straight on `/login` so they can
+/// exercise the authenticated flow without driving the marketing page.
+final initialLocationProvider = Provider<String>((ref) => '/');
 
 /// Bridges [authNotifierProvider] to GoRouter's `refreshListenable` so a
 /// logout that isn't triggered by the user tapping something in the app —
@@ -57,7 +66,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/login',
+    initialLocation: ref.watch(initialLocationProvider),
     refreshListenable: refresh,
     redirect: (context, state) async {
       final isLoggedIn = await ref.read(authNotifierProvider.future);
@@ -67,6 +76,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      // Public marketing landing at the site root, outside the tabbed shell.
+      GoRoute(path: '/', builder: (context, state) => const LandingScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
       GoRoute(

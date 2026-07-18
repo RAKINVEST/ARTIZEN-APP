@@ -56,6 +56,12 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # Landing-page screenshots. Drop real images under frontend/assets/landing/,
+  # then uncomment the line below and run `flutter pub get`. See
+  # lib/features/landing/presentation/landing_screen.dart (_ScreenshotsSection)
+  # for how to swap the placeholders for Image.asset(...).
+  # assets:
+  #   - assets/landing/
   fonts:
     # Exo 2 — the geometric, technical, modern app font (ENR-inspired).
     # Variable font: Flutter applies fontWeight along the weight axis.

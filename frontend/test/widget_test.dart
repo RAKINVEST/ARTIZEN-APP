@@ -1,4 +1,5 @@
 import 'package:artizen/core/api/auth_token_storage.dart';
+import 'package:artizen/core/navigation/app_router.dart';
 import 'package:artizen/features/auth/data/auth_repository.dart';
 import 'package:artizen/features/branding/data/branding_models.dart';
 import 'package:artizen/features/branding/data/branding_repository_impl.dart';
@@ -28,6 +29,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          // The app now boots to the public landing page ('/') by default.
+          // This test exercises the authenticated flow, so start it on
+          // '/login' instead of driving the marketing page.
+          initialLocationProvider.overrideWithValue('/login'),
           // The real storage needs platform channels flutter test doesn't
           // provide — this is exactly the substitution AuthTokenStorage
           // exists to make trivial.

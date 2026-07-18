@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,21 +18,66 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Primary SEO -->
+  <meta name="description" content="ARTIZEN, l'assistant administratif des artisans du bâtiment : créez des devis professionnels et 100 % conformes en 2 minutes depuis votre téléphone. Moins de paperasse, plus de temps sur les chantiers.">
+  <meta name="keywords" content="devis artisan, logiciel devis bâtiment, devis conforme, plomberie, électricité, chauffage, rénovation, auto-entrepreneur BTP">
+  <meta name="theme-color" content="#10233F">
+
+  <!-- Open Graph / social sharing -->
+  <meta property="og:title" content="ARTIZEN — Vos devis d'artisan, aux normes, en 2 minutes">
+  <meta property="og:description" content="L'assistant administratif des artisans du bâtiment. Des devis pros et 100 % conformes en quelques minutes, depuis votre téléphone.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="fr_FR">
+  <meta property="og:site_name" content="ARTIZEN">
+  <!-- TODO: replace with the deployed URL once known. -->
+  <meta property="og:url" content="https://artizen.app/">
+  <!-- TODO: replace with a dedicated 1200x630 share image (assets/landing/og-image.png
+       deployed to web/). Points to the app icon as a functional placeholder. -->
+  <meta property="og:image" content="icons/Icon-512.png">
+
+  <!-- Twitter/X card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ARTIZEN — Vos devis d'artisan, aux normes, en 2 minutes">
+  <meta name="twitter:description" content="L'assistant administratif des artisans du bâtiment. Des devis pros et 100 % conformes en quelques minutes.">
+  <meta name="twitter:image" content="icons/Icon-512.png">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="artizen">
+  <meta name="apple-mobile-web-app-title" content="ARTIZEN">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>artizen</title>
+  <title>ARTIZEN — Vos devis d'artisan, aux normes, en 2 minutes</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <!--
+    Crawler / no-JavaScript fallback. Flutter web renders to a canvas/DOM the
+    engine builds at runtime, so search engines and users without JavaScript
+    see this static content instead of a blank page. It mirrors the hero H1.
+  -->
+  <noscript>
+    <h1>Vos devis, aux normes, en 2 minutes.</h1>
+    <p>
+      ARTIZEN est l'assistant administratif des artisans du bâtiment
+      (plomberie, chauffage, climatisation, électricité, rénovation, menuiserie,
+      peinture, maçonnerie, couverture…). Créez des devis professionnels et
+      100 % conformes depuis votre téléphone : les mentions légales, la TVA et
+      les totaux HT/TVA/TTC sont gérés pour vous. Moins de paperasse, plus de
+      temps sur les chantiers. ARTIZEN est actuellement en bêta privée —
+      demandez votre accès à beta@artizen.app.
+    </p>
+    <p>
+      Cette application nécessite JavaScript pour fonctionner. Veuillez
+      l'activer dans votre navigateur.
+    </p>
+  </noscript>
+
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
