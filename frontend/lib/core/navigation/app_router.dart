@@ -6,6 +6,7 @@ import '../../features/auth/presentation/auth_providers.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/branding/presentation/branding_sample_preview_screen.dart';
+import '../../features/branding/presentation/company_profile_screen.dart';
 import '../../features/catalog/presentation/catalog_screen.dart';
 import '../../features/catalog/presentation/item_form_screen.dart';
 import '../../features/clients/presentation/client_form_screen.dart';
@@ -116,6 +117,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/branding/sample-preview',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const BrandingSamplePreviewScreen(),
+      ),
+      GoRoute(
+        path: '/company-profile',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const CompanyProfileScreen(),
       ),
       GoRoute(
         path: '/quotes/:id',

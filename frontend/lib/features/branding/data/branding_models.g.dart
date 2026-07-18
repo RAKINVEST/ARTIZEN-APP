@@ -20,23 +20,46 @@ _$CompanyImpl _$$CompanyImplFromJson(Map<String, dynamic> json) =>
       phone: json['phone'] as String?,
       email: json['email'] as String?,
       website: json['website'] as String?,
+      legalForm: json['legal_form'] as String?,
+      shareCapital: json['share_capital'] as String?,
+      rcsRm: json['rcs_rm'] as String?,
+      apeCode: json['ape_code'] as String?,
+      insuranceName: json['insurance_name'] as String?,
+      insuranceContract: json['insurance_contract'] as String?,
+      insuranceCoverage: json['insurance_coverage'] as String?,
+      rgeNumber: json['rge_number'] as String?,
+      paymentTerms: json['payment_terms'] as String?,
+      vatRegime: json['vat_regime'] as String? ?? 'normal',
+      quoteValidityDays: (json['quote_validity_days'] as num?)?.toInt() ?? 30,
     );
 
-Map<String, dynamic> _$$CompanyImplToJson(_$CompanyImpl instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      if (instance.name case final value?) 'name': value,
-      if (instance.legalName case final value?) 'legal_name': value,
-      if (instance.siret case final value?) 'siret': value,
-      if (instance.vatNumber case final value?) 'vat_number': value,
-      if (instance.addressLine case final value?) 'address_line': value,
-      if (instance.postalCode case final value?) 'postal_code': value,
-      if (instance.city case final value?) 'city': value,
-      if (instance.country case final value?) 'country': value,
-      if (instance.phone case final value?) 'phone': value,
-      if (instance.email case final value?) 'email': value,
-      if (instance.website case final value?) 'website': value,
-    };
+Map<String, dynamic> _$$CompanyImplToJson(
+  _$CompanyImpl instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  if (instance.name case final value?) 'name': value,
+  if (instance.legalName case final value?) 'legal_name': value,
+  if (instance.siret case final value?) 'siret': value,
+  if (instance.vatNumber case final value?) 'vat_number': value,
+  if (instance.addressLine case final value?) 'address_line': value,
+  if (instance.postalCode case final value?) 'postal_code': value,
+  if (instance.city case final value?) 'city': value,
+  if (instance.country case final value?) 'country': value,
+  if (instance.phone case final value?) 'phone': value,
+  if (instance.email case final value?) 'email': value,
+  if (instance.website case final value?) 'website': value,
+  if (instance.legalForm case final value?) 'legal_form': value,
+  if (instance.shareCapital case final value?) 'share_capital': value,
+  if (instance.rcsRm case final value?) 'rcs_rm': value,
+  if (instance.apeCode case final value?) 'ape_code': value,
+  if (instance.insuranceName case final value?) 'insurance_name': value,
+  if (instance.insuranceContract case final value?) 'insurance_contract': value,
+  if (instance.insuranceCoverage case final value?) 'insurance_coverage': value,
+  if (instance.rgeNumber case final value?) 'rge_number': value,
+  if (instance.paymentTerms case final value?) 'payment_terms': value,
+  'vat_regime': instance.vatRegime,
+  'quote_validity_days': instance.quoteValidityDays,
+};
 
 _$BrandProfileImpl _$$BrandProfileImplFromJson(Map<String, dynamic> json) =>
     _$BrandProfileImpl(
@@ -119,9 +142,21 @@ _$CompanyUpdateInputImpl _$$CompanyUpdateInputImplFromJson(
   addressLine: json['address_line'] as String?,
   postalCode: json['postal_code'] as String?,
   city: json['city'] as String?,
+  country: json['country'] as String?,
   phone: json['phone'] as String?,
   email: json['email'] as String?,
   website: json['website'] as String?,
+  legalForm: json['legal_form'] as String?,
+  shareCapital: json['share_capital'] as String?,
+  rcsRm: json['rcs_rm'] as String?,
+  apeCode: json['ape_code'] as String?,
+  insuranceName: json['insurance_name'] as String?,
+  insuranceContract: json['insurance_contract'] as String?,
+  insuranceCoverage: json['insurance_coverage'] as String?,
+  rgeNumber: json['rge_number'] as String?,
+  paymentTerms: json['payment_terms'] as String?,
+  vatRegime: json['vat_regime'] as String?,
+  quoteValidityDays: (json['quote_validity_days'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$$CompanyUpdateInputImplToJson(
@@ -134,9 +169,22 @@ Map<String, dynamic> _$$CompanyUpdateInputImplToJson(
   if (instance.addressLine case final value?) 'address_line': value,
   if (instance.postalCode case final value?) 'postal_code': value,
   if (instance.city case final value?) 'city': value,
+  if (instance.country case final value?) 'country': value,
   if (instance.phone case final value?) 'phone': value,
   if (instance.email case final value?) 'email': value,
   if (instance.website case final value?) 'website': value,
+  if (instance.legalForm case final value?) 'legal_form': value,
+  if (instance.shareCapital case final value?) 'share_capital': value,
+  if (instance.rcsRm case final value?) 'rcs_rm': value,
+  if (instance.apeCode case final value?) 'ape_code': value,
+  if (instance.insuranceName case final value?) 'insurance_name': value,
+  if (instance.insuranceContract case final value?) 'insurance_contract': value,
+  if (instance.insuranceCoverage case final value?) 'insurance_coverage': value,
+  if (instance.rgeNumber case final value?) 'rge_number': value,
+  if (instance.paymentTerms case final value?) 'payment_terms': value,
+  if (instance.vatRegime case final value?) 'vat_regime': value,
+  if (instance.quoteValidityDays case final value?)
+    'quote_validity_days': value,
 };
 
 _$BrandProfileUpdateInputImpl _$$BrandProfileUpdateInputImplFromJson(

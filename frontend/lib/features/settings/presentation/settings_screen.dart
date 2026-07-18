@@ -20,6 +20,18 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Paramètres')),
       body: ListView(
         children: [
+          const _SectionLabel('Entreprise'),
+          // The one place to configure the whole company identity (legal,
+          // contact, VAT regime, insurance, payment terms) from inside the
+          // app — no longer only via a PDF import.
+          ListTile(
+            leading: const Icon(Icons.business_outlined),
+            title: const Text('Mon entreprise'),
+            subtitle: const Text('Identité légale, coordonnées, TVA, assurance, paiement'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/company-profile'),
+          ),
+          const Divider(),
           const _SectionLabel('Modèle de devis'),
           // The active quote model — its identity and whether an imported
           // template is in use — so the artisan can see at a glance what

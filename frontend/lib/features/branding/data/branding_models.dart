@@ -27,6 +27,21 @@ class Company with _$Company {
     String? phone,
     String? email,
     String? website,
+    // Regulatory identity (Phase 1) — mirrors the new `CompanyRead` fields.
+    String? legalForm,
+    String? shareCapital,
+    String? rcsRm,
+    String? apeCode,
+    String? insuranceName,
+    String? insuranceContract,
+    String? insuranceCoverage,
+    String? rgeNumber,
+    String? paymentTerms,
+    // Non-nullable on the backend. Defaults keep older JSON (and fixtures
+    // that predate these fields) parseable, since `@Default` makes the
+    // generated `fromJson` fall back instead of throwing on a missing key.
+    @Default('normal') String vatRegime,
+    @Default(30) int quoteValidityDays,
   }) = _Company;
 
   factory Company.fromJson(Map<String, dynamic> json) => _$CompanyFromJson(json);
@@ -90,9 +105,22 @@ class CompanyUpdateInput with _$CompanyUpdateInput {
     String? addressLine,
     String? postalCode,
     String? city,
+    String? country,
     String? phone,
     String? email,
     String? website,
+    // Regulatory identity (Phase 1) — mirrors the new `CompanyUpdate` fields.
+    String? legalForm,
+    String? shareCapital,
+    String? rcsRm,
+    String? apeCode,
+    String? insuranceName,
+    String? insuranceContract,
+    String? insuranceCoverage,
+    String? rgeNumber,
+    String? paymentTerms,
+    String? vatRegime,
+    int? quoteValidityDays,
   }) = _CompanyUpdateInput;
 
   factory CompanyUpdateInput.fromJson(Map<String, dynamic> json) =>

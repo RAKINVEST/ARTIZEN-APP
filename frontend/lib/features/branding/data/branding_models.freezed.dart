@@ -32,7 +32,22 @@ mixin _$Company {
   String? get country => throw _privateConstructorUsedError;
   String? get phone => throw _privateConstructorUsedError;
   String? get email => throw _privateConstructorUsedError;
-  String? get website => throw _privateConstructorUsedError;
+  String? get website =>
+      throw _privateConstructorUsedError; // Regulatory identity (Phase 1) — mirrors the new `CompanyRead` fields.
+  String? get legalForm => throw _privateConstructorUsedError;
+  String? get shareCapital => throw _privateConstructorUsedError;
+  String? get rcsRm => throw _privateConstructorUsedError;
+  String? get apeCode => throw _privateConstructorUsedError;
+  String? get insuranceName => throw _privateConstructorUsedError;
+  String? get insuranceContract => throw _privateConstructorUsedError;
+  String? get insuranceCoverage => throw _privateConstructorUsedError;
+  String? get rgeNumber => throw _privateConstructorUsedError;
+  String? get paymentTerms =>
+      throw _privateConstructorUsedError; // Non-nullable on the backend. Defaults keep older JSON (and fixtures
+  // that predate these fields) parseable, since `@Default` makes the
+  // generated `fromJson` fall back instead of throwing on a missing key.
+  String get vatRegime => throw _privateConstructorUsedError;
+  int get quoteValidityDays => throw _privateConstructorUsedError;
 
   /// Serializes this Company to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -61,6 +76,17 @@ abstract class $CompanyCopyWith<$Res> {
     String? phone,
     String? email,
     String? website,
+    String? legalForm,
+    String? shareCapital,
+    String? rcsRm,
+    String? apeCode,
+    String? insuranceName,
+    String? insuranceContract,
+    String? insuranceCoverage,
+    String? rgeNumber,
+    String? paymentTerms,
+    String vatRegime,
+    int quoteValidityDays,
   });
 }
 
@@ -91,6 +117,17 @@ class _$CompanyCopyWithImpl<$Res, $Val extends Company>
     Object? phone = freezed,
     Object? email = freezed,
     Object? website = freezed,
+    Object? legalForm = freezed,
+    Object? shareCapital = freezed,
+    Object? rcsRm = freezed,
+    Object? apeCode = freezed,
+    Object? insuranceName = freezed,
+    Object? insuranceContract = freezed,
+    Object? insuranceCoverage = freezed,
+    Object? rgeNumber = freezed,
+    Object? paymentTerms = freezed,
+    Object? vatRegime = null,
+    Object? quoteValidityDays = null,
   }) {
     return _then(
       _value.copyWith(
@@ -142,6 +179,50 @@ class _$CompanyCopyWithImpl<$Res, $Val extends Company>
                 ? _value.website
                 : website // ignore: cast_nullable_to_non_nullable
                       as String?,
+            legalForm: freezed == legalForm
+                ? _value.legalForm
+                : legalForm // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            shareCapital: freezed == shareCapital
+                ? _value.shareCapital
+                : shareCapital // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            rcsRm: freezed == rcsRm
+                ? _value.rcsRm
+                : rcsRm // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            apeCode: freezed == apeCode
+                ? _value.apeCode
+                : apeCode // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            insuranceName: freezed == insuranceName
+                ? _value.insuranceName
+                : insuranceName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            insuranceContract: freezed == insuranceContract
+                ? _value.insuranceContract
+                : insuranceContract // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            insuranceCoverage: freezed == insuranceCoverage
+                ? _value.insuranceCoverage
+                : insuranceCoverage // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            rgeNumber: freezed == rgeNumber
+                ? _value.rgeNumber
+                : rgeNumber // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            paymentTerms: freezed == paymentTerms
+                ? _value.paymentTerms
+                : paymentTerms // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            vatRegime: null == vatRegime
+                ? _value.vatRegime
+                : vatRegime // ignore: cast_nullable_to_non_nullable
+                      as String,
+            quoteValidityDays: null == quoteValidityDays
+                ? _value.quoteValidityDays
+                : quoteValidityDays // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -169,6 +250,17 @@ abstract class _$$CompanyImplCopyWith<$Res> implements $CompanyCopyWith<$Res> {
     String? phone,
     String? email,
     String? website,
+    String? legalForm,
+    String? shareCapital,
+    String? rcsRm,
+    String? apeCode,
+    String? insuranceName,
+    String? insuranceContract,
+    String? insuranceCoverage,
+    String? rgeNumber,
+    String? paymentTerms,
+    String vatRegime,
+    int quoteValidityDays,
   });
 }
 
@@ -198,6 +290,17 @@ class __$$CompanyImplCopyWithImpl<$Res>
     Object? phone = freezed,
     Object? email = freezed,
     Object? website = freezed,
+    Object? legalForm = freezed,
+    Object? shareCapital = freezed,
+    Object? rcsRm = freezed,
+    Object? apeCode = freezed,
+    Object? insuranceName = freezed,
+    Object? insuranceContract = freezed,
+    Object? insuranceCoverage = freezed,
+    Object? rgeNumber = freezed,
+    Object? paymentTerms = freezed,
+    Object? vatRegime = null,
+    Object? quoteValidityDays = null,
   }) {
     return _then(
       _$CompanyImpl(
@@ -249,6 +352,50 @@ class __$$CompanyImplCopyWithImpl<$Res>
             ? _value.website
             : website // ignore: cast_nullable_to_non_nullable
                   as String?,
+        legalForm: freezed == legalForm
+            ? _value.legalForm
+            : legalForm // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        shareCapital: freezed == shareCapital
+            ? _value.shareCapital
+            : shareCapital // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        rcsRm: freezed == rcsRm
+            ? _value.rcsRm
+            : rcsRm // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        apeCode: freezed == apeCode
+            ? _value.apeCode
+            : apeCode // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        insuranceName: freezed == insuranceName
+            ? _value.insuranceName
+            : insuranceName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        insuranceContract: freezed == insuranceContract
+            ? _value.insuranceContract
+            : insuranceContract // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        insuranceCoverage: freezed == insuranceCoverage
+            ? _value.insuranceCoverage
+            : insuranceCoverage // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        rgeNumber: freezed == rgeNumber
+            ? _value.rgeNumber
+            : rgeNumber // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        paymentTerms: freezed == paymentTerms
+            ? _value.paymentTerms
+            : paymentTerms // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        vatRegime: null == vatRegime
+            ? _value.vatRegime
+            : vatRegime // ignore: cast_nullable_to_non_nullable
+                  as String,
+        quoteValidityDays: null == quoteValidityDays
+            ? _value.quoteValidityDays
+            : quoteValidityDays // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -270,6 +417,17 @@ class _$CompanyImpl implements _Company {
     this.phone,
     this.email,
     this.website,
+    this.legalForm,
+    this.shareCapital,
+    this.rcsRm,
+    this.apeCode,
+    this.insuranceName,
+    this.insuranceContract,
+    this.insuranceCoverage,
+    this.rgeNumber,
+    this.paymentTerms,
+    this.vatRegime = 'normal',
+    this.quoteValidityDays = 30,
   });
 
   factory _$CompanyImpl.fromJson(Map<String, dynamic> json) =>
@@ -299,10 +457,38 @@ class _$CompanyImpl implements _Company {
   final String? email;
   @override
   final String? website;
+  // Regulatory identity (Phase 1) — mirrors the new `CompanyRead` fields.
+  @override
+  final String? legalForm;
+  @override
+  final String? shareCapital;
+  @override
+  final String? rcsRm;
+  @override
+  final String? apeCode;
+  @override
+  final String? insuranceName;
+  @override
+  final String? insuranceContract;
+  @override
+  final String? insuranceCoverage;
+  @override
+  final String? rgeNumber;
+  @override
+  final String? paymentTerms;
+  // Non-nullable on the backend. Defaults keep older JSON (and fixtures
+  // that predate these fields) parseable, since `@Default` makes the
+  // generated `fromJson` fall back instead of throwing on a missing key.
+  @override
+  @JsonKey()
+  final String vatRegime;
+  @override
+  @JsonKey()
+  final int quoteValidityDays;
 
   @override
   String toString() {
-    return 'Company(id: $id, name: $name, legalName: $legalName, siret: $siret, vatNumber: $vatNumber, addressLine: $addressLine, postalCode: $postalCode, city: $city, country: $country, phone: $phone, email: $email, website: $website)';
+    return 'Company(id: $id, name: $name, legalName: $legalName, siret: $siret, vatNumber: $vatNumber, addressLine: $addressLine, postalCode: $postalCode, city: $city, country: $country, phone: $phone, email: $email, website: $website, legalForm: $legalForm, shareCapital: $shareCapital, rcsRm: $rcsRm, apeCode: $apeCode, insuranceName: $insuranceName, insuranceContract: $insuranceContract, insuranceCoverage: $insuranceCoverage, rgeNumber: $rgeNumber, paymentTerms: $paymentTerms, vatRegime: $vatRegime, quoteValidityDays: $quoteValidityDays)';
   }
 
   @override
@@ -325,12 +511,32 @@ class _$CompanyImpl implements _Company {
             (identical(other.country, country) || other.country == country) &&
             (identical(other.phone, phone) || other.phone == phone) &&
             (identical(other.email, email) || other.email == email) &&
-            (identical(other.website, website) || other.website == website));
+            (identical(other.website, website) || other.website == website) &&
+            (identical(other.legalForm, legalForm) ||
+                other.legalForm == legalForm) &&
+            (identical(other.shareCapital, shareCapital) ||
+                other.shareCapital == shareCapital) &&
+            (identical(other.rcsRm, rcsRm) || other.rcsRm == rcsRm) &&
+            (identical(other.apeCode, apeCode) || other.apeCode == apeCode) &&
+            (identical(other.insuranceName, insuranceName) ||
+                other.insuranceName == insuranceName) &&
+            (identical(other.insuranceContract, insuranceContract) ||
+                other.insuranceContract == insuranceContract) &&
+            (identical(other.insuranceCoverage, insuranceCoverage) ||
+                other.insuranceCoverage == insuranceCoverage) &&
+            (identical(other.rgeNumber, rgeNumber) ||
+                other.rgeNumber == rgeNumber) &&
+            (identical(other.paymentTerms, paymentTerms) ||
+                other.paymentTerms == paymentTerms) &&
+            (identical(other.vatRegime, vatRegime) ||
+                other.vatRegime == vatRegime) &&
+            (identical(other.quoteValidityDays, quoteValidityDays) ||
+                other.quoteValidityDays == quoteValidityDays));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     id,
     name,
@@ -344,7 +550,18 @@ class _$CompanyImpl implements _Company {
     phone,
     email,
     website,
-  );
+    legalForm,
+    shareCapital,
+    rcsRm,
+    apeCode,
+    insuranceName,
+    insuranceContract,
+    insuranceCoverage,
+    rgeNumber,
+    paymentTerms,
+    vatRegime,
+    quoteValidityDays,
+  ]);
 
   /// Create a copy of Company
   /// with the given fields replaced by the non-null parameter values.
@@ -374,6 +591,17 @@ abstract class _Company implements Company {
     final String? phone,
     final String? email,
     final String? website,
+    final String? legalForm,
+    final String? shareCapital,
+    final String? rcsRm,
+    final String? apeCode,
+    final String? insuranceName,
+    final String? insuranceContract,
+    final String? insuranceCoverage,
+    final String? rgeNumber,
+    final String? paymentTerms,
+    final String vatRegime,
+    final int quoteValidityDays,
   }) = _$CompanyImpl;
 
   factory _Company.fromJson(Map<String, dynamic> json) = _$CompanyImpl.fromJson;
@@ -401,7 +629,31 @@ abstract class _Company implements Company {
   @override
   String? get email;
   @override
-  String? get website;
+  String? get website; // Regulatory identity (Phase 1) — mirrors the new `CompanyRead` fields.
+  @override
+  String? get legalForm;
+  @override
+  String? get shareCapital;
+  @override
+  String? get rcsRm;
+  @override
+  String? get apeCode;
+  @override
+  String? get insuranceName;
+  @override
+  String? get insuranceContract;
+  @override
+  String? get insuranceCoverage;
+  @override
+  String? get rgeNumber;
+  @override
+  String? get paymentTerms; // Non-nullable on the backend. Defaults keep older JSON (and fixtures
+  // that predate these fields) parseable, since `@Default` makes the
+  // generated `fromJson` fall back instead of throwing on a missing key.
+  @override
+  String get vatRegime;
+  @override
+  int get quoteValidityDays;
 
   /// Create a copy of Company
   /// with the given fields replaced by the non-null parameter values.
@@ -1288,9 +1540,22 @@ mixin _$CompanyUpdateInput {
   String? get addressLine => throw _privateConstructorUsedError;
   String? get postalCode => throw _privateConstructorUsedError;
   String? get city => throw _privateConstructorUsedError;
+  String? get country => throw _privateConstructorUsedError;
   String? get phone => throw _privateConstructorUsedError;
   String? get email => throw _privateConstructorUsedError;
-  String? get website => throw _privateConstructorUsedError;
+  String? get website =>
+      throw _privateConstructorUsedError; // Regulatory identity (Phase 1) — mirrors the new `CompanyUpdate` fields.
+  String? get legalForm => throw _privateConstructorUsedError;
+  String? get shareCapital => throw _privateConstructorUsedError;
+  String? get rcsRm => throw _privateConstructorUsedError;
+  String? get apeCode => throw _privateConstructorUsedError;
+  String? get insuranceName => throw _privateConstructorUsedError;
+  String? get insuranceContract => throw _privateConstructorUsedError;
+  String? get insuranceCoverage => throw _privateConstructorUsedError;
+  String? get rgeNumber => throw _privateConstructorUsedError;
+  String? get paymentTerms => throw _privateConstructorUsedError;
+  String? get vatRegime => throw _privateConstructorUsedError;
+  int? get quoteValidityDays => throw _privateConstructorUsedError;
 
   /// Serializes this CompanyUpdateInput to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -1317,9 +1582,21 @@ abstract class $CompanyUpdateInputCopyWith<$Res> {
     String? addressLine,
     String? postalCode,
     String? city,
+    String? country,
     String? phone,
     String? email,
     String? website,
+    String? legalForm,
+    String? shareCapital,
+    String? rcsRm,
+    String? apeCode,
+    String? insuranceName,
+    String? insuranceContract,
+    String? insuranceCoverage,
+    String? rgeNumber,
+    String? paymentTerms,
+    String? vatRegime,
+    int? quoteValidityDays,
   });
 }
 
@@ -1345,9 +1622,21 @@ class _$CompanyUpdateInputCopyWithImpl<$Res, $Val extends CompanyUpdateInput>
     Object? addressLine = freezed,
     Object? postalCode = freezed,
     Object? city = freezed,
+    Object? country = freezed,
     Object? phone = freezed,
     Object? email = freezed,
     Object? website = freezed,
+    Object? legalForm = freezed,
+    Object? shareCapital = freezed,
+    Object? rcsRm = freezed,
+    Object? apeCode = freezed,
+    Object? insuranceName = freezed,
+    Object? insuranceContract = freezed,
+    Object? insuranceCoverage = freezed,
+    Object? rgeNumber = freezed,
+    Object? paymentTerms = freezed,
+    Object? vatRegime = freezed,
+    Object? quoteValidityDays = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -1379,6 +1668,10 @@ class _$CompanyUpdateInputCopyWithImpl<$Res, $Val extends CompanyUpdateInput>
                 ? _value.city
                 : city // ignore: cast_nullable_to_non_nullable
                       as String?,
+            country: freezed == country
+                ? _value.country
+                : country // ignore: cast_nullable_to_non_nullable
+                      as String?,
             phone: freezed == phone
                 ? _value.phone
                 : phone // ignore: cast_nullable_to_non_nullable
@@ -1391,6 +1684,50 @@ class _$CompanyUpdateInputCopyWithImpl<$Res, $Val extends CompanyUpdateInput>
                 ? _value.website
                 : website // ignore: cast_nullable_to_non_nullable
                       as String?,
+            legalForm: freezed == legalForm
+                ? _value.legalForm
+                : legalForm // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            shareCapital: freezed == shareCapital
+                ? _value.shareCapital
+                : shareCapital // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            rcsRm: freezed == rcsRm
+                ? _value.rcsRm
+                : rcsRm // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            apeCode: freezed == apeCode
+                ? _value.apeCode
+                : apeCode // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            insuranceName: freezed == insuranceName
+                ? _value.insuranceName
+                : insuranceName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            insuranceContract: freezed == insuranceContract
+                ? _value.insuranceContract
+                : insuranceContract // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            insuranceCoverage: freezed == insuranceCoverage
+                ? _value.insuranceCoverage
+                : insuranceCoverage // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            rgeNumber: freezed == rgeNumber
+                ? _value.rgeNumber
+                : rgeNumber // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            paymentTerms: freezed == paymentTerms
+                ? _value.paymentTerms
+                : paymentTerms // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            vatRegime: freezed == vatRegime
+                ? _value.vatRegime
+                : vatRegime // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            quoteValidityDays: freezed == quoteValidityDays
+                ? _value.quoteValidityDays
+                : quoteValidityDays // ignore: cast_nullable_to_non_nullable
+                      as int?,
           )
           as $Val,
     );
@@ -1414,9 +1751,21 @@ abstract class _$$CompanyUpdateInputImplCopyWith<$Res>
     String? addressLine,
     String? postalCode,
     String? city,
+    String? country,
     String? phone,
     String? email,
     String? website,
+    String? legalForm,
+    String? shareCapital,
+    String? rcsRm,
+    String? apeCode,
+    String? insuranceName,
+    String? insuranceContract,
+    String? insuranceCoverage,
+    String? rgeNumber,
+    String? paymentTerms,
+    String? vatRegime,
+    int? quoteValidityDays,
   });
 }
 
@@ -1441,9 +1790,21 @@ class __$$CompanyUpdateInputImplCopyWithImpl<$Res>
     Object? addressLine = freezed,
     Object? postalCode = freezed,
     Object? city = freezed,
+    Object? country = freezed,
     Object? phone = freezed,
     Object? email = freezed,
     Object? website = freezed,
+    Object? legalForm = freezed,
+    Object? shareCapital = freezed,
+    Object? rcsRm = freezed,
+    Object? apeCode = freezed,
+    Object? insuranceName = freezed,
+    Object? insuranceContract = freezed,
+    Object? insuranceCoverage = freezed,
+    Object? rgeNumber = freezed,
+    Object? paymentTerms = freezed,
+    Object? vatRegime = freezed,
+    Object? quoteValidityDays = freezed,
   }) {
     return _then(
       _$CompanyUpdateInputImpl(
@@ -1475,6 +1836,10 @@ class __$$CompanyUpdateInputImplCopyWithImpl<$Res>
             ? _value.city
             : city // ignore: cast_nullable_to_non_nullable
                   as String?,
+        country: freezed == country
+            ? _value.country
+            : country // ignore: cast_nullable_to_non_nullable
+                  as String?,
         phone: freezed == phone
             ? _value.phone
             : phone // ignore: cast_nullable_to_non_nullable
@@ -1487,6 +1852,50 @@ class __$$CompanyUpdateInputImplCopyWithImpl<$Res>
             ? _value.website
             : website // ignore: cast_nullable_to_non_nullable
                   as String?,
+        legalForm: freezed == legalForm
+            ? _value.legalForm
+            : legalForm // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        shareCapital: freezed == shareCapital
+            ? _value.shareCapital
+            : shareCapital // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        rcsRm: freezed == rcsRm
+            ? _value.rcsRm
+            : rcsRm // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        apeCode: freezed == apeCode
+            ? _value.apeCode
+            : apeCode // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        insuranceName: freezed == insuranceName
+            ? _value.insuranceName
+            : insuranceName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        insuranceContract: freezed == insuranceContract
+            ? _value.insuranceContract
+            : insuranceContract // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        insuranceCoverage: freezed == insuranceCoverage
+            ? _value.insuranceCoverage
+            : insuranceCoverage // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        rgeNumber: freezed == rgeNumber
+            ? _value.rgeNumber
+            : rgeNumber // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        paymentTerms: freezed == paymentTerms
+            ? _value.paymentTerms
+            : paymentTerms // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        vatRegime: freezed == vatRegime
+            ? _value.vatRegime
+            : vatRegime // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        quoteValidityDays: freezed == quoteValidityDays
+            ? _value.quoteValidityDays
+            : quoteValidityDays // ignore: cast_nullable_to_non_nullable
+                  as int?,
       ),
     );
   }
@@ -1503,9 +1912,21 @@ class _$CompanyUpdateInputImpl implements _CompanyUpdateInput {
     this.addressLine,
     this.postalCode,
     this.city,
+    this.country,
     this.phone,
     this.email,
     this.website,
+    this.legalForm,
+    this.shareCapital,
+    this.rcsRm,
+    this.apeCode,
+    this.insuranceName,
+    this.insuranceContract,
+    this.insuranceCoverage,
+    this.rgeNumber,
+    this.paymentTerms,
+    this.vatRegime,
+    this.quoteValidityDays,
   });
 
   factory _$CompanyUpdateInputImpl.fromJson(Map<String, dynamic> json) =>
@@ -1526,15 +1947,40 @@ class _$CompanyUpdateInputImpl implements _CompanyUpdateInput {
   @override
   final String? city;
   @override
+  final String? country;
+  @override
   final String? phone;
   @override
   final String? email;
   @override
   final String? website;
+  // Regulatory identity (Phase 1) — mirrors the new `CompanyUpdate` fields.
+  @override
+  final String? legalForm;
+  @override
+  final String? shareCapital;
+  @override
+  final String? rcsRm;
+  @override
+  final String? apeCode;
+  @override
+  final String? insuranceName;
+  @override
+  final String? insuranceContract;
+  @override
+  final String? insuranceCoverage;
+  @override
+  final String? rgeNumber;
+  @override
+  final String? paymentTerms;
+  @override
+  final String? vatRegime;
+  @override
+  final int? quoteValidityDays;
 
   @override
   String toString() {
-    return 'CompanyUpdateInput(name: $name, legalName: $legalName, siret: $siret, vatNumber: $vatNumber, addressLine: $addressLine, postalCode: $postalCode, city: $city, phone: $phone, email: $email, website: $website)';
+    return 'CompanyUpdateInput(name: $name, legalName: $legalName, siret: $siret, vatNumber: $vatNumber, addressLine: $addressLine, postalCode: $postalCode, city: $city, country: $country, phone: $phone, email: $email, website: $website, legalForm: $legalForm, shareCapital: $shareCapital, rcsRm: $rcsRm, apeCode: $apeCode, insuranceName: $insuranceName, insuranceContract: $insuranceContract, insuranceCoverage: $insuranceCoverage, rgeNumber: $rgeNumber, paymentTerms: $paymentTerms, vatRegime: $vatRegime, quoteValidityDays: $quoteValidityDays)';
   }
 
   @override
@@ -1553,14 +1999,35 @@ class _$CompanyUpdateInputImpl implements _CompanyUpdateInput {
             (identical(other.postalCode, postalCode) ||
                 other.postalCode == postalCode) &&
             (identical(other.city, city) || other.city == city) &&
+            (identical(other.country, country) || other.country == country) &&
             (identical(other.phone, phone) || other.phone == phone) &&
             (identical(other.email, email) || other.email == email) &&
-            (identical(other.website, website) || other.website == website));
+            (identical(other.website, website) || other.website == website) &&
+            (identical(other.legalForm, legalForm) ||
+                other.legalForm == legalForm) &&
+            (identical(other.shareCapital, shareCapital) ||
+                other.shareCapital == shareCapital) &&
+            (identical(other.rcsRm, rcsRm) || other.rcsRm == rcsRm) &&
+            (identical(other.apeCode, apeCode) || other.apeCode == apeCode) &&
+            (identical(other.insuranceName, insuranceName) ||
+                other.insuranceName == insuranceName) &&
+            (identical(other.insuranceContract, insuranceContract) ||
+                other.insuranceContract == insuranceContract) &&
+            (identical(other.insuranceCoverage, insuranceCoverage) ||
+                other.insuranceCoverage == insuranceCoverage) &&
+            (identical(other.rgeNumber, rgeNumber) ||
+                other.rgeNumber == rgeNumber) &&
+            (identical(other.paymentTerms, paymentTerms) ||
+                other.paymentTerms == paymentTerms) &&
+            (identical(other.vatRegime, vatRegime) ||
+                other.vatRegime == vatRegime) &&
+            (identical(other.quoteValidityDays, quoteValidityDays) ||
+                other.quoteValidityDays == quoteValidityDays));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     name,
     legalName,
@@ -1569,10 +2036,22 @@ class _$CompanyUpdateInputImpl implements _CompanyUpdateInput {
     addressLine,
     postalCode,
     city,
+    country,
     phone,
     email,
     website,
-  );
+    legalForm,
+    shareCapital,
+    rcsRm,
+    apeCode,
+    insuranceName,
+    insuranceContract,
+    insuranceCoverage,
+    rgeNumber,
+    paymentTerms,
+    vatRegime,
+    quoteValidityDays,
+  ]);
 
   /// Create a copy of CompanyUpdateInput
   /// with the given fields replaced by the non-null parameter values.
@@ -1600,9 +2079,21 @@ abstract class _CompanyUpdateInput implements CompanyUpdateInput {
     final String? addressLine,
     final String? postalCode,
     final String? city,
+    final String? country,
     final String? phone,
     final String? email,
     final String? website,
+    final String? legalForm,
+    final String? shareCapital,
+    final String? rcsRm,
+    final String? apeCode,
+    final String? insuranceName,
+    final String? insuranceContract,
+    final String? insuranceCoverage,
+    final String? rgeNumber,
+    final String? paymentTerms,
+    final String? vatRegime,
+    final int? quoteValidityDays,
   }) = _$CompanyUpdateInputImpl;
 
   factory _CompanyUpdateInput.fromJson(Map<String, dynamic> json) =
@@ -1623,11 +2114,35 @@ abstract class _CompanyUpdateInput implements CompanyUpdateInput {
   @override
   String? get city;
   @override
+  String? get country;
+  @override
   String? get phone;
   @override
   String? get email;
   @override
-  String? get website;
+  String? get website; // Regulatory identity (Phase 1) — mirrors the new `CompanyUpdate` fields.
+  @override
+  String? get legalForm;
+  @override
+  String? get shareCapital;
+  @override
+  String? get rcsRm;
+  @override
+  String? get apeCode;
+  @override
+  String? get insuranceName;
+  @override
+  String? get insuranceContract;
+  @override
+  String? get insuranceCoverage;
+  @override
+  String? get rgeNumber;
+  @override
+  String? get paymentTerms;
+  @override
+  String? get vatRegime;
+  @override
+  int? get quoteValidityDays;
 
   /// Create a copy of CompanyUpdateInput
   /// with the given fields replaced by the non-null parameter values.
