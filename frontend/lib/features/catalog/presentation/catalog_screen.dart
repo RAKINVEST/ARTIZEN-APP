@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/async_value_view.dart';
+import '../../../core/widgets/paged_list_view.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
-import '../../../shared/widgets/search_field.dart';
+import '../../../shared/widgets/debounced_search_field.dart';
 import 'catalog_providers.dart';
 import 'widgets/add_category_dialog.dart';
 import 'widgets/item_tile.dart';
@@ -37,6 +38,7 @@ class _ItemsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final items = ref.watch(itemsNotifierProvider);
+    final notifier = ref.read(itemsNotifierProvider.notifier);
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -45,48 +47,39 @@ class _ItemsTab extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          SearchField(
+          DebouncedSearchField(
             hintText: 'Rechercher un article (désignation, code)',
-            onChanged: (query) => ref.read(itemsNotifierProvider.notifier).search(query),
+            initialValue: notifier.searchQuery,
+            onChanged: notifier.search,
           ),
           Expanded(
-            child: AsyncListView(
+            child: PagedListView(
               value: items,
               emptyMessage: 'Aucun article pour le moment.\nAjoutez votre premier article avec le bouton +.',
               emptyIcon: Icons.inventory_2_outlined,
-              onRetry: () => ref.read(itemsNotifierProvider.notifier).refresh(),
-              itemBuilder: (context, list) => RefreshIndicator(
-                onRefresh: () => ref.read(itemsNotifierProvider.notifier).refresh(),
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(top: 8, bottom: 88),
-                  itemCount: list.length,
-                  itemBuilder: (context, index) {
-                    final item = list[index];
-                    return ItemTile(
-                      item: item,
-                      onTap: () => context.push('/catalog/items/${item.id}/edit'),
-                      onDeactivate: () async {
-                        final confirmed = await showConfirmDialog(
-                          context,
-                          title: 'Désactiver cet article ?',
-                          message:
-                              '"${item.designation}" ne pourra plus être ajouté à un nouveau devis. '
-                              'Les devis existants ne sont pas modifiés.',
-                          confirmLabel: 'Désactiver',
-                        );
-                        if (confirmed) {
-                          await ref.read(itemsNotifierProvider.notifier).deactivateItem(item.id);
-                        }
-                      },
-                      // No confirmation dialog, unlike deactivating:
-                      // putting an item back is harmless and reversible,
-                      // and a prompt would only stand between the artisan
-                      // and undoing a mis-tap.
-                      onReactivate: () =>
-                          ref.read(itemsNotifierProvider.notifier).reactivateItem(item.id),
-                    );
-                  },
-                ),
+              onRetry: notifier.refresh,
+              onRefresh: notifier.refresh,
+              onLoadMore: notifier.loadMore,
+              itemBuilder: (context, item) => ItemTile(
+                item: item,
+                onTap: () => context.push('/catalog/items/${item.id}/edit'),
+                onDeactivate: () async {
+                  final confirmed = await showConfirmDialog(
+                    context,
+                    title: 'Désactiver cet article ?',
+                    message:
+                        '"${item.designation}" ne pourra plus être ajouté à un nouveau devis. '
+                        'Les devis existants ne sont pas modifiés.',
+                    confirmLabel: 'Désactiver',
+                  );
+                  if (confirmed) {
+                    await notifier.deactivateItem(item.id);
+                  }
+                },
+                // No confirmation dialog, unlike deactivating: putting an
+                // item back is harmless and reversible, and a prompt would
+                // only stand between the artisan and undoing a mis-tap.
+                onReactivate: () => notifier.reactivateItem(item.id),
               ),
             ),
           ),

@@ -15,10 +15,23 @@ class QuotesRepositoryImpl implements QuotesRepository {
   final Dio _dio;
 
   @override
-  Future<List<Quote>> list({required String companyId}) async {
+  Future<List<Quote>> list({
+    required String companyId,
+    QuoteStatus? status,
+    String? clientId,
+    int? offset,
+    int? limit,
+  }) async {
     final response = await _dio.get<List<dynamic>>(
       '/quotes',
-      queryParameters: {'company_id': companyId},
+      queryParameters: {
+        'company_id': companyId,
+        // The wire value, not the French label — same enum as the backend.
+        if (status != null) 'status': status.name,
+        'client_id': ?clientId,
+        'offset': ?offset,
+        'limit': ?limit,
+      },
     );
     return response.data!.map((json) => Quote.fromJson(json as Map<String, dynamic>)).toList();
   }

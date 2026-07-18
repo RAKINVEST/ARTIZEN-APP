@@ -65,6 +65,26 @@ void main() {
     ).called(1);
   });
 
+  test('list() forwards offset/limit for pagination', () async {
+    when(
+      () => dio.get<List<dynamic>>(
+        '/clients',
+        queryParameters: {'company_id': 'co1', 'offset': 30, 'limit': 30},
+      ),
+    ).thenAnswer(
+      (_) async => Response(requestOptions: RequestOptions(path: '/clients'), data: <dynamic>[]),
+    );
+
+    await repository.list(companyId: 'co1', offset: 30, limit: 30);
+
+    verify(
+      () => dio.get<List<dynamic>>(
+        '/clients',
+        queryParameters: {'company_id': 'co1', 'offset': 30, 'limit': 30},
+      ),
+    ).called(1);
+  });
+
   test('delete() calls DELETE /clients/{id}', () async {
     when(() => dio.delete<void>('/clients/c1')).thenAnswer(
       (_) async => Response(requestOptions: RequestOptions(path: '/clients/c1')),

@@ -1,72 +1,50 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/pagination/entity_search_notifier.dart';
+import '../../../core/pagination/paged_list.dart';
+import '../../../core/pagination/paged_list_notifier.dart';
 import '../../../shared/providers/current_company_provider.dart';
 import '../data/client_model.dart';
 import '../data/clients_repository_impl.dart';
 
-/// Holds the current client list plus the active search term. All CRUD
-/// operations funnel through here so every screen sees a consistent list
-/// without each re-fetching independently.
-class ClientsNotifier extends AsyncNotifier<List<Client>> {
-  String _query = '';
-
+/// The clients list: server search (`?q=`) + offset/limit paging, with every
+/// CRUD operation funnelling through here so screens share one consistent,
+/// paged view. Search and "load more" keep the current rows on screen (see
+/// [SearchablePagedListNotifier]) — no flicker on each keystroke.
+class ClientsNotifier extends SearchablePagedListNotifier<Client> {
   @override
-  Future<List<Client>> build() async {
-    final companyId = await ref.watch(currentCompanyIdProvider.future);
-    return ref.watch(clientsRepositoryProvider).list(
+  Future<List<Client>> fetchQueryPage(
+    String companyId, {
+    required int offset,
+    required int limit,
+    required String? query,
+  }) {
+    return ref.read(clientsRepositoryProvider).list(
           companyId: companyId,
-          query: _query.isEmpty ? null : _query,
+          query: query,
+          offset: offset,
+          limit: limit,
         );
-  }
-
-  /// Deliberately does NOT go through `refresh()`/`refreshCurrentCompanyId`:
-  /// invalidating `currentCompanyIdProvider` triggers Riverpod to re-run
-  /// this notifier's own `build()` (which watches it) concurrently with
-  /// this method's own state update, racing over which write wins — a
-  /// plain search never needs to re-bootstrap the company id anyway, only
-  /// recovering from a genuinely failed/cached-broken upstream does (see
-  /// `refresh()`, used by pull-to-refresh and the "Réessayer" button).
-  Future<void> search(String query) async {
-    _query = query;
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final companyId = await ref.read(currentCompanyIdProvider.future);
-      return ref.read(clientsRepositoryProvider).list(
-            companyId: companyId,
-            query: _query.isEmpty ? null : _query,
-          );
-    });
-  }
-
-  Future<void> refresh() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final companyId = await refreshCurrentCompanyId(ref);
-      return ref.read(clientsRepositoryProvider).list(
-            companyId: companyId,
-            query: _query.isEmpty ? null : _query,
-          );
-    });
   }
 
   Future<void> createClient(ClientInput input) async {
     final companyId = await ref.read(currentCompanyIdProvider.future);
     await ref.read(clientsRepositoryProvider).create(input, companyId: companyId);
-    await refresh();
+    await reload();
   }
 
   Future<void> updateClient(String id, ClientInput input) async {
     await ref.read(clientsRepositoryProvider).update(id, input);
-    await refresh();
+    await reload();
   }
 
   Future<void> deleteClient(String id) async {
     await ref.read(clientsRepositoryProvider).delete(id);
-    await refresh();
+    await reload();
   }
 }
 
-final clientsNotifierProvider = AsyncNotifierProvider<ClientsNotifier, List<Client>>(
+final clientsNotifierProvider = AsyncNotifierProvider<ClientsNotifier, PagedList<Client>>(
   ClientsNotifier.new,
 );
 
@@ -74,3 +52,23 @@ final clientsNotifierProvider = AsyncNotifierProvider<ClientsNotifier, List<Clie
 final clientByIdProvider = FutureProvider.family<Client, String>((ref, id) {
   return ref.watch(clientsRepositoryProvider).get(id);
 });
+
+/// Server-searched client picker used by the quote form — its own
+/// `autoDispose` source so searching inside the picker never disturbs the
+/// main clients list's own filter.
+class ClientSearchNotifier extends EntitySearchNotifier<Client> {
+  @override
+  Future<List<Client>> fetch(String companyId, {required String? query, required int limit}) {
+    return ref.read(clientsRepositoryProvider).list(
+          companyId: companyId,
+          query: query,
+          offset: 0,
+          limit: limit,
+        );
+  }
+}
+
+final clientSearchProvider =
+    AutoDisposeAsyncNotifierProvider<ClientSearchNotifier, List<Client>>(
+  ClientSearchNotifier.new,
+);

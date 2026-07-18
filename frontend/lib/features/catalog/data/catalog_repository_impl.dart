@@ -40,10 +40,19 @@ class CatalogRepositoryImpl implements CatalogRepository {
   Future<List<CatalogItem>> listItems({
     required String companyId,
     bool activeOnly = false,
+    String? query,
+    int? offset,
+    int? limit,
   }) async {
     final response = await _dio.get<List<dynamic>>(
       '/catalog/items',
-      queryParameters: {'company_id': companyId, 'active_only': activeOnly},
+      queryParameters: {
+        'company_id': companyId,
+        'active_only': activeOnly,
+        if (query != null && query.isNotEmpty) 'q': query,
+        'offset': ?offset,
+        'limit': ?limit,
+      },
     );
     return response.data!
         .map((json) => CatalogItem.fromJson(json as Map<String, dynamic>))

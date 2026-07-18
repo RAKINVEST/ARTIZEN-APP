@@ -8,7 +8,16 @@ import '../data/quote_readiness.dart';
 /// itself does no math; the backend's `QuoteCalculator` is the only place
 /// HT/VAT/TTC are computed.
 abstract class QuotesRepository {
-  Future<List<Quote>> list({required String companyId});
+  /// [status]/[clientId] map to the server-side filters (`?status=`,
+  /// `?client_id=`); [offset]/[limit] page the result. All optional so a
+  /// plain count call still works unchanged.
+  Future<List<Quote>> list({
+    required String companyId,
+    QuoteStatus? status,
+    String? clientId,
+    int? offset,
+    int? limit,
+  });
   Future<Quote> get(String id);
   Future<Quote> create({
     required String companyId,

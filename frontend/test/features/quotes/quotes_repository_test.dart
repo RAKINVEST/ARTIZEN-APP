@@ -36,6 +36,66 @@ void main() {
     repository = QuotesRepositoryImpl(dio);
   });
 
+  group('list', () {
+    test('forwards status/client_id/offset/limit as the server filters', () async {
+      when(
+        () => dio.get<List<dynamic>>(
+          '/quotes',
+          queryParameters: {
+            'company_id': 'co1',
+            'status': 'sent',
+            'client_id': 'cl1',
+            'offset': 0,
+            'limit': 30,
+          },
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/quotes'),
+          statusCode: 200,
+          data: [_quoteJson(status: 'sent')],
+        ),
+      );
+
+      final quotes = await repository.list(
+        companyId: 'co1',
+        status: QuoteStatus.sent,
+        clientId: 'cl1',
+        offset: 0,
+        limit: 30,
+      );
+
+      expect(quotes, hasLength(1));
+      // The enum wire value, never the French label — "Envoyé" would 422.
+      verify(
+        () => dio.get<List<dynamic>>(
+          '/quotes',
+          queryParameters: {
+            'company_id': 'co1',
+            'status': 'sent',
+            'client_id': 'cl1',
+            'offset': 0,
+            'limit': 30,
+          },
+        ),
+      ).called(1);
+    });
+
+    test('sends only company_id when no filter or paging is given', () async {
+      when(
+        () => dio.get<List<dynamic>>('/quotes', queryParameters: {'company_id': 'co1'}),
+      ).thenAnswer(
+        (_) async => Response(requestOptions: RequestOptions(path: '/quotes'), data: <dynamic>[]),
+      );
+
+      await repository.list(companyId: 'co1');
+
+      verify(
+        () => dio.get<List<dynamic>>('/quotes', queryParameters: {'company_id': 'co1'}),
+      ).called(1);
+    });
+  });
+
   group('changeStatus', () {
     test('sends the backend wire value, not the French label', () {
       when(

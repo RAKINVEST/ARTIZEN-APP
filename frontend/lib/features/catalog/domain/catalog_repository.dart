@@ -5,10 +5,10 @@ import '../data/catalog_models.dart';
 /// `CatalogService` on the backend, which also groups both for the same
 /// reason: they're one cohesive resource, not two unrelated concerns.
 ///
-/// No search parameter for items: unlike `/clients`, the backend's
-/// `GET /catalog/items` has no free-text query support. Filtering by
-/// designation/code happens client-side in `CatalogItemsNotifier` — a
-/// display-only filter over an already-small list, not business logic.
+/// `GET /catalog/items` now supports free-text search server-side (`?q=`)
+/// over designation and code, plus offset/limit paging. The old client-side
+/// filter only ever saw the first page — a row past it was invisible; the
+/// server query makes the whole catalogue reachable.
 abstract class CatalogRepository {
   Future<List<CatalogCategory>> listCategories({required String companyId});
   Future<CatalogCategory> createCategory(
@@ -16,7 +16,15 @@ abstract class CatalogRepository {
     required String companyId,
   });
 
-  Future<List<CatalogItem>> listItems({required String companyId, bool activeOnly = false});
+  /// [query] filters on designation/code; [offset]/[limit] page the result.
+  /// All optional so a plain count call still works unchanged.
+  Future<List<CatalogItem>> listItems({
+    required String companyId,
+    bool activeOnly = false,
+    String? query,
+    int? offset,
+    int? limit,
+  });
   Future<CatalogItem> createItem(CatalogItemInput input, {required String companyId});
   Future<CatalogItem> updateItem(String id, CatalogItemInput input);
   Future<CatalogItem> deactivateItem(String id);

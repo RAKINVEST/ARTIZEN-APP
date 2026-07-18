@@ -32,6 +32,75 @@ void main() {
     repository = CatalogRepositoryImpl(dio);
   });
 
+  group('listItems', () {
+    test('forwards q/offset/limit for server-side search and paging', () async {
+      when(
+        () => dio.get<List<dynamic>>(
+          '/catalog/items',
+          queryParameters: {
+            'company_id': 'co1',
+            'active_only': true,
+            'q': 'carrelage',
+            'offset': 0,
+            'limit': 30,
+          },
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/catalog/items'),
+          statusCode: 200,
+          data: [_itemJson(active: true)],
+        ),
+      );
+
+      final items = await repository.listItems(
+        companyId: 'co1',
+        activeOnly: true,
+        query: 'carrelage',
+        offset: 0,
+        limit: 30,
+      );
+
+      expect(items, hasLength(1));
+      verify(
+        () => dio.get<List<dynamic>>(
+          '/catalog/items',
+          queryParameters: {
+            'company_id': 'co1',
+            'active_only': true,
+            'q': 'carrelage',
+            'offset': 0,
+            'limit': 30,
+          },
+        ),
+      ).called(1);
+    });
+
+    test('omits q/offset/limit when not provided (plain count call)', () async {
+      when(
+        () => dio.get<List<dynamic>>(
+          '/catalog/items',
+          queryParameters: {'company_id': 'co1', 'active_only': false},
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/catalog/items'),
+          statusCode: 200,
+          data: <dynamic>[],
+        ),
+      );
+
+      await repository.listItems(companyId: 'co1');
+
+      verify(
+        () => dio.get<List<dynamic>>(
+          '/catalog/items',
+          queryParameters: {'company_id': 'co1', 'active_only': false},
+        ),
+      ).called(1);
+    });
+  });
+
   group('reactivateItem', () {
     test('sends only {"active": true}, leaving every other field untouched', () async {
       // The backend applies exclude_unset, so anything sent here is

@@ -2,6 +2,8 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/pagination/paged_list.dart';
+import '../../../core/pagination/paged_list_notifier.dart';
 import '../../../shared/providers/current_company_provider.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../clients/data/client_model.dart';
@@ -9,19 +11,41 @@ import '../data/quote_models.dart';
 import '../data/quote_readiness.dart';
 import '../data/quotes_repository_impl.dart';
 
-class QuotesNotifier extends AsyncNotifier<List<Quote>> {
+/// The status chip selected on the devis list (`null` = "Tous"). Watched by
+/// [QuotesNotifier.watchDependencies] so picking a chip re-runs the fetch
+/// with `?status=` — kept as a separate provider (rather than notifier
+/// state) so the chip bar can watch the selection reactively.
+final quotesStatusFilterProvider = StateProvider<QuoteStatus?>((ref) => null);
+
+/// The client filter selected on the devis list (`null` = all clients).
+final quotesClientFilterProvider = StateProvider<String?>((ref) => null);
+
+/// The devis list: server-side status/client filters + offset/limit paging.
+/// Changing a filter re-runs `build` (via [watchDependencies]); with
+/// `skipLoadingOnReload` in `PagedListView`, the current rows stay on screen
+/// under a discrete indicator instead of flashing a full-page spinner.
+class QuotesNotifier extends PagedListNotifier<Quote> {
+  QuoteStatus? _status;
+  String? _clientId;
+
   @override
-  Future<List<Quote>> build() async {
-    final companyId = await ref.watch(currentCompanyIdProvider.future);
-    return ref.watch(quotesRepositoryProvider).list(companyId: companyId);
+  Future<String> watchDependencies() {
+    // Read filters synchronously (before the first await) so build tracks
+    // both providers and re-runs whenever either changes.
+    _status = ref.watch(quotesStatusFilterProvider);
+    _clientId = ref.watch(quotesClientFilterProvider);
+    return ref.watch(currentCompanyIdProvider.future);
   }
 
-  Future<void> refresh() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final companyId = await refreshCurrentCompanyId(ref);
-      return ref.read(quotesRepositoryProvider).list(companyId: companyId);
-    });
+  @override
+  Future<List<Quote>> fetchPage(String companyId, {required int offset, required int limit}) {
+    return ref.read(quotesRepositoryProvider).list(
+          companyId: companyId,
+          status: _status,
+          clientId: _clientId,
+          offset: offset,
+          limit: limit,
+        );
   }
 
   /// Returns the created quote (with its backend-computed totals) so the
@@ -36,7 +60,7 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
           clientId: clientId,
           lines: lines,
         );
-    await refresh();
+    await reload();
     return quote;
   }
 
@@ -48,25 +72,25 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
   Future<Quote> changeStatus(String id, QuoteStatus status) async {
     final quote = await ref.read(quotesRepositoryProvider).changeStatus(id, status);
     ref.invalidate(quoteByIdProvider(id));
-    await refresh();
+    await reload();
     return quote;
   }
 
   Future<void> deleteQuote(String id) async {
     await ref.read(quotesRepositoryProvider).delete(id);
-    await refresh();
+    await reload();
   }
 
   /// Duplicates a quote into a new draft and returns it, so the caller can
   /// navigate straight to the copy the artisan will now edit.
   Future<Quote> duplicateQuote(String id) async {
     final copy = await ref.read(quotesRepositoryProvider).duplicate(id);
-    await refresh();
+    await reload();
     return copy;
   }
 }
 
-final quotesNotifierProvider = AsyncNotifierProvider<QuotesNotifier, List<Quote>>(
+final quotesNotifierProvider = AsyncNotifierProvider<QuotesNotifier, PagedList<Quote>>(
   QuotesNotifier.new,
 );
 

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
-import '../../../core/widgets/async_value_view.dart';
+import '../../../core/widgets/paged_list_view.dart';
+import '../data/quote_models.dart';
 import 'quotes_providers.dart';
 import 'widgets/quote_status_chip.dart';
 
@@ -13,6 +15,7 @@ class QuotesListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final quotes = ref.watch(quotesNotifierProvider);
+    final notifier = ref.read(quotesNotifierProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
@@ -29,26 +32,23 @@ class QuotesListScreen extends ConsumerWidget {
         onPressed: () => context.push('/quotes/new'),
         child: const Icon(Icons.add),
       ),
-      body: AsyncListView(
-        value: quotes,
-        emptyMessage: 'Aucun devis pour le moment.\nCréez votre premier devis avec le bouton +.',
-        emptyIcon: Icons.description_outlined,
-        onRetry: () => ref.read(quotesNotifierProvider.notifier).refresh(),
-        itemBuilder: (context, items) => RefreshIndicator(
-          onRefresh: () => ref.read(quotesNotifierProvider.notifier).refresh(),
-          child: ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 88),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final quote = items[index];
-              return Card(
+      body: Column(
+        children: [
+          const _StatusFilterBar(),
+          Expanded(
+            child: PagedListView(
+              value: quotes,
+              emptyMessage: 'Aucun devis pour le moment.\nCréez votre premier devis avec le bouton +.',
+              emptyIcon: Icons.description_outlined,
+              onRetry: notifier.refresh,
+              onRefresh: notifier.refresh,
+              onLoadMore: notifier.loadMore,
+              itemBuilder: (context, quote) => Card(
                 child: ListTile(
                   onTap: () => context.push('/quotes/${quote.id}'),
                   leading: const CircleAvatar(child: Icon(Icons.description_outlined)),
                   // The number, not the line count: "DEV-2026-0042" is what
-                  // the artisan is scanning the list for. "Devis · 3
-                  // ligne(s)" told them nothing that distinguished one row
-                  // from the next.
+                  // the artisan is scanning the list for.
                   title: Text(
                     quote.quoteNumber,
                     style: const TextStyle(fontWeight: FontWeight.w600),
@@ -62,10 +62,54 @@ class QuotesListScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-              );
-            },
+              ),
+            ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The statut filter bar: "Tous" plus one chip per [QuoteStatus]. Selecting a
+/// chip sets [quotesStatusFilterProvider], which re-runs the paged fetch with
+/// `?status=` server-side — no client-side filtering of a truncated page.
+class _StatusFilterBar extends ConsumerWidget {
+  const _StatusFilterBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(quotesStatusFilterProvider);
+
+    // null entry = "Tous"; the rest follow the enum order.
+    final entries = <(QuoteStatus?, String)>[
+      (null, 'Tous'),
+      for (final status in QuoteStatus.values) (status, status.label),
+    ];
+
+    return SizedBox(
+      height: 52,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        itemCount: entries.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final (status, label) = entries[index];
+          final isSelected = status == selected;
+          return ChoiceChip(
+            label: Text(label),
+            selected: isSelected,
+            showCheckmark: false,
+            selectedColor: ArtizenColors.nightBlue,
+            labelStyle: TextStyle(
+              color: isSelected ? ArtizenColors.onNightBlue : ArtizenColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+            onSelected: (_) =>
+                ref.read(quotesStatusFilterProvider.notifier).state = status,
+          );
+        },
       ),
     );
   }

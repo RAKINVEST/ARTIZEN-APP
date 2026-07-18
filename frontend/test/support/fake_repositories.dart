@@ -18,16 +18,37 @@ import 'package:artizen/features/template_import/domain/template_import_reposito
 /// test that needs to boot the app or a notifier without touching the
 /// network (see `ClientsRepository`, `CatalogRepository`,
 /// `QuotesRepository` for the contracts these implement).
+/// Applies the offset/limit paging the real backend does, so notifier tests
+/// can exercise "load more" against a fake exactly as against the server.
+List<T> _paginate<T>(List<T> rows, int? offset, int? limit) {
+  var result = rows;
+  if (offset != null && offset > 0) {
+    result = offset >= result.length ? <T>[] : result.sublist(offset);
+  }
+  if (limit != null && limit < result.length) {
+    result = result.sublist(0, limit);
+  }
+  return result;
+}
+
 class FakeClientsRepository implements ClientsRepository {
   FakeClientsRepository(this._clients);
 
   final List<Client> _clients;
 
   @override
-  Future<List<Client>> list({required String companyId, String? query}) async {
-    if (query == null || query.isEmpty) return _clients;
-    final lower = query.toLowerCase();
-    return _clients.where((client) => client.lastName.toLowerCase().contains(lower)).toList();
+  Future<List<Client>> list({
+    required String companyId,
+    String? query,
+    int? offset,
+    int? limit,
+  }) async {
+    var rows = _clients;
+    if (query != null && query.isNotEmpty) {
+      final lower = query.toLowerCase();
+      rows = rows.where((client) => client.lastName.toLowerCase().contains(lower)).toList();
+    }
+    return _paginate(rows, offset, limit);
   }
 
   @override
@@ -67,8 +88,22 @@ class FakeCatalogRepository implements CatalogRepository {
   }
 
   @override
-  Future<List<CatalogItem>> listItems({required String companyId, bool activeOnly = false}) async {
-    return activeOnly ? _items.where((item) => item.active).toList() : _items;
+  Future<List<CatalogItem>> listItems({
+    required String companyId,
+    bool activeOnly = false,
+    String? query,
+    int? offset,
+    int? limit,
+  }) async {
+    var rows = activeOnly ? _items.where((item) => item.active).toList() : _items;
+    if (query != null && query.isNotEmpty) {
+      final lower = query.toLowerCase();
+      rows = rows.where((item) {
+        return item.designation.toLowerCase().contains(lower) ||
+            (item.code?.toLowerCase().contains(lower) ?? false);
+      }).toList();
+    }
+    return _paginate(rows, offset, limit);
   }
 
   @override
@@ -102,7 +137,18 @@ class FakeQuotesRepository implements QuotesRepository {
   final QuoteReadiness? readinessResult;
 
   @override
-  Future<List<Quote>> list({required String companyId}) async => _quotes;
+  Future<List<Quote>> list({
+    required String companyId,
+    QuoteStatus? status,
+    String? clientId,
+    int? offset,
+    int? limit,
+  }) async {
+    var rows = _quotes;
+    if (status != null) rows = rows.where((quote) => quote.status == status).toList();
+    if (clientId != null) rows = rows.where((quote) => quote.clientId == clientId).toList();
+    return _paginate(rows, offset, limit);
+  }
 
   @override
   Future<Quote> get(String id) async => _quotes.firstWhere((quote) => quote.id == id);

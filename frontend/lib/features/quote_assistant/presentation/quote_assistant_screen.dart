@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/currency.dart';
 import '../../../core/utils/decimal_input.dart';
 import '../../../core/widgets/app_components.dart';
-import '../../../core/widgets/async_value_view.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_state.dart';
 import '../../../shared/providers/current_company_provider.dart';
+import '../../../shared/widgets/debounced_search_field.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../catalog/data/catalog_repository_impl.dart';
 import '../../catalog/presentation/catalog_providers.dart';
@@ -369,67 +370,88 @@ class _ManualItemPickerSheetState extends ConsumerState<_ManualItemPickerSheet> 
 
   @override
   Widget build(BuildContext context) {
-    final items = ref.watch(itemsNotifierProvider);
+    // Server search, active items only — mirrors QuoteFormScreen's own
+    // picker, so a large catalogue stays reachable by typing.
+    final items = ref.watch(catalogItemSearchProvider);
+    final notifier = ref.read(catalogItemSearchProvider.notifier);
 
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
           bottom: MediaQuery.of(context).viewInsets.bottom + 16,
         ),
         child: SizedBox(
           height: MediaQuery.of(context).size.height * 0.7,
           child: Column(
             children: [
-              Text('Ajouter un article', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
+              Text('Ajouter un article', style: Theme.of(context).textTheme.titleMedium),
+              DebouncedSearchField(
+                hintText: 'Rechercher un article (désignation, code)',
+                isLoading: items.isLoading,
+                onChanged: notifier.search,
+              ),
               Expanded(
-                child: AsyncValueView(
-                  value: items,
-                  builder: (context, list) {
-                    final activeItems = list.where((item) => item.active).toList();
-                    return ListView.builder(
-                      itemCount: activeItems.length,
-                      itemBuilder: (context, index) {
-                        final item = activeItems[index];
-                        final isSelected = _selected?.id == item.id;
-                        return ListTile(
-                          leading: Icon(
-                            isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                          ),
-                          title: Text(item.designation),
-                          subtitle: Text('${item.unitPriceHt} € HT / ${item.unit}'),
-                          selected: isSelected,
-                          onTap: () => setState(() => _selected = item),
-                        );
-                      },
-                    );
-                  },
+                child: items.when(
+                  skipLoadingOnReload: true,
+                  skipLoadingOnRefresh: true,
+                  data: (list) => list.isEmpty
+                      ? const EmptyState(
+                          message: 'Aucun article actif ne correspond.\nAffinez votre '
+                              'recherche ou ajoutez l\'article au catalogue.',
+                          icon: Icons.search_off,
+                        )
+                      : ListView.builder(
+                          itemCount: list.length,
+                          itemBuilder: (context, index) {
+                            final item = list[index];
+                            final isSelected = _selected?.id == item.id;
+                            return ListTile(
+                              leading: Icon(
+                                isSelected
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_unchecked,
+                              ),
+                              title: Text(item.designation),
+                              subtitle: Text(
+                                '${CurrencyFormatter.format(item.unitPriceHt)} HT / ${item.unit}',
+                              ),
+                              selected: isSelected,
+                              onTap: () => setState(() => _selected = item),
+                            );
+                          },
+                        ),
+                  loading: () => const LoadingState(),
+                  error: (error, _) => ErrorState(
+                    error: error,
+                    onRetry: () => ref.invalidate(catalogItemSearchProvider),
+                  ),
                 ),
               ),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _quantityController,
-                      decoration: InputDecoration(
-                        labelText: 'Quantité',
-                        errorText: _quantityError,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _quantityController,
+                        decoration: InputDecoration(
+                          labelText: 'Quantité',
+                          errorText: _quantityError,
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        onChanged: (_) {
+                          if (_quantityError != null) setState(() => _quantityError = null);
+                        },
                       ),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (_) {
-                        if (_quantityError != null) setState(() => _quantityError = null);
-                      },
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  FilledButton(
-                    onPressed: _selected == null ? null : _addSelectedItem,
-                    child: const Text('Ajouter'),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    FilledButton(
+                      onPressed: _selected == null ? null : _addSelectedItem,
+                      child: const Text('Ajouter'),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

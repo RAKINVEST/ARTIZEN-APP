@@ -5,7 +5,15 @@ import '../data/client_model.dart';
 /// interface makes providers/tests swap in a fake without touching any
 /// screen — the same reasoning as the backend's `BaseRepository` pattern.
 abstract class ClientsRepository {
-  Future<List<Client>> list({required String companyId, String? query});
+  /// [offset]/[limit] page the server-side list (`GET /clients`). Both are
+  /// optional so callers that only need a count (e.g. the dashboard) can
+  /// keep letting the backend apply its default page size.
+  Future<List<Client>> list({
+    required String companyId,
+    String? query,
+    int? offset,
+    int? limit,
+  });
   Future<Client> get(String id);
   Future<Client> create(ClientInput input, {required String companyId});
   Future<Client> update(String id, ClientInput input);

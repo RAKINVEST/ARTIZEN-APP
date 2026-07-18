@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/currency.dart';
 import '../../../core/utils/decimal_input.dart';
 import '../../../core/widgets/app_components.dart';
-import '../../../core/widgets/async_value_view.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/error_state.dart';
+import '../../../core/widgets/loading_state.dart';
+import '../../../shared/widgets/debounced_search_field.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../catalog/presentation/catalog_providers.dart';
 import '../../clients/data/client_model.dart';
@@ -16,13 +20,24 @@ import 'quotes_providers.dart';
 /// submit. No amount is shown or computed while drafting — see
 /// `QuoteDraftLine` — the totals only appear once the backend has computed
 /// them, on the resulting quote's detail screen.
-class QuoteFormScreen extends ConsumerWidget {
+class QuoteFormScreen extends ConsumerStatefulWidget {
   const QuoteFormScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<QuoteFormScreen> createState() => _QuoteFormScreenState();
+}
+
+class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
+  /// Anti-double-submit: a double-tap on "Créer le devis" used to fire two
+  /// `POST /quotes`, creating two quotes. This guard, plus the button's
+  /// loading state, makes the second tap a no-op.
+  bool _saving = false;
+
+  @override
+  Widget build(BuildContext context) {
     final selectedClient = ref.watch(quoteDraftClientProvider);
     final draftLines = ref.watch(quoteDraftLinesProvider);
+    final canSubmit = selectedClient != null && draftLines.isNotEmpty && !_saving;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nouveau devis')),
@@ -36,7 +51,7 @@ class QuoteFormScreen extends ConsumerWidget {
               leading: const Icon(Icons.person_outline),
               title: Text(selectedClient?.displayName ?? 'Sélectionner un client'),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => _pickClient(context, ref),
+              onTap: _saving ? null : () => _pickClient(context),
             ),
           ),
           const SizedBox(height: 24),
@@ -45,7 +60,7 @@ class QuoteFormScreen extends ConsumerWidget {
             children: [
               Text('Lignes du devis', style: Theme.of(context).textTheme.titleMedium),
               TextButton.icon(
-                onPressed: () => _addLine(context, ref),
+                onPressed: _saving ? null : () => _addLine(context),
                 icon: const Icon(Icons.add),
                 label: const Text('Ajouter un article'),
               ),
@@ -61,10 +76,16 @@ class QuoteFormScreen extends ConsumerWidget {
               Card(
                 child: ListTile(
                   title: Text(draftLines[i].item.designation),
-                  subtitle: Text('${draftLines[i].quantity} ${draftLines[i].item.unit}'),
+                  subtitle: Text(
+                    '${CurrencyFormatter.formatQuantity(draftLines[i].quantity)} '
+                    '${draftLines[i].item.unit} · '
+                    '${CurrencyFormatter.format(draftLines[i].item.unitPriceHt)} HT',
+                  ),
                   trailing: IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => ref.read(quoteDraftLinesProvider.notifier).removeLineAt(i),
+                    onPressed: _saving
+                        ? null
+                        : () => ref.read(quoteDraftLinesProvider.notifier).removeLineAt(i),
                   ),
                 ),
               ),
@@ -72,16 +93,15 @@ class QuoteFormScreen extends ConsumerWidget {
           AppPrimaryButton(
             label: 'Créer le devis',
             icon: Icons.check_circle_outline,
-            onPressed: (selectedClient == null || draftLines.isEmpty)
-                ? null
-                : () => _submit(context, ref, selectedClient, draftLines),
+            loading: _saving,
+            onPressed: canSubmit ? () => _submit(selectedClient, draftLines) : null,
           ),
         ],
       ),
     );
   }
 
-  Future<void> _pickClient(BuildContext context, WidgetRef ref) async {
+  Future<void> _pickClient(BuildContext context) async {
     final client = await showModalBottomSheet<Client>(
       context: context,
       isScrollControlled: true,
@@ -92,7 +112,7 @@ class QuoteFormScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _addLine(BuildContext context, WidgetRef ref) async {
+  Future<void> _addLine(BuildContext context) async {
     final line = await showModalBottomSheet<QuoteDraftLine>(
       context: context,
       isScrollControlled: true,
@@ -103,26 +123,26 @@ class QuoteFormScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _submit(
-    BuildContext context,
-    WidgetRef ref,
-    Client client,
-    List<QuoteDraftLine> lines,
-  ) async {
+  Future<void> _submit(Client client, List<QuoteDraftLine> lines) async {
+    if (_saving) return;
+    setState(() => _saving = true);
     try {
       final quote = await ref.read(quotesNotifierProvider.notifier).createQuote(
             clientId: client.id,
+            // Quantities are already comma-normalized at the picker (see
+            // `_ItemPickerSheet`), so the payload is backend-ready here.
             lines: lines
                 .map((line) => QuoteLineInput(catalogItemId: line.item.id, quantity: line.quantity))
                 .toList(),
           );
       ref.read(quoteDraftLinesProvider.notifier).clear();
       ref.read(quoteDraftClientProvider.notifier).state = null;
-      if (context.mounted) {
+      if (mounted) {
         context.pushReplacement('/quotes/${quote.id}');
       }
     } catch (error) {
-      if (context.mounted) {
+      if (mounted) {
+        setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Échec de la création du devis : $error')),
         );
@@ -131,35 +151,77 @@ class QuoteFormScreen extends ConsumerWidget {
   }
 }
 
-class _ClientPickerSheet extends ConsumerWidget {
+/// Client picker with server search — an artisan with hundreds of clients
+/// finds one by typing, instead of scrolling a truncated first page.
+class _ClientPickerSheet extends ConsumerStatefulWidget {
   const _ClientPickerSheet();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clients = ref.watch(clientsNotifierProvider);
+  ConsumerState<_ClientPickerSheet> createState() => _ClientPickerSheetState();
+}
+
+class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final clients = ref.watch(clientSearchProvider);
+    final notifier = ref.read(clientSearchProvider.notifier);
+
     return SafeArea(
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.7,
-        child: AsyncValueView(
-          value: clients,
-          onRetry: () => ref.read(clientsNotifierProvider.notifier).refresh(),
-          builder: (context, items) => ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final client = items[index];
-              return ListTile(
-                title: Text(client.displayName),
-                onTap: () => Navigator.of(context).pop(client),
-              );
-            },
-          ),
+        child: Column(
+          children: [
+            const SizedBox(height: 8),
+            Text('Choisir un client', style: Theme.of(context).textTheme.titleMedium),
+            DebouncedSearchField(
+              hintText: 'Rechercher un client (nom, société…)',
+              isLoading: clients.isLoading,
+              onChanged: notifier.search,
+            ),
+            Expanded(
+              child: clients.when(
+                skipLoadingOnReload: true,
+                skipLoadingOnRefresh: true,
+                data: (items) => items.isEmpty
+                    ? const EmptyState(
+                        message: 'Aucun client ne correspond.\nAffinez votre recherche '
+                            'ou créez le client depuis l\'onglet Clients.',
+                        icon: Icons.person_search_outlined,
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final client = items[index];
+                          return ListTile(
+                            leading: const Icon(Icons.person_outline),
+                            title: Text(client.displayName),
+                            subtitle: _clientSubtitle(client),
+                            onTap: () => Navigator.of(context).pop(client),
+                          );
+                        },
+                      ),
+                loading: () => const LoadingState(),
+                error: (error, _) => ErrorState(
+                  error: error,
+                  onRetry: () => ref.invalidate(clientSearchProvider),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget? _clientSubtitle(Client client) {
+    final parts = [client.phone, client.email].whereType<String>().where((s) => s.isNotEmpty);
+    return parts.isEmpty ? null : Text(parts.join(' · '));
+  }
 }
 
+/// Item picker with server search — active items only (deactivated ones are
+/// never offered on a new quote), reachable past the first page by typing.
 class _ItemPickerSheet extends ConsumerStatefulWidget {
   const _ItemPickerSheet();
 
@@ -178,10 +240,7 @@ class _ItemPickerSheetState extends ConsumerState<_ItemPickerSheet> {
   /// after the artisan had composed every line, and without saying which
   /// one was wrong.
   void _addSelectedItem() {
-    final error = DecimalInput.validate(
-      _quantityController.text,
-      exclusiveMin: true,
-    );
+    final error = DecimalInput.validate(_quantityController.text, exclusiveMin: true);
     if (error != null) {
       setState(() => _quantityError = error);
       return;
@@ -202,66 +261,86 @@ class _ItemPickerSheetState extends ConsumerState<_ItemPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final items = ref.watch(itemsNotifierProvider);
+    final items = ref.watch(catalogItemSearchProvider);
+    final notifier = ref.read(catalogItemSearchProvider.notifier);
 
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
           bottom: MediaQuery.of(context).viewInsets.bottom + 16,
         ),
         child: SizedBox(
           height: MediaQuery.of(context).size.height * 0.7,
           child: Column(
             children: [
+              const SizedBox(height: 8),
+              Text('Choisir un article', style: Theme.of(context).textTheme.titleMedium),
+              DebouncedSearchField(
+                hintText: 'Rechercher un article (désignation, code)',
+                isLoading: items.isLoading,
+                onChanged: notifier.search,
+              ),
               Expanded(
-                child: AsyncValueView(
-                  value: items,
-                  onRetry: () => ref.read(itemsNotifierProvider.notifier).refresh(),
-                  builder: (context, list) {
-                    final activeItems = list.where((item) => item.active).toList();
-                    return ListView.builder(
-                      itemCount: activeItems.length,
-                      itemBuilder: (context, index) {
-                        final item = activeItems[index];
-                        final isSelected = _selected?.id == item.id;
-                        return ListTile(
-                          leading: Icon(
-                            isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                          ),
-                          title: Text(item.designation),
-                          subtitle: Text('${item.unitPriceHt} € HT / ${item.unit}'),
-                          selected: isSelected,
-                          onTap: () => setState(() => _selected = item),
-                        );
-                      },
-                    );
-                  },
+                child: items.when(
+                  skipLoadingOnReload: true,
+                  skipLoadingOnRefresh: true,
+                  data: (list) => list.isEmpty
+                      ? const EmptyState(
+                          message: 'Aucun article actif ne correspond.\nAffinez votre '
+                              'recherche ou ajoutez l\'article au catalogue.',
+                          icon: Icons.search_off,
+                        )
+                      : ListView.builder(
+                          itemCount: list.length,
+                          itemBuilder: (context, index) {
+                            final item = list[index];
+                            final isSelected = _selected?.id == item.id;
+                            return ListTile(
+                              leading: Icon(
+                                isSelected
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_unchecked,
+                              ),
+                              title: Text(item.designation),
+                              subtitle: Text(
+                                '${CurrencyFormatter.format(item.unitPriceHt)} HT / ${item.unit}',
+                              ),
+                              selected: isSelected,
+                              onTap: () => setState(() => _selected = item),
+                            );
+                          },
+                        ),
+                  loading: () => const LoadingState(),
+                  error: (error, _) => ErrorState(
+                    error: error,
+                    onRetry: () => ref.invalidate(catalogItemSearchProvider),
+                  ),
                 ),
               ),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _quantityController,
-                      decoration: InputDecoration(
-                        labelText: 'Quantité',
-                        errorText: _quantityError,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _quantityController,
+                        decoration: InputDecoration(
+                          labelText: 'Quantité',
+                          errorText: _quantityError,
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        onChanged: (_) {
+                          if (_quantityError != null) setState(() => _quantityError = null);
+                        },
                       ),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (_) {
-                        if (_quantityError != null) setState(() => _quantityError = null);
-                      },
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  FilledButton(
-                    onPressed: _selected == null ? null : _addSelectedItem,
-                    child: const Text('Ajouter'),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    FilledButton(
+                      onPressed: _selected == null ? null : _addSelectedItem,
+                      child: const Text('Ajouter'),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

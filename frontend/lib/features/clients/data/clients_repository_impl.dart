@@ -15,12 +15,19 @@ class ClientsRepositoryImpl implements ClientsRepository {
   final Dio _dio;
 
   @override
-  Future<List<Client>> list({required String companyId, String? query}) async {
+  Future<List<Client>> list({
+    required String companyId,
+    String? query,
+    int? offset,
+    int? limit,
+  }) async {
     final response = await _dio.get<List<dynamic>>(
       '/clients',
       queryParameters: {
         'company_id': companyId,
         if (query != null && query.isNotEmpty) 'q': query,
+        'offset': ?offset,
+        'limit': ?limit,
       },
     );
     return response.data!
