@@ -13,12 +13,11 @@
 > Remplacez `artizen.fr` par **votre** domaine partout. Les commandes se tapent dans un terminal SSH
 > connecté au serveur, sauf mention « sur votre ordinateur ».
 
-> 🔴 **À LIRE AVANT DE COMMENCER — le seul point qui exige un petit développement** : aujourd'hui, les
-> e-mails (dont la **réinitialisation de mot de passe**) ne partent **pas réellement** (seul le mode
-> « mock » est câblé : il écrit dans les logs). Pour une bêta avec de vrais artisans, il faut **brancher
-> un vrai fournisseur d'e-mails** (voir §7.4). Sans cela, un testeur qui oublie son mot de passe ne
-> reçoit rien. Tout le reste ci-dessous fonctionne sans cette étape, mais **ne pas inviter d'artisans
-> avant de l'avoir réglée**.
+> 🟢 **Bon à savoir — l'envoi d'e-mails est prêt.** Le fournisseur **SMTP réel** existe : il suffit de
+> **configurer** `EMAIL_PROVIDER=smtp` + les variables `SMTP_*` (voir §7.4) avec un compte SMTP standard
+> (Brevo/Postmark/Mailjet/SES). Plus aucun développement. En mode `mock` (défaut), les e-mails sont
+> seulement journalisés — **ne pas inviter d'artisans en mock** (le reset de mot de passe n'arriverait
+> pas). **Tester le reset de bout en bout** avant d'ouvrir.
 
 ---
 
@@ -254,10 +253,20 @@ STORAGE_LOCAL_ROOT=/data/storage
 > de 32 caractères, et si `DEBUG=true`. C'est une protection, pas un bug.
 
 **7.4 E-mail réel (avant d'inviter des testeurs)** : `EMAIL_PROVIDER=mock` n'envoie rien (il logue).
-Pour de vrais e-mails, il faut **ajouter un fournisseur SMTP** derrière l'abstraction `app/email/`
-(petit développement, ~0,5 j) et un compte transactionnel (Brevo/Postmark/Mailjet/SES — palier gratuit).
-Une fois fait : `EMAIL_PROVIDER=smtp` + identifiants SMTP. *(Cette brique n'existe pas encore ; à
-planifier avec l'équipe technique.)*
+Le fournisseur **SMTP réel est déjà implémenté** — il suffit de le **configurer**. Créez un compte chez
+un service SMTP transactionnel (Brevo/Postmark/Mailjet/SES — palier gratuit), récupérez ses identifiants
+SMTP, puis dans `.env` :
+```bash
+EMAIL_PROVIDER=smtp
+SMTP_HOST=<smtp du fournisseur, ex. smtp-relay.brevo.com>
+SMTP_PORT=587
+SMTP_USERNAME=<identifiant / clé fournie>
+SMTP_PASSWORD=<mot de passe / clé>
+SMTP_USE_TLS=true          # 587 + STARTTLS (défaut) ; pour 465 : SMTP_PORT=465, SMTP_USE_SSL=true, SMTP_USE_TLS=false
+```
+Redémarrez le backend (`docker compose -f docker-compose.prod.yml up -d backend worker`). Un e-mail qui
+échoue est **journalisé, jamais bloquant** (surveiller `email.smtp_send_failed`). **Testez le reset de
+bout en bout** (demande → e-mail reçu → nouveau mot de passe) avant d'ouvrir.
 
 ## 8. HTTPS (Caddy — certificat automatique)
 

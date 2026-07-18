@@ -179,18 +179,30 @@ class Settings(BaseSettings):
     STORAGE_LOCAL_ROOT: str = "/data/storage"
 
     # --- Email (transactional: password reset, welcome, receipts) ---
-    # Only "mock" is wired today (logs the message, never fails, no account
-    # needed) — the app runs and the reset flow works end-to-end without an
-    # email account. A real provider (SMTP/Postmark/Brevo…) slots behind the
-    # same EmailProvider contract when EMAIL_PROVIDER is set to it, with no
-    # change to any caller (same pattern as the AI/storage abstractions).
-    EMAIL_PROVIDER: Literal["mock"] = "mock"
+    # "mock" (default) logs the message and never fails — the app runs and the
+    # reset flow works end-to-end without any email account. "smtp" sends for
+    # real through any standard SMTP service (Brevo, Postmark, Mailjet, SES…):
+    # set the SMTP_* variables below and switch EMAIL_PROVIDER=smtp. Nothing
+    # that sends email changes — both are chosen behind the same EmailProvider
+    # contract (same pattern as the AI/storage abstractions).
+    EMAIL_PROVIDER: Literal["mock", "smtp"] = "mock"
     EMAIL_FROM: str = "no-reply@artizen.app"
     # Public URL of the web app, used to build links inside emails (the reset
     # link points at <APP_BASE_URL>/reset-password?token=…). Override in prod.
     APP_BASE_URL: str = "http://localhost:3000"
     # How long a password-reset link stays valid.
     RESET_TOKEN_TTL_MINUTES: int = 60
+
+    # --- SMTP (only used when EMAIL_PROVIDER=smtp) ---
+    # Typical setups: port 587 + STARTTLS (SMTP_USE_TLS=true) — the default of
+    # most providers — or port 465 + SSL (SMTP_USE_SSL=true). Username/password
+    # are the SMTP credentials your provider gives you (often an API key).
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_USE_TLS: bool = True  # STARTTLS on the default 587
+    SMTP_USE_SSL: bool = False  # implicit SSL on 465 (mutually exclusive with STARTTLS)
 
     # --- Redis (V3 foundations: task broker, cache, shared rate limit) ---
     # Optional: when unreachable, the app still starts and every dependent

@@ -4,10 +4,9 @@
 > concrète, ancrée sur la stack réelle (`docker-compose.yml`, `.env.example`, `app/core/config.py`).
 > Pas une nouvelle fonctionnalité : de l'exploitation.
 
-> ⚠️ **Point d'attention email** : seul le fournisseur **mock** est câblé aujourd'hui (il *logue* les
-> emails, ne les envoie pas). Pour une bêta avec de **vrais** artisans, la **réinitialisation du mot de
-> passe** doit **réellement** envoyer un email → il faut **ajouter un fournisseur SMTP réel** derrière
-> l'abstraction `app/email/` (petit dev, ~0,5 j) **avant** d'ouvrir. Voir §7.
+> ✅ **Email** : le fournisseur **SMTP réel** existe (`SmtpEmailProvider`). Pour une bêta avec de vrais
+> artisans, il suffit de passer `EMAIL_PROVIDER=smtp` et de renseigner les variables `SMTP_*` (voir §7) —
+> aucun développement à faire. En `mock` (défaut), les emails sont seulement journalisés (pas d'envoi).
 
 ---
 
@@ -77,15 +76,20 @@ docker compose exec -T db pg_dump -U $POSTGRES_USER $POSTGRES_DB | gzip > artize
 - Le volume `artizen_storage_data` (logos, signatures) doit aussi être sauvegardé.
 
 ## 7. Email réel (avant d'ouvrir la bêta)
-L'abstraction `app/email/` est prête ; il manque un fournisseur réel. Deux options :
-1. **Recommandé** : ajouter un `SmtpEmailProvider` (petit dev) branché sur un compte transactionnel
-   (Brevo/Postmark/SES/Mailjet — la plupart offrent un palier gratuit) ; passer `EMAIL_PROVIDER=smtp` +
-   les identifiants. Aucun code appelant ne change.
-2. **Dépannage bêta only** : rester en `mock` et **lire le lien de reset dans les logs**
-   (`docker compose logs backend | grep mock_sent` ne montre que le sujet ; le corps/lien est dans
-   l'outbox mémoire) — **non tenable** pour de vrais artisans. → préférer l'option 1.
-
-*(Je peux implémenter le `SmtpEmailProvider` sur demande — vous fournissez les identifiants du compte.)*
+Le `SmtpEmailProvider` **existe** et fonctionne avec tout service SMTP standard (Brevo, Postmark,
+Mailjet, Amazon SES… — la plupart offrent un palier gratuit). Pour l'activer, dans `.env` :
+```
+EMAIL_PROVIDER=smtp
+EMAIL_FROM=no-reply@artizen.fr
+SMTP_HOST=<smtp du fournisseur>
+SMTP_PORT=587
+SMTP_USERNAME=<identifiant / clé API>
+SMTP_PASSWORD=<mot de passe / clé>
+SMTP_USE_TLS=true        # 587 + STARTTLS (défaut). Pour 465 + SSL : SMTP_PORT=465, SMTP_USE_SSL=true, SMTP_USE_TLS=false
+```
+Puis `docker compose up -d` (ou redémarrer le backend). Un envoi qui échoue est **journalisé, jamais
+bloquant** (le reset répond 204 quoi qu'il arrive) — surveillez `email.smtp_send_failed` dans les logs.
+**Testez le reset de bout en bout** (demande → email reçu → nouveau mot de passe) avant d'inviter.
 
 ## 8. Monitoring
 - **Uptime** : brancher UptimeRobot / BetterStack sur `https://api.artizen.fr/health` (alerte si ≠ 200
