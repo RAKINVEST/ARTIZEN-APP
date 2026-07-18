@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:printing/printing.dart';
 
 import '../../../core/utils/currency.dart';
+import '../../../core/widgets/app_components.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../clients/presentation/clients_providers.dart';
@@ -266,9 +267,9 @@ class _StatusActions extends StatelessWidget {
       children: [
         for (final status in next) ...[
           if (status == QuoteStatus.sent)
-            FilledButton.icon(
-              icon: const Icon(Icons.send_outlined),
-              label: const Text('Marquer comme envoyé'),
+            AppPrimaryButton(
+              label: 'Marquer comme envoyé',
+              icon: Icons.send_outlined,
               onPressed: busy ? null : () => onChange(status),
             )
           else

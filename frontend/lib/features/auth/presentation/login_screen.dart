@@ -232,7 +232,7 @@ class _BrandBanner extends StatelessWidget {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: ArtizenColors.cardSurface,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(

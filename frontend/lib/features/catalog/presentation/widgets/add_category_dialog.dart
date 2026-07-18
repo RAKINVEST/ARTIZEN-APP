@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_components.dart';
 import '../../data/catalog_models.dart';
 
 /// A minimal add-category form (name + optional description) — the brief
@@ -19,16 +21,20 @@ Future<CatalogCategoryInput?> showAddCategoryDialog(BuildContext context) {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
+            AppTextField(
+              label: 'Nom *',
               controller: nameController,
-              autofocus: true,
-              decoration: const InputDecoration(labelText: 'Nom *'),
+              hintText: 'Nom de la catégorie',
+              icon: Icons.label_outline,
+              textInputAction: TextInputAction.next,
               validator: (value) => (value == null || value.trim().isEmpty) ? 'Requis' : null,
             ),
-            const SizedBox(height: 12),
-            TextFormField(
+            const SizedBox(height: ArtizenSpacing.sm),
+            AppTextField(
+              label: 'Description',
               controller: descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
+              hintText: 'Optionnel',
+              icon: Icons.notes_outlined,
             ),
           ],
         ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/utils/decimal_input.dart';
+import '../../../core/widgets/app_components.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../catalog/presentation/catalog_providers.dart';
@@ -68,11 +69,12 @@ class QuoteFormScreen extends ConsumerWidget {
                 ),
               ),
           const SizedBox(height: 24),
-          FilledButton(
+          AppPrimaryButton(
+            label: 'Créer le devis',
+            icon: Icons.check_circle_outline,
             onPressed: (selectedClient == null || draftLines.isEmpty)
                 ? null
                 : () => _submit(context, ref, selectedClient, draftLines),
-            child: const Text('Créer le devis'),
           ),
         ],
       ),

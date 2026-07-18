@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_components.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../data/client_model.dart';
 import 'clients_providers.dart';
@@ -100,57 +102,72 @@ class _ClientFormState extends ConsumerState<_ClientForm> {
     final form = Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(ArtizenSpacing.sm),
         children: [
-          TextFormField(
+          AppTextField(
+            label: 'Nom *',
             controller: _lastName,
-            decoration: const InputDecoration(labelText: 'Nom *'),
+            hintText: 'Nom du client',
+            icon: Icons.person_outline,
+            textInputAction: TextInputAction.next,
             validator: (value) => (value == null || value.trim().isEmpty) ? 'Le nom est requis' : null,
           ),
-          const SizedBox(height: 12),
-          TextFormField(
+          const SizedBox(height: ArtizenSpacing.sm),
+          AppTextField(
+            label: 'Prénom',
             controller: _firstName,
-            decoration: const InputDecoration(labelText: 'Prénom'),
+            hintText: 'Prénom',
+            icon: Icons.badge_outlined,
+            textInputAction: TextInputAction.next,
           ),
-          const SizedBox(height: 12),
-          TextFormField(
+          const SizedBox(height: ArtizenSpacing.sm),
+          AppTextField(
+            label: 'Société',
             controller: _companyName,
-            decoration: const InputDecoration(labelText: 'Société'),
+            hintText: 'Raison sociale (optionnel)',
+            icon: Icons.business_outlined,
+            textInputAction: TextInputAction.next,
           ),
-          const SizedBox(height: 12),
-          TextFormField(
+          const SizedBox(height: ArtizenSpacing.sm),
+          AppTextField(
+            label: 'Adresse',
             controller: _address,
-            decoration: const InputDecoration(labelText: 'Adresse'),
+            hintText: 'Adresse complète',
+            icon: Icons.place_outlined,
             maxLines: 2,
           ),
-          const SizedBox(height: 12),
-          TextFormField(
+          const SizedBox(height: ArtizenSpacing.sm),
+          AppTextField(
+            label: 'Téléphone',
             controller: _phone,
-            decoration: const InputDecoration(labelText: 'Téléphone'),
+            hintText: 'Numéro de téléphone',
+            icon: Icons.phone_outlined,
             keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
           ),
-          const SizedBox(height: 12),
-          TextFormField(
+          const SizedBox(height: ArtizenSpacing.sm),
+          AppTextField(
+            label: 'Email',
             controller: _email,
-            decoration: const InputDecoration(labelText: 'Email'),
+            hintText: 'Adresse email',
+            icon: Icons.mail_outline,
             keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
           ),
-          const SizedBox(height: 12),
-          TextFormField(
+          const SizedBox(height: ArtizenSpacing.sm),
+          AppTextField(
+            label: 'Notes',
             controller: _notes,
-            decoration: const InputDecoration(labelText: 'Notes'),
+            hintText: 'Notes internes',
+            icon: Icons.notes_outlined,
             maxLines: 3,
           ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(isEditing ? 'Enregistrer' : 'Créer le client'),
+          const SizedBox(height: ArtizenSpacing.md),
+          AppPrimaryButton(
+            label: isEditing ? 'Enregistrer' : 'Créer le client',
+            icon: Icons.check_circle_outline,
+            loading: _saving,
+            onPressed: _save,
           ),
         ],
       ),

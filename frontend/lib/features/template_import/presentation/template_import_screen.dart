@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/app_components.dart';
 import '../data/template_import_models.dart';
 import 'template_import_providers.dart';
 
@@ -86,10 +87,10 @@ class _IdleView extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            FilledButton.icon(
+            AppPrimaryButton(
+              label: 'Choisir un fichier PDF',
+              icon: Icons.upload_file,
               onPressed: onPick,
-              icon: const Icon(Icons.upload_file),
-              label: const Text('Choisir un fichier PDF'),
             ),
           ],
         ),
@@ -147,7 +148,7 @@ class _DoneView extends StatelessWidget {
               label: const Text('Aperçu du rendu'),
             ),
             const SizedBox(height: 8),
-            FilledButton(onPressed: onFinish, child: const Text('Terminer')),
+            AppPrimaryButton(label: 'Terminer', icon: Icons.check_circle_outline, onPressed: onFinish),
           ],
         ),
       ),
@@ -328,9 +329,11 @@ class _PreviewFormState extends ConsumerState<_PreviewForm> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: FilledButton(
-                onPressed: widget.submitting ? null : _submit,
-                child: Text(widget.submitting ? 'Validation...' : 'Valider ce modèle'),
+              child: AppPrimaryButton(
+                label: 'Valider ce modèle',
+                icon: Icons.check_circle_outline,
+                loading: widget.submitting,
+                onPressed: _submit,
               ),
             ),
           ],

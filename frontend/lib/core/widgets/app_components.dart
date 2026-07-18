@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
 
@@ -21,6 +22,9 @@ class AppTextField extends StatefulWidget {
     this.validator,
     this.onFieldSubmitted,
     this.textInputAction,
+    this.maxLines = 1,
+    this.suffixText,
+    this.inputFormatters,
     super.key,
   });
 
@@ -34,6 +38,9 @@ class AppTextField extends StatefulWidget {
   final String? Function(String?)? validator;
   final void Function(String)? onFieldSubmitted;
   final TextInputAction? textInputAction;
+  final int maxLines;
+  final String? suffixText;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -64,8 +71,11 @@ class _AppTextFieldState extends State<AppTextField> {
           validator: widget.validator,
           onFieldSubmitted: widget.onFieldSubmitted,
           textInputAction: widget.textInputAction,
+          maxLines: widget.obscure ? 1 : widget.maxLines,
+          inputFormatters: widget.inputFormatters,
           decoration: InputDecoration(
             hintText: widget.hintText,
+            suffixText: widget.suffixText,
             prefixIcon: widget.icon == null ? null : Icon(widget.icon),
             suffixIcon: widget.obscure
                 ? IconButton(

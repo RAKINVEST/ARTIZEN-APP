@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/utils/decimal_input.dart';
+import '../../../core/widgets/app_components.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
@@ -61,16 +62,16 @@ class _QuoteAssistantScreenState extends ConsumerState<QuoteAssistantScreen> {
             maxLines: 4,
             enabled: !isAnalyzing,
             decoration: const InputDecoration(
-              border: OutlineInputBorder(),
               hintText: "Ex : Remplacement d'un chauffe-eau Atlantic 200 litres avec groupe de "
                   "sécurité et deux heures de main-d'œuvre.",
             ),
           ),
           const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: isAnalyzing ? null : _analyze,
-            icon: const Icon(Icons.auto_awesome),
-            label: Text(isAnalyzing ? 'Analyse en cours...' : 'Analyser'),
+          AppPrimaryButton(
+            label: isAnalyzing ? 'Analyse en cours...' : 'Analyser',
+            icon: Icons.auto_awesome,
+            loading: isAnalyzing,
+            onPressed: _analyze,
           ),
           const SizedBox(height: 24),
           suggestionState.when(
@@ -306,9 +307,11 @@ class _SuggestionResult extends StatelessWidget {
               ),
             ),
         const SizedBox(height: 16),
-        FilledButton(
-          onPressed: (acceptedItems.isEmpty || creatingQuote) ? null : onCreateQuote,
-          child: Text(creatingQuote ? 'Préparation...' : 'Créer le devis'),
+        AppPrimaryButton(
+          label: creatingQuote ? 'Préparation...' : 'Créer le devis',
+          icon: Icons.check_circle_outline,
+          loading: creatingQuote,
+          onPressed: acceptedItems.isEmpty ? null : onCreateQuote,
         ),
       ],
     );

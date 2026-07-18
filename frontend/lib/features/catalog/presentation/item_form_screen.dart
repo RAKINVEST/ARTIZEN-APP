@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/decimal_input.dart';
+import '../../../core/widgets/app_components.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../data/catalog_models.dart';
 import 'catalog_providers.dart';
@@ -117,17 +119,21 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
     return Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(ArtizenSpacing.sm),
         children: [
+          const Text(
+            'Catégorie *',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: ArtizenColors.textPrimary),
+          ),
+          const SizedBox(height: ArtizenSpacing.xs),
           DropdownButtonFormField<String>(
             initialValue: _categoryId,
-            decoration: const InputDecoration(labelText: 'Catégorie *'),
             items: widget.categories
                 .map((category) => DropdownMenuItem(value: category.id, child: Text(category.name)))
                 .toList(),
             onChanged: (value) => setState(() => _categoryId = value!),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: ArtizenSpacing.sm),
           SegmentedButton<ItemType>(
             segments: const [
               ButtonSegment(value: ItemType.service, label: Text('Prestation'), icon: Icon(Icons.build_outlined)),
@@ -136,72 +142,89 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
             selected: {_itemType},
             onSelectionChanged: (selection) => setState(() => _itemType = selection.first),
           ),
-          const SizedBox(height: 12),
-          TextFormField(
+          const SizedBox(height: ArtizenSpacing.sm),
+          AppTextField(
+            label: 'Désignation *',
             controller: _designation,
-            decoration: const InputDecoration(labelText: 'Désignation *'),
+            hintText: 'Nom de l\'article',
+            icon: Icons.label_outline,
+            textInputAction: TextInputAction.next,
             validator: (value) => (value == null || value.trim().isEmpty) ? 'Requis' : null,
           ),
-          const SizedBox(height: 12),
-          TextFormField(
+          const SizedBox(height: ArtizenSpacing.sm),
+          AppTextField(
+            label: 'Code (optionnel)',
             controller: _code,
-            decoration: const InputDecoration(labelText: 'Code (optionnel)'),
+            hintText: 'Référence interne',
+            icon: Icons.tag_outlined,
+            textInputAction: TextInputAction.next,
           ),
-          const SizedBox(height: 12),
-          TextFormField(
+          const SizedBox(height: ArtizenSpacing.sm),
+          AppTextField(
+            label: 'Description',
             controller: _description,
-            decoration: const InputDecoration(labelText: 'Description'),
+            hintText: 'Détail de la prestation ou fourniture',
+            icon: Icons.notes_outlined,
             maxLines: 2,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: ArtizenSpacing.sm),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: TextFormField(
+                child: AppTextField(
+                  label: 'Unité *',
                   controller: _unit,
-                  decoration: const InputDecoration(labelText: 'Unité *'),
+                  hintText: 'unité, h, m²…',
+                  textInputAction: TextInputAction.next,
                   validator: (value) => (value == null || value.trim().isEmpty) ? 'Requis' : null,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: ArtizenSpacing.sm),
               Expanded(
-                child: TextFormField(
+                child: AppTextField(
+                  label: 'Durée (min)',
                   controller: _duration,
-                  decoration: const InputDecoration(labelText: 'Durée estimée (min)'),
+                  hintText: 'Optionnel',
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: ArtizenSpacing.sm),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: TextFormField(
+                child: AppTextField(
+                  label: 'Prix unitaire HT *',
                   controller: _unitPriceHt,
-                  decoration: const InputDecoration(labelText: 'Prix unitaire HT *', suffixText: '€'),
+                  hintText: '0,00',
+                  suffixText: '€',
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   validator: _validateDecimal,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: ArtizenSpacing.sm),
               Expanded(
-                child: TextFormField(
+                child: AppTextField(
+                  label: 'TVA *',
                   controller: _vatRate,
-                  decoration: const InputDecoration(labelText: 'TVA *', suffixText: '%'),
+                  hintText: '20',
+                  suffixText: '%',
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   validator: _validateVatRate,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(widget.itemId == null ? 'Créer l\'article' : 'Enregistrer'),
+          const SizedBox(height: ArtizenSpacing.md),
+          AppPrimaryButton(
+            label: widget.itemId == null ? 'Créer l\'article' : 'Enregistrer',
+            icon: Icons.check_circle_outline,
+            loading: _saving,
+            onPressed: _save,
           ),
         ],
       ),
