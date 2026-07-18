@@ -133,6 +133,43 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str | None = None
     MISTRAL_API_KEY: str | None = None
 
+    # --- Voice-to-Quote providers (V3.3 L1, see app/ai/base.py, docs/v3/06) ---
+    # STT (speech-to-text), TTS (text-to-speech) and embeddings each sit behind
+    # their own abstraction, selected here exactly like DEFAULT_AI_PROVIDER. Only
+    # "mock" is wired today (deterministic, fully offline): real providers
+    # (Whisper, ElevenLabs, OpenAI embeddings…) are added in later lots and will
+    # extend these Literals. As with the LLM layer, a missing key never fails —
+    # the factory falls back to the mock.
+    STT_PROVIDER: Literal["mock"] = "mock"
+    TTS_PROVIDER: Literal["mock"] = "mock"
+    EMBEDDING_PROVIDER: Literal["mock"] = "mock"
+
+    # --- Voice-to-Quote confidence thresholds (Blueprint §5, adjustment #1) ---
+    # Externalized rather than hardcoded so they can be calibrated on real
+    # jobsite data without a code change. The decision policy (see docs/v3/06 §5):
+    #   final score >= VOICE_CONFIDENCE_AUTO      -> include silently ("à relire")
+    #   VOICE_CONFIDENCE_CLARIFY..AUTO            -> ask / mark for review
+    #   < VOICE_CONFIDENCE_CLARIFY                -> omit and signal explicitly
+    VOICE_CONFIDENCE_AUTO: float = 0.80
+    VOICE_CONFIDENCE_CLARIFY: float = 0.50
+    # Per-stage guards, upstream of the composite score:
+    VOICE_STT_MIN_SEGMENT_CONFIDENCE: float = 0.60  # below -> ask to repeat
+    VOICE_MATCH_MIN_SIMILARITY: float = 0.45  # below -> "hors catalogue", never forced
+
+    @field_validator("VOICE_CONFIDENCE_CLARIFY")
+    @classmethod
+    def _clarify_below_auto(cls, value: float, info: ValidationInfo) -> float:
+        # A clarify threshold at or above the auto threshold would collapse the
+        # middle "ask a question" band to nothing (or invert it), silently
+        # turning every uncertain line into either auto-accept or outright
+        # omission — the opposite of the conversational policy.
+        auto = info.data.get("VOICE_CONFIDENCE_AUTO", 0.80)
+        if not 0.0 <= value <= auto:
+            raise ValueError(
+                "VOICE_CONFIDENCE_CLARIFY must be between 0 and VOICE_CONFIDENCE_AUTO."
+            )
+        return value
+
     # --- Storage (abstraction layer, see app/branding/storage.py) ---
     STORAGE_PROVIDER: Literal["local"] = "local"
     STORAGE_LOCAL_ROOT: str = "/data/storage"

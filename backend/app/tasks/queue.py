@@ -62,9 +62,15 @@ async def queue_depth() -> int | None:
 
 
 async def close_pool() -> None:
+    """Close the shared pool if one is open. Best-effort: a pool whose event
+    loop is already gone, or a broker that has died, must never turn a shutdown
+    (or a test teardown) into an error — the pool is dropped either way."""
     global _pool
-    if _pool is not None:
-        try:
-            await _pool.aclose()
-        finally:
-            _pool = None
+    if _pool is None:
+        return
+    try:
+        await _pool.aclose()
+    except Exception:  # noqa: BLE001 — dropping a broken/stale pool must not raise
+        logger.debug("tasks.close_pool: aclose failed, dropping pool anyway", exc_info=True)
+    finally:
+        _pool = None

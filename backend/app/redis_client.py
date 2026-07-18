@@ -46,9 +46,15 @@ async def redis_healthy() -> bool:
 
 
 async def close_redis() -> None:
+    """Close the shared client if one is open. Best-effort: closing a client
+    bound to a dead event loop (or a Redis that has gone away) must never raise
+    out of a shutdown or a test teardown — the client is dropped either way."""
     global _client
-    if _client is not None:
-        try:
-            await _client.aclose()
-        finally:
-            _client = None
+    if _client is None:
+        return
+    try:
+        await _client.aclose()
+    except Exception:  # noqa: BLE001 — dropping a broken/stale client must not raise
+        logger.debug("redis.close: aclose failed, dropping client anyway", exc_info=True)
+    finally:
+        _client = None

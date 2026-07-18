@@ -11,12 +11,32 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.ai.base import AIProvider
-from app.ai.factory import get_ai_provider
+from app.ai.base import AIProvider, EmbeddingProvider, SttProvider, TtsProvider
+from app.ai.factory import (
+    get_ai_provider,
+    get_embedding_provider,
+    get_stt_provider,
+    get_tts_provider,
+)
 
 
 def get_default_ai_provider() -> AIProvider:
     return get_ai_provider()
 
 
+def get_default_stt_provider() -> SttProvider:
+    return get_stt_provider()
+
+
+def get_default_tts_provider() -> TtsProvider:
+    return get_tts_provider()
+
+
+def get_default_embedding_provider() -> EmbeddingProvider:
+    return get_embedding_provider()
+
+
 AIProviderDep = Annotated[AIProvider, Depends(get_default_ai_provider)]
+SttProviderDep = Annotated[SttProvider, Depends(get_default_stt_provider)]
+TtsProviderDep = Annotated[TtsProvider, Depends(get_default_tts_provider)]
+EmbeddingProviderDep = Annotated[EmbeddingProvider, Depends(get_default_embedding_provider)]

@@ -18,6 +18,8 @@ from httpx import ASGITransport, AsyncClient  # noqa: E402
 
 from app.database.session import engine  # noqa: E402
 from app.main import app  # noqa: E402
+from app.redis_client import close_redis  # noqa: E402
+from app.tasks.queue import close_pool as _close_task_pool  # noqa: E402
 
 _TEST_PASSWORD = "TestPassword123!"
 
@@ -69,3 +71,19 @@ async def _dispose_engine_after_test() -> AsyncIterator[None]:
     """
     yield
     await engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+async def _reset_redis_singletons_after_test() -> AsyncIterator[None]:
+    """Drop the process-wide Redis client and arq pool after every test.
+
+    Same hazard as the SQLAlchemy engine above: both are module-level
+    singletons that bind to whichever event loop created them (e.g. when a
+    ``/health`` request pings Redis and reads ``queue_depth``). pytest-asyncio
+    runs each test on its own loop, so a client left open from one test breaks
+    the next with "attached to a different loop". ``close_*`` is best-effort,
+    so this is safe even for the tests that never opened either one.
+    """
+    yield
+    await _close_task_pool()
+    await close_redis()

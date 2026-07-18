@@ -19,10 +19,13 @@ depends on ``AIProvider``.
 
 from functools import lru_cache
 
-from app.ai.base import AIProvider
+from app.ai.base import AIProvider, EmbeddingProvider, SttProvider, TtsProvider
 from app.ai.providers.anthropic_provider import AnthropicProvider
 from app.ai.providers.mistral_provider import MistralProvider
+from app.ai.providers.mock_embedding import MockEmbeddingProvider
 from app.ai.providers.mock_provider import MockAIProvider
+from app.ai.providers.mock_stt import MockSttProvider
+from app.ai.providers.mock_tts import MockTtsProvider
 from app.ai.providers.openai_provider import OpenAIProvider
 from app.core.config import settings
 from app.core.exceptions import AppException
@@ -46,3 +49,34 @@ def get_ai_provider(provider_name: str | None = None) -> AIProvider:
         return MistralProvider(api_key=settings.MISTRAL_API_KEY) if settings.MISTRAL_API_KEY else MockAIProvider()
 
     raise AppException(f"Unknown AI provider: {name}")
+
+
+# --- Voice-to-Quote providers (V3.3 L1) --------------------------------------
+# Same contract as get_ai_provider: pick the configured provider, fall back to
+# the deterministic mock. Only "mock" is wired today; real providers (Whisper,
+# ElevenLabs, OpenAI embeddings…) become new branches in later lots, and no
+# caller changes when they do.
+
+
+@lru_cache
+def get_stt_provider(provider_name: str | None = None) -> SttProvider:
+    name = provider_name or settings.STT_PROVIDER
+    if name == "mock":
+        return MockSttProvider()
+    raise AppException(f"Unknown STT provider: {name}")
+
+
+@lru_cache
+def get_tts_provider(provider_name: str | None = None) -> TtsProvider:
+    name = provider_name or settings.TTS_PROVIDER
+    if name == "mock":
+        return MockTtsProvider()
+    raise AppException(f"Unknown TTS provider: {name}")
+
+
+@lru_cache
+def get_embedding_provider(provider_name: str | None = None) -> EmbeddingProvider:
+    name = provider_name or settings.EMBEDDING_PROVIDER
+    if name == "mock":
+        return MockEmbeddingProvider()
+    raise AppException(f"Unknown embedding provider: {name}")

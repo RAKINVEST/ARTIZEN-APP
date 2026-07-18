@@ -1,10 +1,19 @@
 # V3.2 — Voice-to-Quote Engine — Blueprint fonctionnel
 
-> **Statut : architecture à valider. Aucun code métier avant validation de ce Blueprint.**
+> **Statut : ✅ approuvé (V3.2). Développement lancé — Sprint V3.3.**
 > Ce document affine et étend [`03_IA_VOICE_TO_QUOTE.md`](03_IA_VOICE_TO_QUOTE.md) (vision one-shot) en
 > un **moteur conversationnel** complet, et s'appuie sur les fondations livrées en V3.1
 > ([`05_FONDATIONS_TECHNIQUES.md`](05_FONDATIONS_TECHNIQUES.md) : file de tâches Arq, Redis, worker,
 > abstractions de fournisseur).
+
+### Ajustements validés à l'approbation (intégrés)
+
+| # | Ajustement | Où | Statut |
+|---|---|---|---|
+| 1 | **Seuils de confiance externalisés en configuration** (calibrables sans code) | §5.1 → `core/config.py` (`VOICE_CONFIDENCE_*`) | ✅ livré (L1) |
+| 2 | **Fin de la limite fixe de 3 questions** → arrêt piloté par les **informations obligatoires** restantes | §5.3 | 📐 conçu (impl. L4) |
+| 3 | **MVP strictement borné** : *devis de climatisation résidentielle, en français, en ligne* | §0.1, §17 | 📐 acté (mock STT L1 déjà calé dessus) |
+| 4 | **Révision conversationnelle du brouillon** avant création définitive | §4, §7.1 | 📐 conçu (impl. L4/L6) |
 
 ---
 
@@ -30,6 +39,24 @@ geste explicite. La différence avec un simple dictaphone :
 articles existants et *infère des quantités* (seule valeur numérique qu'elle produise). Elle **ne
 choisit aucun prix, aucune TVA, ne modifie jamais le catalogue, ne crée jamais un devis.** La création
 reste `POST /quotes`, seul endroit où un montant est calculé (`QuoteCalculator`).
+
+### 0.1 Périmètre du MVP — strictement borné (ajustement #3)
+
+> **Le MVP ne traite qu'un seul scénario : *devis de climatisation résidentielle, en français, en
+> ligne.*** Tout le reste est explicitement **hors périmètre MVP** et repoussé aux itérations
+> suivantes.
+
+| Dimension | MVP | Hors MVP (itérations suivantes) |
+|---|---|---|
+| Métier | **Climatisation résidentielle** (split/multi-split, pose UI/UE, liaison frigorifique) | plomberie, élec, tout autre corps d'état |
+| Langue | **Français** | multilingue (§10) |
+| Connectivité | **En ligne** | hors ligne / différé (§9) |
+| Matching | lexical (`MatchValidator`) | sémantique (embeddings/pgvector, §2 étape 8) |
+
+Ce cadrage réduit le risque produit (un vocabulaire, un flux, des cas de test finis) et concentre
+l'effort. L'**architecture** ci-dessous reste générale (aucun « climatisation » codé en dur) ; seul le
+**contenu** (vocabulaire, données de démo du mock STT, jeu de questions obligatoires) est spécialisé
+clim pour le MVP. Élargir = ajouter du contenu, pas refondre le moteur.
 
 ---
 
@@ -248,16 +275,39 @@ Seuils **par étape** (garde-fous en amont, avant même le score composite) :
 | Aucun article catalogue au-dessus de | 0.45 (similarité) | Prestation classée « hors catalogue » → signalée, jamais forcée. |
 | Quantité inférée | absente | Défaut 1 + `⚠ à relire` ; question si l'article est marqué « sensible » (coût élevé). |
 
-### 5.3 Garde-fous du dialogue
+### 5.3 Garde-fous du dialogue — questions pilotées par l'information obligatoire (ajustement #2)
 
-- **Plafond de questions** : au plus **3 questions** par brouillon (au-delà, on livre le brouillon avec
-  les incertitudes marquées « à relire » plutôt que d'épuiser l'artisan).
+> **Il n'y a pas de limite fixe de questions.** Le nombre de questions n'est pas plafonné à une
+> constante arbitraire : il découle des **informations obligatoires encore manquantes** pour produire
+> un brouillon cohérent.
+
+Chaque prestation reconnue a un **jeu de champs obligatoires** propre à son type (pour le MVP clim :
+p. ex. *type d'unité* mono/multi-split, *pièce/zone*, *présence unité extérieure*, *longueur de liaison
+frigorifique*). Le moteur :
+
+1. calcule, après chaque tour, l'ensemble des **slots obligatoires non résolus** (manquants OU sous le
+   seuil de confiance) sur les prestations retenues ;
+2. **pose une question tant qu'il reste un slot obligatoire non résolu** — une seule à la fois, en
+   priorisant le slot le plus bloquant (celui qui empêche le plus de lignes d'être fiables) ;
+3. **s'arrête dès qu'il n'en reste plus** — ou dès qu'un slot est **irrésolvable** (l'artisan répond
+   « je ne sais pas », ou la prestation est hors catalogue) : le slot est alors marqué « à relire » ou
+   la prestation signalée, jamais comblé par une invention.
+
+Les slots **facultatifs** (confort, variante) ne déclenchent jamais de question : ils sont proposés à
+l'écran, ajustables à la revue. Un **garde-fou anti-boucle** subsiste (borne haute de sécurité,
+`VOICE_MAX_QUESTIONS`, valeur large, introduite en config avec le moteur de dialogue L4) uniquement pour
+éviter un dialogue infini si l'extraction tourne en rond — ce n'est **pas** le mécanisme d'arrêt normal,
+seulement un disjoncteur.
+
 - **Une question à la fois** : jamais deux questions dans le même tour TTS.
 - **Toujours livrable** : même à 0 réponse, la conversation aboutit à un brouillon (éventuellement
   vide + « je n'ai rien compris, saisissez à la main ») — l'app reste utilisable.
 
-*Ces valeurs (0.80 / 0.50 / 3 questions) sont des **hypothèses de départ à calibrer** sur données
-réelles ; elles vivent dans la configuration, pas en dur dans la logique.*
+*Les seuils (`VOICE_CONFIDENCE_AUTO=0.80`, `VOICE_CONFIDENCE_CLARIFY=0.50`,
+`VOICE_STT_MIN_SEGMENT_CONFIDENCE=0.60`, `VOICE_MATCH_MIN_SIMILARITY=0.45`) sont des **hypothèses de
+départ à calibrer** : ils vivent dans `core/config.py` (ajustement #1, livré en L1), pas en dur dans la
+logique. La liste des champs obligatoires par type de prestation est, elle aussi, de la donnée de
+configuration métier — pas du code.*
 
 ---
 
@@ -301,6 +351,29 @@ Exigences :
 - **TTS optionnel** : tout le parcours doit rester faisable **en silencieux** (lecture écran + saisie),
   pour un chantier où parler à voix haute n'est pas discret. Le vocal est un accélérateur, pas une
   obligation.
+
+### 7.1 Révision conversationnelle du brouillon (ajustement #4)
+
+Une fois le brouillon présenté (état `Reviewing`), l'artisan peut le **corriger à la voix**, avant toute
+création — le brouillon est une matière négociable, pas un résultat figé :
+
+```
+Artizen : « Votre devis est prêt : 4 lignes. »
+Artisan : « Enlève la saignée, et mets deux unités intérieures au lieu d'une. »
+Artizen : (applique) « C'est noté : saignée retirée, 2 unités intérieures. Il reste
+          3 lignes. Autre chose ? »
+Artisan : « Non, c'est bon, crée le devis. »
+```
+
+- **Intentions de révision** : `remove_line`, `set_quantity`, `add_service`, `choose_variant`,
+  `replace_item`. Chacune re-passe par le matching + les seuils (§5) et re-trace la décision (§11) —
+  une correction vocale n'est pas moins vérifiée qu'une extraction initiale.
+- **La révision boucle `Reviewing → Listening → Reviewing`** autant que voulu ; elle **précède
+  toujours** `Confirming`. Elle est aussi faisable **à l'écran** (édition manuelle), les deux voies
+  convergent sur le même brouillon.
+- **La création reste un geste explicite distinct** : « crée le devis » (ou le bouton) déclenche
+  `Confirming → POST /quotes`. Réviser n'est jamais créer — l'invariant tient (aucun devis sans
+  validation explicite finale).
 
 ---
 
@@ -621,10 +694,10 @@ Découpage en lots livrables, chacun testable en isolation (providers mock → d
 
 | Lot | Contenu | Dépend de | Effort |
 |---|---|---|---|
-| **L1 — Abstractions & mocks** | `SttProvider`, `TtsProvider`, `EmbeddingProvider` + mocks + factory + config | V3.1 | M |
+| **L1 — Abstractions & mocks** ✅ *livré* | `SttProvider`, `TtsProvider`, `EmbeddingProvider` + mocks déterministes + factory + deps + seuils de confiance en config (ajustement #1) | V3.1 | M |
 | **L2 — Persistance** | tables `ai_conversations`/`ai_turns`/`ai_jobs`/`ai_decisions` + migration Alembic | L1 | S |
 | **L3 — Pipeline étapes [2]→[9]** | STT→extraction→matching (branché sur `match_validator`/`SuggestionScorer`), tâches Arq | L1, L2 | L |
-| **L4 — Moteur de dialogue** | machine à états §4, seuils §5, génération de questions, plafond, boucle | L3 | L |
+| **L4 — Moteur de dialogue** | machine à états §4, seuils §5, génération de questions **pilotée par l'info obligatoire (#2)**, **révision conversationnelle du brouillon (#4)**, disjoncteur `VOICE_MAX_QUESTIONS` | L3 | L |
 | **L5 — API + temps réel** | endpoints §13.2 + SSE ; scoping tenant (404) | L4 | M |
 | **L6 — UI « Parler » + Revue** | écran micro, transcription live, revue éditable, validation → `POST /quotes` | L5 | L |
 | **L7 — Explicabilité** | `ai_decisions` + « pourquoi ? » dans l'UI | L4, L6 | M |
