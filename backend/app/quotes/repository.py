@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.quotes.models import Quote, QuoteCounter, QuoteLine
+from app.quotes.models import Quote, QuoteCounter, QuoteLine, QuoteStatus
 from app.repositories.base import BaseRepository
 
 
@@ -74,15 +74,24 @@ class QuoteRepository(BaseRepository[Quote]):
         return result.scalar_one_or_none()
 
     async def list_by_company(
-        self, company_id: uuid.UUID, *, offset: int = 0, limit: int = 100
+        self,
+        company_id: uuid.UUID,
+        *,
+        status: QuoteStatus | None = None,
+        client_id: uuid.UUID | None = None,
+        offset: int = 0,
+        limit: int = 100,
     ) -> list[Quote]:
-        result = await self.session.execute(
-            select(Quote)
-            .where(Quote.company_id == company_id)
-            .order_by(Quote.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-        )
+        stmt = select(Quote).where(Quote.company_id == company_id)
+        # Filters so the quotes list is triageable at a glance — "my pending
+        # quotes", "this client's quotes" — instead of scrolling everything
+        # (audit M8). Both are indexed columns.
+        if status is not None:
+            stmt = stmt.where(Quote.status == status)
+        if client_id is not None:
+            stmt = stmt.where(Quote.client_id == client_id)
+        stmt = stmt.order_by(Quote.created_at.desc()).offset(offset).limit(limit)
+        result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
 

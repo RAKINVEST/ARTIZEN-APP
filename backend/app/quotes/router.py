@@ -13,10 +13,11 @@ is always scoped to it, and ``get`` verifies ownership via
 
 import uuid
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Query, Response, status
 
 from app.core.authorization import ensure_same_company
 from app.quotes.deps import QuoteServiceDep
+from app.quotes.models import QuoteStatus
 from app.quotes.schemas import QuoteCreate, QuoteRead, QuoteReadiness, QuoteStatusUpdate
 from app.users.deps import CurrentUserDep
 
@@ -35,10 +36,20 @@ async def create_quote(
 async def list_quotes(
     service: QuoteServiceDep,
     current_user: CurrentUserDep,
-    offset: int = 0,
-    limit: int = 100,
+    status: QuoteStatus | None = None,
+    client_id: uuid.UUID | None = None,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
 ) -> list[QuoteRead]:
-    return await service.list(company_id=current_user.company_id, offset=offset, limit=limit)
+    """Filter by ``status`` (draft/sent/accepted/refused) and/or ``client_id``
+    so the artisan can triage instead of scrolling everything."""
+    return await service.list(
+        company_id=current_user.company_id,
+        status=status,
+        client_id=client_id,
+        offset=offset,
+        limit=limit,
+    )
 
 
 @router.get(

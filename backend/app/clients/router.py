@@ -10,7 +10,7 @@ returning or mutating a resource.
 
 import uuid
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Query, status
 
 from app.clients.deps import ClientServiceDep
 from app.clients.schemas import ClientCreate, ClientRead, ClientUpdate
@@ -34,8 +34,8 @@ async def list_clients(
     service: ClientServiceDep,
     current_user: CurrentUserDep,
     q: str | None = None,
-    offset: int = 0,
-    limit: int = 100,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
 ) -> list[ClientRead]:
     """``q`` searches by name, company, phone or email (simple ILIKE match)."""
     clients = await service.list(

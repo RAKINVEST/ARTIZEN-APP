@@ -12,7 +12,7 @@ it, raising the same ``NotFoundError`` a made-up id would (a 404, not a
 
 import uuid
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Query, status
 
 from app.catalog.deps import CatalogServiceDep
 from app.catalog.schemas import (
@@ -42,8 +42,8 @@ async def create_category(
 async def list_categories(
     service: CatalogServiceDep,
     current_user: CurrentUserDep,
-    offset: int = 0,
-    limit: int = 100,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
 ) -> list[CatalogCategoryRead]:
     categories = await service.list_categories(
         company_id=current_user.company_id, offset=offset, limit=limit
@@ -95,12 +95,19 @@ async def create_item(
 async def list_items(
     service: CatalogServiceDep,
     current_user: CurrentUserDep,
+    q: str | None = None,
     active_only: bool = False,
-    offset: int = 0,
-    limit: int = 100,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
 ) -> list[CatalogItemRead]:
+    """``q`` searches items by designation or code (ILIKE) — server-side, so a
+    catalogue of any size is searchable, not just the first page."""
     items = await service.list_items(
-        company_id=current_user.company_id, active_only=active_only, offset=offset, limit=limit
+        company_id=current_user.company_id,
+        active_only=active_only,
+        query=q,
+        offset=offset,
+        limit=limit,
     )
     return [CatalogItemRead.model_validate(item) for item in items]
 
