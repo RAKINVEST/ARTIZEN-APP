@@ -12,8 +12,9 @@ old "auto-create the first company" singleton hack in
 """
 
 import uuid
+from datetime import datetime
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base, TimestampMixin, UUIDMixin
@@ -29,3 +30,11 @@ class User(Base, UUIDMixin, TimestampMixin):
     hashed_password: Mapped[str]
     full_name: Mapped[str | None] = mapped_column(default=None)
     is_active: Mapped[bool] = mapped_column(default=True)
+
+    # Password reset: only the token's SHA-256 hash is stored (the raw token is
+    # emailed), and it expires. Indexed for the lookup on reset. Both null when
+    # no reset is pending.
+    reset_token_hash: Mapped[str | None] = mapped_column(String, default=None, index=True)
+    reset_token_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )

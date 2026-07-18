@@ -5,6 +5,7 @@ model and the /auth routes): the hashing scheme and token format are
 decided here, once, and nothing else in the app needs to know them.
 """
 
+import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -43,6 +44,22 @@ def spend_dummy_verify() -> None:
     cost the same.
     """
     _pwd_context.verify("dummy", _DUMMY_HASH)
+
+
+def generate_reset_token() -> tuple[str, str]:
+    """Return ``(raw_token, token_hash)`` for a password reset.
+
+    Only the **hash** is stored in the database; the **raw** token is emailed to
+    the user. A database leak therefore cannot be replayed to reset an account —
+    the attacker would still need the raw token that only reached the user's
+    inbox. SHA-256 (not bcrypt) is enough here: the token is already 256 bits of
+    entropy from ``secrets``, so there is nothing to brute-force."""
+    raw = secrets.token_urlsafe(32)
+    return raw, hash_reset_token(raw)
+
+
+def hash_reset_token(raw_token: str) -> str:
+    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 
 
 def create_access_token(

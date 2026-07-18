@@ -10,3 +10,11 @@ from app.core.exceptions import AppException
 class EmailAlreadyRegisteredError(AppException):
     status_code = 409
     error_code = "email_already_registered"
+
+
+class InvalidResetTokenError(AppException):
+    """The password-reset token is unknown, already used, or expired. 400 (a
+    bad request), not 401 — there is no session involved, just a bad token."""
+
+    status_code = 400
+    error_code = "invalid_reset_token"

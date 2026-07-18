@@ -9,7 +9,14 @@ the first place.
 from fastapi import APIRouter, status
 
 from app.users.deps import AuthServiceDep, CurrentUserDep
-from app.users.schemas import TokenRead, UserLogin, UserRead, UserRegister
+from app.users.schemas import (
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    TokenRead,
+    UserLogin,
+    UserRead,
+    UserRegister,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -22,6 +29,19 @@ async def register(service: AuthServiceDep, payload: UserRegister) -> TokenRead:
 @router.post("/login", response_model=TokenRead)
 async def login(service: AuthServiceDep, payload: UserLogin) -> TokenRead:
     return await service.login(payload)
+
+
+@router.post("/forgot-password", status_code=status.HTTP_204_NO_CONTENT)
+async def forgot_password(service: AuthServiceDep, payload: ForgotPasswordRequest) -> None:
+    """Request a reset link. Always answers 204 — it never reveals whether the
+    email is registered (anti-enumeration)."""
+    await service.request_password_reset(payload.email)
+
+
+@router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
+async def reset_password(service: AuthServiceDep, payload: ResetPasswordRequest) -> None:
+    """Set a new password from a valid reset token (single use, expiring)."""
+    await service.reset_password(payload.token, payload.password)
 
 
 @router.get("/me", response_model=UserRead)

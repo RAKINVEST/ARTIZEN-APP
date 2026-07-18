@@ -178,6 +178,20 @@ class Settings(BaseSettings):
     STORAGE_PROVIDER: Literal["local"] = "local"
     STORAGE_LOCAL_ROOT: str = "/data/storage"
 
+    # --- Email (transactional: password reset, welcome, receipts) ---
+    # Only "mock" is wired today (logs the message, never fails, no account
+    # needed) — the app runs and the reset flow works end-to-end without an
+    # email account. A real provider (SMTP/Postmark/Brevo…) slots behind the
+    # same EmailProvider contract when EMAIL_PROVIDER is set to it, with no
+    # change to any caller (same pattern as the AI/storage abstractions).
+    EMAIL_PROVIDER: Literal["mock"] = "mock"
+    EMAIL_FROM: str = "no-reply@artizen.app"
+    # Public URL of the web app, used to build links inside emails (the reset
+    # link points at <APP_BASE_URL>/reset-password?token=…). Override in prod.
+    APP_BASE_URL: str = "http://localhost:3000"
+    # How long a password-reset link stays valid.
+    RESET_TOKEN_TTL_MINUTES: int = 60
+
     # --- Redis (V3 foundations: task broker, cache, shared rate limit) ---
     # Optional: when unreachable, the app still starts and every dependent
     # feature degrades gracefully (in-memory rate limit, tasks refused with a

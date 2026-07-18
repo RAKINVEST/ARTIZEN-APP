@@ -30,6 +30,15 @@ class UserLogin(BaseModel):
     password: str = Field(max_length=_MAX_PASSWORD_LENGTH)
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=1)
+    password: str = Field(min_length=8, max_length=_MAX_PASSWORD_LENGTH)
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

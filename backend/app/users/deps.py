@@ -14,6 +14,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.api.deps import SessionDep
 from app.branding.repository import CompanyRepository
+from app.email.deps import EmailProviderDep
 from app.users.models import User
 from app.users.repository import UserRepository
 from app.users.service import AuthService
@@ -25,9 +26,12 @@ from app.users.service import AuthService
 _bearer_scheme = HTTPBearer(auto_error=True)
 
 
-def get_auth_service(session: SessionDep) -> AuthService:
+def get_auth_service(session: SessionDep, email: EmailProviderDep) -> AuthService:
     return AuthService(
-        session=session, users=UserRepository(session), companies=CompanyRepository(session)
+        session=session,
+        users=UserRepository(session),
+        companies=CompanyRepository(session),
+        email=email,
     )
 
 

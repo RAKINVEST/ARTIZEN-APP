@@ -48,7 +48,14 @@ _WINDOW_SECONDS = 60
 # JWT, which is its own gate — and rate-limiting the app's normal traffic
 # on a per-IP counter would punish an office where several artisans share
 # one connection.
-_PROTECTED_PATH_SUFFIXES = ("/auth/login", "/auth/register")
+_PROTECTED_PATH_SUFFIXES = (
+    "/auth/login",
+    "/auth/register",
+    # Reset endpoints are unauthenticated and trigger emails / accept tokens —
+    # rate-limited to stop email-bombing an address and brute-forcing a token.
+    "/auth/forgot-password",
+    "/auth/reset-password",
+)
 
 
 class AuthRateLimitMiddleware:

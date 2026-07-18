@@ -14,3 +14,9 @@ class UserRepository(BaseRepository[User]):
     async def get_by_email(self, email: str) -> User | None:
         result = await self.session.execute(select(User).where(User.email == email))
         return result.scalars().first()
+
+    async def get_by_reset_token_hash(self, token_hash: str) -> User | None:
+        result = await self.session.execute(
+            select(User).where(User.reset_token_hash == token_hash)
+        )
+        return result.scalars().first()
