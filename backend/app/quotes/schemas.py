@@ -8,10 +8,30 @@ which catalog item and how much of it — the amount is always derived by
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.quotes.models import QuoteStatus
+
+
+class ReadinessIssue(BaseModel):
+    """One thing standing between the quote and being ready to send.
+
+    ``target`` + ``field`` let the client turn the issue into a tap that jumps
+    straight to the screen and field to fix (Phase 1.1, Mission 2)."""
+
+    code: str
+    label: str
+    target: Literal["company_profile", "client", "quote"]
+    field: str | None = None
+
+
+class QuoteReadiness(BaseModel):
+    """🟢 ``ready`` or 🔴 the precise list of what is missing."""
+
+    ready: bool
+    issues: list[ReadinessIssue] = Field(default_factory=list)
 
 
 class QuoteLineCreate(BaseModel):

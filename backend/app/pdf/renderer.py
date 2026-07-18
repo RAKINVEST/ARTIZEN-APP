@@ -21,7 +21,7 @@ from decimal import Decimal
 from io import BytesIO
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_RIGHT
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
@@ -149,7 +149,25 @@ class PdfRenderer:
             story.append(Spacer(1, 10 * mm))
             story += self._legal(document)
 
-        doc.build(story)
+        def _footer(canvas: object, _doc: object) -> None:
+            """Issuer identity + page number at the foot of every page — so a
+            multi-page quote stays attributable and navigable even if pages get
+            separated."""
+            canvas.saveState()  # type: ignore[attr-defined]
+            canvas.setFont("Helvetica", 7)  # type: ignore[attr-defined]
+            canvas.setFillColor(_MUTED)  # type: ignore[attr-defined]
+            canvas.setStrokeColor(_RULE)  # type: ignore[attr-defined]
+            footer_y = 12 * mm
+            canvas.line(  # type: ignore[attr-defined]
+                _PAGE_MARGIN, footer_y + 3 * mm, A4[0] - _PAGE_MARGIN, footer_y + 3 * mm
+            )
+            canvas.drawString(_PAGE_MARGIN, footer_y, document.issuer.name)  # type: ignore[attr-defined]
+            canvas.drawRightString(  # type: ignore[attr-defined]
+                A4[0] - _PAGE_MARGIN, footer_y, f"Page {canvas.getPageNumber()}"  # type: ignore[attr-defined]
+            )
+            canvas.restoreState()  # type: ignore[attr-defined]
+
+        doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
         return buffer.getvalue()
 
     # --- sections ---
@@ -189,24 +207,24 @@ class PdfRenderer:
         return [table]
 
     def _logo_flowable(self, document: Document) -> Image | None:
-        """A broken logo degrades to no logo. Same reasoning as
-        ``_parse_color``: the bytes come from an upload, and an upload can
-        be anything. Losing the document over it would be absurd."""
-        if not document.branding.logo:
+        return self._scaled_image(document.branding.logo, _LOGO_MAX_WIDTH, _LOGO_MAX_HEIGHT)
+
+    def _scaled_image(self, data: bytes | None, max_width: float, max_height: float) -> Image | None:
+        """Fit image ``data`` inside a box, preserving aspect ratio. A broken or
+        missing image degrades to ``None`` (no image), never an exception — the
+        bytes come from an upload and losing the whole document over one would
+        be absurd (same reasoning as ``_parse_color``)."""
+        if not data:
             return None
         try:
-            reader = ImageReader(BytesIO(document.branding.logo))
+            reader = ImageReader(BytesIO(data))
             width, height = reader.getSize()
             if not width or not height:
                 return None
-            scale = min(_LOGO_MAX_WIDTH / width, _LOGO_MAX_HEIGHT / height, 1.0)
-            return Image(
-                BytesIO(document.branding.logo),
-                width=width * scale,
-                height=height * scale,
-            )
+            scale = min(max_width / width, max_height / height, 1.0)
+            return Image(BytesIO(data), width=width * scale, height=height * scale)
         except Exception:
-            logger.warning("pdf.unreadable_logo — rendering without it", exc_info=True)
+            logger.warning("pdf.unreadable_image — rendering without it", exc_info=True)
             return None
 
     def _parties(self, document: Document, secondary: colors.Color) -> list[object]:
@@ -257,15 +275,18 @@ class PdfRenderer:
             [Paragraph(f"<b>{h}</b>", styles["th"]) for h in header]
         ]
         for line in document.lines:
+            # Every cell is a Paragraph so long values wrap inside their column
+            # instead of overflowing into the next one — a long unit ("forfait
+            # mensuel") or a large amount ("1 234 567,89 €") must never spill.
             row: list[object] = [
                 Paragraph(line.designation, styles["td"]),
-                _quantity(line.quantity),
-                line.unit,
-                f"{_money(line.unit_price_ht)} €",
+                Paragraph(_quantity(line.quantity), styles["td_num"]),
+                Paragraph(line.unit, styles["td_center"]),
+                Paragraph(f"{_money(line.unit_price_ht)} €", styles["td_num"]),
             ]
             if show_vat:
-                row.append(_rate(line.vat_rate))
-            row.append(f"{_money(line.total_ht)} €")
+                row.append(Paragraph(_rate(line.vat_rate), styles["td_num"]))
+            row.append(Paragraph(f"{_money(line.total_ht)} €", styles["td_num"]))
             rows.append(row)
 
         table = Table(rows, colWidths=col_widths, repeatRows=1)
@@ -350,32 +371,60 @@ class PdfRenderer:
         return wrapper
 
     def _signature_block(self, document: Document) -> list[object]:
-        """A bordered "Bon pour accord" area for the client to date and sign.
+        """Two facing signature areas: the artisan's own signature/stamp on the
+        left (the issuer pre-signs), the client's "Bon pour accord" box on the
+        right (a quote that claims acceptance-on-signature must give somewhere
+        to sign).
 
-        Without it, a quote that states it "vaut acceptation dès signature"
-        gives nowhere to sign — the document couldn't play its contractual
-        role. Right-aligned, kept together so it never splits across a page.
+        Stays clean in every combination: with neither artisan asset the left
+        column is simply empty; with no ``signature_label`` there is no client
+        box. If nothing at all is to be drawn, the whole section is dropped.
+        Kept together so it never splits across a page.
         """
-        if not document.signature_label:
-            return []
         styles = _styles()
-        box = Table(
-            [[Paragraph(document.signature_label, styles["signature"])]],
-            colWidths=[80 * mm],
-            rowHeights=[26 * mm],
-        )
-        box.setStyle(
+        signature_img = self._scaled_image(document.branding.signature, 55 * mm, 20 * mm)
+        stamp_img = self._scaled_image(document.branding.stamp, 30 * mm, 30 * mm)
+
+        left: list[object] = []
+        if signature_img is not None or stamp_img is not None:
+            left.append(Paragraph("Signature de l'entreprise :", styles["signature"]))
+            left.append(Spacer(1, 3 * mm))
+            for image in (signature_img, stamp_img):
+                if image is not None:
+                    left.append(image)
+                    left.append(Spacer(1, 2 * mm))
+
+        right: list[object] = []
+        if document.signature_label:
+            box = Table(
+                [[Paragraph(document.signature_label, styles["signature"])]],
+                colWidths=[80 * mm],
+                rowHeights=[26 * mm],
+            )
+            box.setStyle(
+                TableStyle(
+                    [
+                        ("BOX", (0, 0), (-1, -1), 0.6, _RULE),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                        ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ]
+                )
+            )
+            right = [box]
+
+        if not left and not right:
+            return []
+
+        wrapper = Table([[left, right]], colWidths=[94 * mm, 80 * mm])
+        wrapper.setStyle(
             TableStyle(
                 [
-                    ("BOX", (0, 0), (-1, -1), 0.6, _RULE),
                     ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("LEFTPADDING", (0, 0), (0, 0), 0),
                 ]
             )
         )
-        wrapper = Table([["", box]], colWidths=[94 * mm, 80 * mm])
-        wrapper.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
         return [Spacer(1, 8 * mm), KeepTogether([wrapper])]
 
     def _legal(self, document: Document) -> list[object]:
@@ -415,6 +464,12 @@ def _styles() -> dict[str, ParagraphStyle]:
         "party_line": ParagraphStyle("party_line", parent=base, fontSize=8.5, leading=11),
         "th": ParagraphStyle("th", parent=base, fontSize=8.5, textColor=colors.white),
         "td": ParagraphStyle("td", parent=base, fontSize=8.5, leading=11),
+        "td_num": ParagraphStyle(
+            "td_num", parent=base, fontSize=8.5, leading=11, alignment=TA_RIGHT
+        ),
+        "td_center": ParagraphStyle(
+            "td_center", parent=base, fontSize=8.5, leading=11, alignment=TA_CENTER
+        ),
         "legal": ParagraphStyle("legal", parent=base, fontSize=7, textColor=_MUTED, leading=9),
         "signature": ParagraphStyle(
             "signature", parent=base, fontSize=8, textColor=_DEFAULT_TEXT, leading=11

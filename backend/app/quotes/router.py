@@ -17,7 +17,7 @@ from fastapi import APIRouter, Response, status
 
 from app.core.authorization import ensure_same_company
 from app.quotes.deps import QuoteServiceDep
-from app.quotes.schemas import QuoteCreate, QuoteRead, QuoteStatusUpdate
+from app.quotes.schemas import QuoteCreate, QuoteRead, QuoteReadiness, QuoteStatusUpdate
 from app.users.deps import CurrentUserDep
 
 router = APIRouter(prefix="/quotes", tags=["quotes"])
@@ -74,6 +74,17 @@ async def get_quote(
     quote = await service.get(quote_id)
     ensure_same_company(quote.company_id, quote_id, current_user.company_id)
     return quote
+
+
+@router.get("/{quote_id}/readiness", response_model=QuoteReadiness)
+async def quote_readiness(
+    service: QuoteServiceDep, current_user: CurrentUserDep, quote_id: uuid.UUID
+) -> QuoteReadiness:
+    """Whether the quote is ready to emit, and if not, exactly what to fix —
+    called before Download / Print / Send (Phase 1.1, Mission 2)."""
+    existing = await service.get(quote_id)
+    ensure_same_company(existing.company_id, quote_id, current_user.company_id)
+    return await service.check_readiness(quote_id)
 
 
 @router.post("/{quote_id}/duplicate", response_model=QuoteRead, status_code=status.HTTP_201_CREATED)

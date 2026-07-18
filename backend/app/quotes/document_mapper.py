@@ -122,7 +122,13 @@ def _company_party(profile: BrandingProfileRead) -> DocumentParty:
 #: to create a real quote first. Reuses the exact same ``Document`` shape and
 #: renderer as a genuine quote, so the preview cannot drift from the real
 #: thing.
-def sample_document(*, profile: BrandingProfileRead, logo: bytes | None) -> Document:
+def sample_document(
+    *,
+    profile: BrandingProfileRead,
+    logo: bytes | None,
+    signature: bytes | None = None,
+    stamp: bytes | None = None,
+) -> Document:
     brand = profile.brand
     company = profile.company
     # The preview must be faithful to the company's regime: a franchise-en-base
@@ -185,6 +191,8 @@ def sample_document(*, profile: BrandingProfileRead, logo: bytes | None) -> Docu
             primary_color=brand.primary_color,
             secondary_color=brand.secondary_color,
             tagline=brand.tagline,
+            signature=signature,
+            stamp=stamp,
         ),
         show_vat=not vat_exempt,
         signature_label=QUOTE_SIGNATURE_LABEL,
@@ -209,6 +217,8 @@ def quote_to_document(
     profile: BrandingProfileRead,
     vat_breakdown: list[VatBucket],
     logo: bytes | None,
+    signature: bytes | None = None,
+    stamp: bytes | None = None,
     issued_on: date | None = None,
 ) -> Document:
     """``logo`` arrives as bytes, already read from storage by the caller.
@@ -253,6 +263,8 @@ def quote_to_document(
             primary_color=brand.primary_color,
             secondary_color=brand.secondary_color,
             tagline=brand.tagline,
+            signature=signature,
+            stamp=stamp,
         ),
         # Franchise-en-base quotes carry no VAT (the rate was forced to 0 at
         # creation), so the document shows no VAT column/total and states the

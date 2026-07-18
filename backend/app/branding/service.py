@@ -14,7 +14,9 @@ not something to paper over by creating one.
 """
 
 import logging
+import mimetypes
 import uuid
+from typing import Literal
 
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,8 +46,22 @@ logger = logging.getLogger(__name__)
 _LOGO_CONTENT_TYPES = {"image/png", "image/jpeg", "image/svg+xml"}
 _LOGO_MAX_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 
+# Signature/stamp are drawn as raster images into the PDF, so no SVG here (and
+# smaller: a scanned signature is not a 5 MB photo).
+_SIGNATURE_CONTENT_TYPES = {"image/png", "image/jpeg"}
+_SIGNATURE_MAX_SIZE_BYTES = 2 * 1024 * 1024  # 2 MB
+
 _PDF_CONTENT_TYPES = {"application/pdf"}
 _PDF_MAX_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB
+
+#: kind -> BrandProfile column holding the storage key, for the generic asset
+#: upload/delete/serve paths (logo, signature, stamp).
+_ASSET_FIELDS: dict[str, str] = {
+    "logo": "logo_path",
+    "signature": "signature_path",
+    "stamp": "stamp_path",
+}
+AssetKind = Literal["logo", "signature", "stamp"]
 
 
 class BrandingService:
@@ -61,9 +77,11 @@ class BrandingService:
             upload, allowed_content_types=_LOGO_CONTENT_TYPES, max_size_bytes=_LOGO_MAX_SIZE_BYTES
         )
         profile = await self._get_or_create_profile(company_id)
-        return await self._store_logo(
+        return await self._store_asset(
             profile,
             company_id,
+            field="logo_path",
+            category="logos",
             content=content,
             content_type=upload.content_type or "application/octet-stream",
             filename=upload.filename or "logo",
@@ -83,42 +101,47 @@ class BrandingService:
         same way an explicit upload would — same replace-and-cleanup path, so
         a re-import never leaks the previous logo file."""
         profile = await self._get_or_create_profile(company_id)
-        return await self._store_logo(
-            profile, company_id, content=content, content_type=content_type, filename=filename
+        return await self._store_asset(
+            profile, company_id, field="logo_path", category="logos",
+            content=content, content_type=content_type, filename=filename,
         )
 
-    async def _store_logo(
+    async def _store_asset(
         self,
         profile: BrandProfile,
         company_id: uuid.UUID,
         *,
+        field: str,
+        category: str,
         content: bytes,
         content_type: str,
         filename: str,
     ) -> StoredFileInfo:
-        previous_logo_key = profile.logo_path
+        """Store a brand asset (logo / signature / stamp) and point ``field``
+        at it, deleting whatever it pointed at before."""
+        previous_key = getattr(profile, field)
         stored = await self._storage.save(
-            category="logos",
+            category=category,
             filename=filename,
             content_type=content_type,
             content=content,
         )
-        profile.logo_path = stored.key
+        setattr(profile, field, stored.key)
 
-        # Reassigning logo_path drops the only reference to the previous
-        # file, so without this the old logo stays on disk forever: every
-        # re-upload leaked up to _LOGO_MAX_SIZE_BYTES into a volume with no
-        # purge path. Deleted after the new key is in place, and never at
-        # the cost of the request: the artisan's new logo is saved either
-        # way, an orphan file is a janitorial problem, not their problem.
-        if previous_logo_key and previous_logo_key != stored.key:
+        # Reassigning the key drops the only reference to the previous file, so
+        # without this the old asset stays on disk forever: every re-upload
+        # leaked into a volume with no purge path. Deleted after the new key is
+        # in place, and never at the cost of the request: the artisan's new
+        # asset is saved either way, an orphan file is a janitorial problem.
+        if previous_key and previous_key != stored.key:
             try:
-                await self._storage.delete(previous_logo_key)
+                await self._storage.delete(previous_key)
             except OSError:
                 logger.warning(
-                    "branding.previous_logo_delete_failed company_id=%s key=%s",
+                    "branding.previous_asset_delete_failed company_id=%s field=%s key=%s",
                     company_id,
-                    previous_logo_key,
+                    field,
+                    previous_key,
                     exc_info=True,
                 )
         return StoredFileInfo(
@@ -127,6 +150,62 @@ class BrandingService:
             size_bytes=stored.size_bytes,
             path=stored.key,
         )
+
+    async def upload_signature(self, company_id: uuid.UUID, upload: UploadFile) -> StoredFileInfo:
+        return await self._upload_signature_asset(company_id, upload, field="signature_path", category="signatures")
+
+    async def upload_stamp(self, company_id: uuid.UUID, upload: UploadFile) -> StoredFileInfo:
+        return await self._upload_signature_asset(company_id, upload, field="stamp_path", category="stamps")
+
+    async def _upload_signature_asset(
+        self, company_id: uuid.UUID, upload: UploadFile, *, field: str, category: str
+    ) -> StoredFileInfo:
+        content = await read_validated_upload(
+            upload,
+            allowed_content_types=_SIGNATURE_CONTENT_TYPES,
+            max_size_bytes=_SIGNATURE_MAX_SIZE_BYTES,
+        )
+        profile = await self._get_or_create_profile(company_id)
+        return await self._store_asset(
+            profile,
+            company_id,
+            field=field,
+            category=category,
+            content=content,
+            content_type=upload.content_type or "image/png",
+            filename=upload.filename or f"{category}.png",
+        )
+
+    async def delete_asset(self, company_id: uuid.UUID, kind: AssetKind) -> None:
+        """Remove a brand asset (logo/signature/stamp): clear the key and delete
+        the file. A no-op if none is set — deleting an absent asset is success,
+        not a 404, so the client's "remove" always ends in the same state."""
+        field = _ASSET_FIELDS[kind]
+        profile = await self._get_or_create_profile(company_id)
+        key = getattr(profile, field)
+        if key:
+            setattr(profile, field, None)
+            try:
+                await self._storage.delete(key)
+            except OSError:
+                logger.warning(
+                    "branding.asset_delete_failed company_id=%s field=%s key=%s",
+                    company_id, field, key, exc_info=True,
+                )
+        await self._session.flush()
+
+    async def load_asset(self, company_id: uuid.UUID, kind: AssetKind) -> tuple[bytes, str]:
+        """Return (bytes, content_type) for a stored brand asset, for previewing
+        it in the app. 404 if none is set. Content type is inferred from the
+        stored key's extension (storage keeps no MIME)."""
+        field = _ASSET_FIELDS[kind]
+        profile = await self._get_or_create_profile(company_id)
+        key = getattr(profile, field)
+        if not key:
+            raise NotFoundError(f"No {kind} configured for this company.")
+        content = await self._storage.load(key)
+        content_type = mimetypes.guess_type(key)[0] or "application/octet-stream"
+        return content, content_type
 
     async def upload_template(
         self, company_id: uuid.UUID, template_type: TemplateType, upload: UploadFile
@@ -194,6 +273,13 @@ class BrandingService:
     async def update_company(self, company_id: uuid.UUID, data: CompanyUpdate) -> CompanyRead:
         company = await self._get_company(company_id)
         for field, value in data.model_dump(exclude_unset=True).items():
+            # Phase 1.1 field management: an explicitly-sent blank string is a
+            # request to CLEAR the field — store NULL, not "". This is what lets
+            # the "Mon entreprise" form delete a value it filled earlier; a
+            # field simply omitted from the payload is still left untouched
+            # (exclude_unset), so template_import's partial updates are unaffected.
+            if isinstance(value, str) and value.strip() == "":
+                value = None
             setattr(company, field, value)
         await self._session.flush()
         await self._session.refresh(company)

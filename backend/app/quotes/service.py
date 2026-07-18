@@ -32,12 +32,13 @@ from app.quotes.exceptions import (
     QuoteNotEditableError,
 )
 from app.quotes.models import QUOTE_TRANSITIONS, Quote, QuoteLine, QuoteStatus
+from app.quotes.readiness import evaluate_readiness
 from app.quotes.repository import (
     QuoteCounterRepository,
     QuoteLineRepository,
     QuoteRepository,
 )
-from app.quotes.schemas import QuoteCreate, QuoteLineRead, QuoteRead
+from app.quotes.schemas import QuoteCreate, QuoteLineRead, QuoteRead, QuoteReadiness
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +187,22 @@ class QuoteService:
             raise NotFoundError(f"Quote {quote_id} not found.")
         return await self._build_read(quote)
 
+    async def check_readiness(self, quote_id: uuid.UUID) -> QuoteReadiness:
+        """Is this quote ready to be downloaded/printed/sent? Returns 🟢 or the
+        precise 🔴 list (Phase 1.1, Mission 2). Reuses the same company, client
+        and lines a real render would — so "ready" means "the PDF will be
+        complete", not a guess."""
+        quote = await self._quotes.get(quote_id)
+        if quote is None:
+            raise NotFoundError(f"Quote {quote_id} not found.")
+        profile = await self._branding.get_profile(quote.company_id)
+        client = await self._clients.get(quote.client_id)
+        lines = await self._lines.list_by_quote(quote.id)
+        issues = evaluate_readiness(
+            company=profile.company, brand=profile.brand, client=client, quote=quote, lines=lines
+        )
+        return QuoteReadiness(ready=not issues, issues=issues)
+
     async def duplicate(self, quote_id: uuid.UUID) -> QuoteRead:
         """Creates a fresh DRAFT that copies an existing quote's lines.
 
@@ -279,7 +296,9 @@ class QuoteService:
         vat_breakdown = self._calculator.calculate_vat_breakdown(
             [(line.vat_rate, line.total_ht, line.total_vat) for line in lines]
         )
-        logo = await self._load_logo(profile.brand.logo_path)
+        logo = await self._load_asset(profile.brand.logo_path)
+        signature = await self._load_asset(profile.brand.signature_path)
+        stamp = await self._load_asset(profile.brand.stamp_path)
 
         document = quote_to_document(
             quote=quote,
@@ -288,6 +307,8 @@ class QuoteService:
             profile=profile,
             vat_breakdown=vat_breakdown,
             logo=logo,
+            signature=signature,
+            stamp=stamp,
         )
         pdf = await asyncio.to_thread(self._renderer.render, document)
         return f"{quote.quote_number}.pdf", pdf
@@ -300,23 +321,24 @@ class QuoteService:
         faithful to what a real quote will look like, and an artisan can
         confirm their logo, colours and identity landed before creating one."""
         profile = await self._branding.get_profile(company_id)
-        logo = await self._load_logo(profile.brand.logo_path)
-        document = sample_document(profile=profile, logo=logo)
+        logo = await self._load_asset(profile.brand.logo_path)
+        signature = await self._load_asset(profile.brand.signature_path)
+        stamp = await self._load_asset(profile.brand.stamp_path)
+        document = sample_document(profile=profile, logo=logo, signature=signature, stamp=stamp)
         pdf = await asyncio.to_thread(self._renderer.render, document)
         return "apercu-modele.pdf", pdf
 
-    async def _load_logo(self, logo_path: str | None) -> bytes | None:
-        """A missing or unreadable logo costs the artisan a logo, never
-        their document: the storage key comes from a row that may point at
-        a file that has since gone, and a quote must still be sendable."""
-        if not logo_path:
+    async def _load_asset(self, key: str | None) -> bytes | None:
+        """A missing or unreadable brand asset (logo/signature/stamp) costs the
+        artisan that asset, never their document: the storage key comes from a
+        row that may point at a file that has since gone, and a quote must still
+        be sendable."""
+        if not key:
             return None
         try:
-            return await self._storage.load(logo_path)
+            return await self._storage.load(key)
         except OSError:
-            logger.warning(
-                "quotes.logo_unreadable path=%s — rendering without it", logo_path
-            )
+            logger.warning("quotes.asset_unreadable key=%s — rendering without it", key)
             return None
 
     async def change_status(self, quote_id: uuid.UUID, new_status: QuoteStatus) -> QuoteRead:

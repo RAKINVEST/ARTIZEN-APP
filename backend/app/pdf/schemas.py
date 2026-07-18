@@ -87,6 +87,11 @@ class DocumentBranding:
     primary_color: str | None = None
     secondary_color: str | None = None
     tagline: str | None = None
+    #: The artisan's own signature and (optional) stamp, as raw image bytes —
+    #: same rule as ``logo``: the engine draws bytes, it never reads storage.
+    #: Both ``None`` is normal and must still render cleanly.
+    signature: bytes | None = None
+    stamp: bytes | None = None
 
 
 @dataclass(frozen=True)

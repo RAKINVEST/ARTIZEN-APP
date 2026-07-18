@@ -8,7 +8,9 @@ client-suppliable value (see ``users.deps`` and the root README's
 "Authentification (Étape 10)" section).
 """
 
-from fastapi import APIRouter, File, UploadFile, status
+from typing import Literal
+
+from fastapi import APIRouter, File, Response, UploadFile, status
 
 from app.branding.deps import BrandingServiceDep
 from app.branding.models import TemplateType
@@ -31,6 +33,48 @@ async def upload_logo(
     service: BrandingServiceDep, current_user: CurrentUserDep, file: UploadFile = File(...)
 ) -> StoredFileInfo:
     return await service.upload_logo(current_user.company_id, file)
+
+
+@router.post("/signature", response_model=StoredFileInfo, status_code=status.HTTP_201_CREATED)
+async def upload_signature(
+    service: BrandingServiceDep, current_user: CurrentUserDep, file: UploadFile = File(...)
+) -> StoredFileInfo:
+    """The artisan's own signature, drawn on the quotes they issue."""
+    return await service.upload_signature(current_user.company_id, file)
+
+
+@router.delete("/signature", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_signature(service: BrandingServiceDep, current_user: CurrentUserDep) -> None:
+    await service.delete_asset(current_user.company_id, "signature")
+
+
+@router.post("/stamp", response_model=StoredFileInfo, status_code=status.HTTP_201_CREATED)
+async def upload_stamp(
+    service: BrandingServiceDep, current_user: CurrentUserDep, file: UploadFile = File(...)
+) -> StoredFileInfo:
+    """The company stamp (optional), drawn next to the signature."""
+    return await service.upload_stamp(current_user.company_id, file)
+
+
+@router.delete("/stamp", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_stamp(service: BrandingServiceDep, current_user: CurrentUserDep) -> None:
+    await service.delete_asset(current_user.company_id, "stamp")
+
+
+@router.get(
+    "/asset/{kind}",
+    response_class=Response,
+    responses={200: {"content": {"image/*": {}}}, 404: {"description": "No such asset configured."}},
+)
+async def get_asset(
+    service: BrandingServiceDep,
+    current_user: CurrentUserDep,
+    kind: Literal["logo", "signature", "stamp"],
+) -> Response:
+    """Serve a stored brand asset so the app can preview it. Tenant-scoped: the
+    key is resolved from the caller's own company, never taken from the URL."""
+    content, content_type = await service.load_asset(current_user.company_id, kind)
+    return Response(content=content, media_type=content_type)
 
 
 @router.post(
