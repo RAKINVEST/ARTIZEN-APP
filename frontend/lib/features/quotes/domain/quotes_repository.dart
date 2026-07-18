@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../data/quote_models.dart';
+import '../data/quote_readiness.dart';
 
 /// The contract the presentation layer depends on. Creation takes the
 /// client and the chosen (catalog item, quantity) pairs — the repository
@@ -40,4 +41,10 @@ abstract class QuotesRepository {
   /// a quote does not otherwise have: to revise a sent or refused quote,
   /// the artisan duplicates it and edits the copy. Returns the new draft.
   Future<Quote> duplicate(String id);
+
+  /// Pre-flight check before emitting a quote (download / print / send):
+  /// asks the backend whether every legal/commercial requirement is met and,
+  /// if not, what is missing and where to fix it. The backend is the sole
+  /// authority — this app only reads the verdict and guides the artisan.
+  Future<QuoteReadiness> readiness(String id);
 }

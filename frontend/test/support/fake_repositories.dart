@@ -9,6 +9,7 @@ import 'package:artizen/features/clients/domain/clients_repository.dart';
 import 'package:artizen/features/quote_assistant/data/quote_suggestion_models.dart';
 import 'package:artizen/features/quote_assistant/domain/quote_assistant_repository.dart';
 import 'package:artizen/features/quotes/data/quote_models.dart';
+import 'package:artizen/features/quotes/data/quote_readiness.dart';
 import 'package:artizen/features/quotes/domain/quotes_repository.dart';
 import 'package:artizen/features/template_import/data/template_import_models.dart';
 import 'package:artizen/features/template_import/domain/template_import_repository.dart';
@@ -92,9 +93,13 @@ class FakeCatalogRepository implements CatalogRepository {
 }
 
 class FakeQuotesRepository implements QuotesRepository {
-  FakeQuotesRepository(this._quotes);
+  FakeQuotesRepository(this._quotes, {this.readinessResult});
 
   final List<Quote> _quotes;
+
+  /// Defaults to "ready" so screens that don't care about readiness (e.g. the
+  /// boot/widget test) aren't blocked; a test can inject a not-ready verdict.
+  final QuoteReadiness? readinessResult;
 
   @override
   Future<List<Quote>> list({required String companyId}) async => _quotes;
@@ -135,6 +140,10 @@ class FakeQuotesRepository implements QuotesRepository {
   Future<Quote> duplicate(String id) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<QuoteReadiness> readiness(String id) async =>
+      readinessResult ?? const QuoteReadiness(ready: true);
 }
 
 class FakeQuoteAssistantRepository implements QuoteAssistantRepository {
@@ -166,6 +175,29 @@ class FakeBrandingRepository implements BrandingRepository {
   Future<BrandProfile> updateBrandProfile(BrandProfileUpdateInput input) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<String> uploadSignature({required String filename, required List<int> bytes}) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteSignature() async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<String> uploadStamp({required String filename, required List<int> bytes}) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteStamp() async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Uint8List?> fetchAsset(BrandAssetKind kind) async => null;
 }
 
 class FakeTemplateImportRepository implements TemplateImportRepository {

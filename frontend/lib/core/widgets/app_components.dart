@@ -25,6 +25,7 @@ class AppTextField extends StatefulWidget {
     this.maxLines = 1,
     this.suffixText,
     this.inputFormatters,
+    this.focusNode,
     super.key,
   });
 
@@ -41,6 +42,9 @@ class AppTextField extends StatefulWidget {
   final int maxLines;
   final String? suffixText;
   final List<TextInputFormatter>? inputFormatters;
+  /// Lets a caller focus (and scroll to) this field programmatically — used
+  /// by the readiness gate to jump straight to the field a quote is missing.
+  final FocusNode? focusNode;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -65,6 +69,7 @@ class _AppTextFieldState extends State<AppTextField> {
         const SizedBox(height: ArtizenSpacing.xs),
         TextFormField(
           controller: widget.controller,
+          focusNode: widget.focusNode,
           obscureText: _obscured,
           keyboardType: widget.keyboardType,
           autofillHints: widget.autofillHints,

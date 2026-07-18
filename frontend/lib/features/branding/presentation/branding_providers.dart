@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/branding_models.dart';
@@ -34,7 +36,67 @@ class BrandingProfileNotifier extends AsyncNotifier<BrandingProfile> {
     }
     return updated;
   }
+
+  /// Imports a signature image and reflects the new `signaturePath` in the
+  /// cached brand, then drops the cached preview bytes so the aperçu refetches.
+  Future<void> uploadSignature({required String filename, required List<int> bytes}) async {
+    final path = await ref
+        .read(brandingRepositoryProvider)
+        .uploadSignature(filename: filename, bytes: bytes);
+    _setBrandPaths(signaturePath: path);
+    ref.invalidate(brandAssetProvider(BrandAssetKind.signature));
+  }
+
+  Future<void> deleteSignature() async {
+    await ref.read(brandingRepositoryProvider).deleteSignature();
+    _setBrandPaths(clearSignature: true);
+    ref.invalidate(brandAssetProvider(BrandAssetKind.signature));
+  }
+
+  Future<void> uploadStamp({required String filename, required List<int> bytes}) async {
+    final path =
+        await ref.read(brandingRepositoryProvider).uploadStamp(filename: filename, bytes: bytes);
+    _setBrandPaths(stampPath: path);
+    ref.invalidate(brandAssetProvider(BrandAssetKind.stamp));
+  }
+
+  Future<void> deleteStamp() async {
+    await ref.read(brandingRepositoryProvider).deleteStamp();
+    _setBrandPaths(clearStamp: true);
+    ref.invalidate(brandAssetProvider(BrandAssetKind.stamp));
+  }
+
+  /// Patches `brand.signaturePath` / `brand.stampPath` in the cached aggregate
+  /// without a round-trip. The `clear*` flags exist because `copyWith` cannot
+  /// tell "leave unchanged" from "set to null" through a single optional arg.
+  void _setBrandPaths({
+    String? signaturePath,
+    String? stampPath,
+    bool clearSignature = false,
+    bool clearStamp = false,
+  }) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final brand = current.brand;
+    state = AsyncValue.data(
+      current.copyWith(
+        brand: brand.copyWith(
+          signaturePath: clearSignature ? null : (signaturePath ?? brand.signaturePath),
+          stampPath: clearStamp ? null : (stampPath ?? brand.stampPath),
+        ),
+      ),
+    );
+  }
 }
 
 final brandingProfileNotifierProvider =
     AsyncNotifierProvider<BrandingProfileNotifier, BrandingProfile>(BrandingProfileNotifier.new);
+
+/// Raw image bytes for a brand asset (logo/signature/stamp), fetched with the
+/// auth header through Dio so `Image.memory` can render it. `autoDispose` and
+/// keyed by kind: each preview re-fetches when its section is reopened, and
+/// the notifier invalidates the relevant kind after a replace/delete so the
+/// aperçu never shows a stale image. `null` means "no asset stored".
+final brandAssetProvider = FutureProvider.autoDispose.family<Uint8List?, BrandAssetKind>(
+  (ref, kind) => ref.watch(brandingRepositoryProvider).fetchAsset(kind),
+);

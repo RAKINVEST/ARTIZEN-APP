@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:artizen/features/quotes/data/quote_models.dart';
+import 'package:artizen/features/quotes/data/quote_readiness.dart';
 import 'package:artizen/features/quotes/data/quotes_repository_impl.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -111,6 +112,29 @@ void main() {
 
       expect(copy.status, QuoteStatus.draft);
       verify(() => dio.post<Map<String, dynamic>>('/quotes/q1/duplicate')).called(1);
+    });
+  });
+
+  group('readiness', () {
+    test('GETs /quotes/{id}/readiness and parses the verdict', () async {
+      when(() => dio.get<Map<String, dynamic>>('/quotes/q1/readiness')).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/quotes/q1/readiness'),
+          statusCode: 200,
+          data: {
+            'ready': false,
+            'issues': [
+              {'code': 'no_lines', 'label': 'Le devis ne contient aucune ligne', 'target': 'quote', 'field': null},
+            ],
+          },
+        ),
+      );
+
+      final readiness = await repository.readiness('q1');
+
+      expect(readiness.ready, isFalse);
+      expect(readiness.issues.single.target, ReadinessTarget.quote);
+      verify(() => dio.get<Map<String, dynamic>>('/quotes/q1/readiness')).called(1);
     });
   });
 

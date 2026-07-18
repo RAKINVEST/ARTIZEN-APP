@@ -121,7 +121,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/company-profile',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const CompanyProfileScreen(),
+        // `?field=` lets the readiness gate deep-link straight to the field a
+        // quote is missing, which the form then focuses and scrolls to.
+        builder: (context, state) =>
+            CompanyProfileScreen(focusField: state.uri.queryParameters['field']),
       ),
       GoRoute(
         path: '/quotes/:id',

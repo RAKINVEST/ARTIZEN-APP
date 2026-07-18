@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/dio_client.dart';
 import '../domain/quotes_repository.dart';
 import 'quote_models.dart';
+import 'quote_readiness.dart';
 
 /// Talks to `/quotes` (`app/quotes/router.py` on the backend).
 class QuotesRepositoryImpl implements QuotesRepository {
@@ -68,6 +69,12 @@ class QuotesRepositoryImpl implements QuotesRepository {
   Future<Quote> duplicate(String id) async {
     final response = await _dio.post<Map<String, dynamic>>('/quotes/$id/duplicate');
     return Quote.fromJson(response.data!);
+  }
+
+  @override
+  Future<QuoteReadiness> readiness(String id) async {
+    final response = await _dio.get<Map<String, dynamic>>('/quotes/$id/readiness');
+    return QuoteReadiness.fromJson(response.data!);
   }
 
   @override

@@ -10,6 +10,7 @@ import '../../../shared/widgets/confirm_dialog.dart';
 import '../../clients/presentation/clients_providers.dart';
 import '../data/quote_models.dart';
 import '../data/quotes_repository_impl.dart';
+import 'quote_readiness_gate.dart';
 import 'quotes_providers.dart';
 import 'widgets/quote_status_chip.dart';
 import 'widgets/quote_totals_card.dart';
@@ -50,6 +51,15 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
 
   Future<void> _downloadPdf(Quote quote) => _run(
         () async {
+          // Pre-flight: a non-conforming quote must not leave the app. The
+          // gate shows what's missing (and where to fix it) and returns false,
+          // so the download is skipped without an error.
+          final ready = await QuoteReadinessGate.ensureReady(
+            context: context,
+            ref: ref,
+            quote: quote,
+          );
+          if (!ready) return;
           final bytes = await ref.read(quotesRepositoryProvider).downloadPdf(quote.id);
           // The OS share sheet is how a file gets saved or sent on mobile —
           // available at any status, a draft included: the artisan can hold
@@ -59,25 +69,33 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         failureLabel: 'Téléchargement impossible',
       );
 
-  Future<void> _changeStatus(Quote quote, QuoteStatus next) async {
-    // Sending is the irreversible step — nothing ever returns to draft — so
-    // it is the one that earns a confirmation. Recording the customer's
-    // answer afterwards does not: the artisan is reporting a fact.
-    if (next == QuoteStatus.sent) {
-      final confirmed = await showConfirmDialog(
-        context,
-        title: 'Marquer ce devis comme envoyé ?',
-        message: 'Le devis ${quote.quoteNumber} ne sera plus modifiable ni supprimable. '
-            'Vous pourrez ensuite indiquer si le client l\'accepte ou le refuse.',
-        confirmLabel: 'Marquer comme envoyé',
+  Future<void> _changeStatus(Quote quote, QuoteStatus next) => _run(
+        () async {
+          // Sending is the irreversible step — nothing ever returns to draft —
+          // so it earns both a conformity check and a confirmation. Recording
+          // the customer's answer afterwards does neither: the artisan is
+          // reporting a fact about a quote already emitted.
+          if (next == QuoteStatus.sent) {
+            final ready = await QuoteReadinessGate.ensureReady(
+              context: context,
+              ref: ref,
+              quote: quote,
+            );
+            if (!ready) return;
+            if (!mounted) return;
+            final confirmed = await showConfirmDialog(
+              context,
+              title: 'Marquer ce devis comme envoyé ?',
+              message: 'Le devis ${quote.quoteNumber} ne sera plus modifiable ni supprimable. '
+                  'Vous pourrez ensuite indiquer si le client l\'accepte ou le refuse.',
+              confirmLabel: 'Marquer comme envoyé',
+            );
+            if (!confirmed) return;
+          }
+          await ref.read(quotesNotifierProvider.notifier).changeStatus(quote.id, next);
+        },
+        failureLabel: 'Changement de statut impossible',
       );
-      if (!confirmed) return;
-    }
-    await _run(
-      () => ref.read(quotesNotifierProvider.notifier).changeStatus(quote.id, next),
-      failureLabel: 'Changement de statut impossible',
-    );
-  }
 
   Future<void> _duplicate(Quote quote) async {
     // No confirmation: duplicating creates a new draft and changes nothing
@@ -164,6 +182,10 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
               Row(
                 children: [
                   QuoteStatusChip(status: quote.status),
+                  const SizedBox(width: 8),
+                  // "Prêt à émettre" / "À compléter" — the same verdict the
+                  // emit actions enforce, surfaced up front.
+                  QuoteReadinessBadge(quoteId: quote.id),
                   const Spacer(),
                   if (quote.status.isEditable)
                     TextButton.icon(

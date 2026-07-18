@@ -11,6 +11,11 @@ enum TemplateType {
   invoice,
 }
 
+/// The three brand images the backend serves at `GET /branding/asset/{kind}`.
+/// The wire value is the enum name itself (`logo` / `signature` / `stamp`),
+/// so a kind maps straight into the URL path segment.
+enum BrandAssetKind { logo, signature, stamp }
+
 /// Mirrors `CompanyRead`.
 @freezed
 class Company with _$Company {

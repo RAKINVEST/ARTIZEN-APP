@@ -6,6 +6,7 @@ import '../../../shared/providers/current_company_provider.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../clients/data/client_model.dart';
 import '../data/quote_models.dart';
+import '../data/quote_readiness.dart';
 import '../data/quotes_repository_impl.dart';
 
 class QuotesNotifier extends AsyncNotifier<List<Quote>> {
@@ -71,6 +72,14 @@ final quotesNotifierProvider = AsyncNotifierProvider<QuotesNotifier, List<Quote>
 
 final quoteByIdProvider = FutureProvider.family<Quote, String>((ref, id) {
   return ref.watch(quotesRepositoryProvider).get(id);
+});
+
+/// The pre-flight verdict for a single quote — powers the "Prêt à émettre / À
+/// compléter" badge and the readiness gate. `autoDispose` so it re-checks each
+/// time a detail screen is opened; the gate also refreshes it when an emit is
+/// attempted, so fixing an issue elsewhere is reflected on return.
+final quoteReadinessProvider = FutureProvider.autoDispose.family<QuoteReadiness, String>((ref, id) {
+  return ref.watch(quotesRepositoryProvider).readiness(id);
 });
 
 /// The rendered PDF bytes of a quote, for the in-app preview. Same endpoint
