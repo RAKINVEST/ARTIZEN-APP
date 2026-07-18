@@ -14,6 +14,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.voice_quote import ENGINE_VERSION
 from app.voice_quote.states import ConversationState
 
 
@@ -56,8 +57,14 @@ class MatchedService(BaseModel):
 class DraftLine(BaseModel):
     """A line retained in the draft after confidence composition (Blueprint
     §5). ``needs_review`` marks the "à relire" middle band; the client turns
-    ``catalog_item_id`` + ``quantity`` straight into ``QuoteLineCreate``."""
+    ``catalog_item_id`` + ``quantity`` straight into ``QuoteLineCreate``.
 
+    ``decision_id`` is the stable, unique id of this AI decision — generated
+    here (a plain uuid, no DB) so it can flow through the event stream and be
+    persisted as ``ai_decisions.id`` without the engine knowing a database
+    exists."""
+
+    decision_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     source_index: int = Field(ge=0)
     catalog_item_id: uuid.UUID
     designation: str
@@ -77,8 +84,12 @@ class ClarificationQuestion(BaseModel):
 
 class UnresolvedItem(BaseModel):
     """A prestation the engine chose not to put in the draft — omitted, never
-    invented. ``reason`` is what the UI shows ("aucun article correspondant")."""
+    invented. ``reason`` is what the UI shows ("aucun article correspondant").
 
+    Also an AI decision (outcome "omit"), so it too carries a unique
+    ``decision_id`` and is persisted in ``ai_decisions``."""
+
+    decision_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     source_index: int = Field(ge=0)
     description: str
     reason: str
@@ -92,6 +103,7 @@ class ConversationSnapshot(BaseModel):
     conversation_id: uuid.UUID
     company_id: uuid.UUID
     client_id: uuid.UUID | None
+    engine_version: str = ENGINE_VERSION
     language: str
     state: ConversationState
     transcript: str

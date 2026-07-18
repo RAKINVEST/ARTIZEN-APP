@@ -12,4 +12,14 @@ conversation) are ``Protocol`` ports (``ports.py``) whose concrete, DB-backed
 implementations are injected by an outer layer in a later lot — never imported
 here. That boundary is what makes every step independently testable with a
 fake, and it is enforced by ``test_voice_orchestrator_boundaries``.
+
+Persistence lives entirely outside this package (``app.ai_conversations``) and
+plugs in through the ``EventSink`` protocol only — the engine still knows
+nothing about it.
 """
+
+#: Version of the orchestration engine, stamped on every conversation
+#: (``CONVERSATION_STARTED`` event → ``ai_conversations.engine_version``). Bump
+#: it when the pipeline's behaviour changes, so persisted conversations — and
+#: the statistics drawn from them — can be compared across engine revisions.
+ENGINE_VERSION = "1.0.0"

@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 
 class EventType(str, enum.Enum):
+    CONVERSATION_STARTED = "conversation_started"  # carries the metadata a store needs to create the row
     STATE_CHANGED = "state_changed"
     TRANSCRIPT_READY = "transcript_ready"
     SERVICES_EXTRACTED = "services_extracted"

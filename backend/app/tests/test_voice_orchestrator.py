@@ -314,12 +314,34 @@ async def test_event_stream_is_normalized_and_sequenced() -> None:
     assert len(set(sequences)) == len(sequences)
     cid = orch.snapshot().conversation_id
     assert all(e.conversation_id == cid for e in sink.events)
-    # The first event is the IDLE -> LISTENING transition.
+    # The first event carries the conversation metadata (incl. engine_version),
+    # followed by the IDLE -> LISTENING transition.
     first = sink.events[0]
-    assert first.type is EventType.STATE_CHANGED
-    assert first.payload["from_state"] == "idle" and first.payload["to_state"] == "listening"
+    assert first.type is EventType.CONVERSATION_STARTED
+    assert first.payload["engine_version"]
+    transition = sink.events[1]
+    assert transition.type is EventType.STATE_CHANGED
+    assert transition.payload["from_state"] == "idle" and transition.payload["to_state"] == "listening"
     # The pipeline announced a ready quote.
     assert sink.of_type(EventType.QUOTE_READY)
+
+
+async def test_a_raising_sink_never_breaks_the_conversation() -> None:
+    """Resilience: a failing EventSink (e.g. persistence down) must not abort
+    the turn — the orchestrator swallows and logs, the conversation completes."""
+
+    class RaisingSink:
+        async def emit(self, event) -> None:
+            raise RuntimeError("sink is down")
+
+    orch = build_orchestrator(
+        extractor=FakeExtractor([make_service()]),
+        matcher=FakeMatcher(lambda s: _match_fields()),
+        sink=RaisingSink(),
+    )
+    await orch.start()
+    snap = await orch.submit_audio(_AUDIO)
+    assert snap.state is ConversationState.REVIEWING  # unaffected by the sink's failure
 
 
 # --- conversational revision (adjustment #4) --------------------------------

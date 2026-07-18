@@ -28,6 +28,7 @@ import uuid
 
 from app.ai.base import SttProvider, TtsProvider
 from app.core.config import settings
+from app.voice_quote import ENGINE_VERSION
 from app.voice_quote.confidence import ConfidencePolicy
 from app.voice_quote.errors import classify
 from app.voice_quote.events import EventSink, EventType, VoiceEvent
@@ -97,6 +98,16 @@ class VoiceOrchestrator:
 
     async def start(self) -> ConversationSnapshot:
         self._require_state(ConversationState.IDLE)
+        # First event of the conversation: carries everything a store needs to
+        # create the row (a sink cannot derive company/engine from a later
+        # STATE_CHANGED). The engine stays unaware anything is being stored.
+        await self._emit(
+            EventType.CONVERSATION_STARTED,
+            company_id=str(self._company_id),
+            client_id=str(self._client_id) if self._client_id else None,
+            language=self._language,
+            engine_version=ENGINE_VERSION,
+        )
         await self._transition_to(ConversationState.LISTENING, trigger="start")
         return self.snapshot()
 
@@ -123,6 +134,7 @@ class VoiceOrchestrator:
             EventType.ANSWER_APPLIED,
             slot=question.slot,
             target=question.target_service_index,
+            answer=answer.strip(),
         )
         try:
             await self._advance_from_understanding()
@@ -299,6 +311,11 @@ class VoiceOrchestrator:
             line_count=len(draft),
             unresolved_count=len(unresolved),
             overall_confidence=self._overall_confidence,
+            # Full lines + omissions travel in the event so a sink can persist
+            # every decision (each with its decision_id) without ever reading
+            # the engine's memory. This is what keeps persistence 100% event-driven.
+            draft_lines=[line.model_dump(mode="json") for line in draft],
+            unresolved=[item.model_dump(mode="json") for item in unresolved],
         )
         await self._transition_to(ConversationState.REVIEWING, trigger="draft_ready")
         await self._emit(EventType.QUOTE_READY, line_count=len(draft))
@@ -345,7 +362,14 @@ class VoiceOrchestrator:
             event.sequence,
         )
         if self._event_sink is not None:
-            await self._event_sink.emit(event)
+            try:
+                await self._event_sink.emit(event)
+            except Exception:  # noqa: BLE001 — a sink (e.g. persistence) must never break the conversation
+                logger.warning(
+                    "voice.event_sink_failed conversation=%s type=%s",
+                    self._conversation_id,
+                    event_type.value,
+                )
 
     async def _run_step(self, step: str, coro):
         """Run one fallible step: time it (even on failure), and on failure move
