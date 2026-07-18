@@ -42,6 +42,28 @@ class Company(Base, UUIDMixin, TimestampMixin):
     email: Mapped[str | None] = mapped_column(default=None)
     website: Mapped[str | None] = mapped_column(default=None)
 
+    # --- Regulatory identity (Phase 1 — commercialisation) ---
+    # French building-trade quotes must carry these; all nullable so an
+    # existing account keeps working and a new one fills them in over time
+    # from the "Mon entreprise" screen (see docs/PHASE1-CONFORMITE.md).
+    legal_form: Mapped[str | None] = mapped_column(default=None)  # forme juridique (SARL, EI…)
+    share_capital: Mapped[str | None] = mapped_column(default=None)  # capital social
+    rcs_rm: Mapped[str | None] = mapped_column(default=None)  # RCS ou n° Répertoire des Métiers
+    ape_code: Mapped[str | None] = mapped_column(default=None)  # code APE/NAF
+    # Décennale / RC pro — obligatoire bâtiment (loi du 17 mars 2014).
+    insurance_name: Mapped[str | None] = mapped_column(default=None)  # assureur
+    insurance_contract: Mapped[str | None] = mapped_column(default=None)  # n° de contrat
+    insurance_coverage: Mapped[str | None] = mapped_column(default=None)  # couverture géographique
+    rge_number: Mapped[str | None] = mapped_column(default=None)  # mention/numéro RGE si applicable
+    payment_terms: Mapped[str | None] = mapped_column(default=None)  # conditions et délais de paiement
+
+    # "normal" (assujetti TVA) | "franchise" (franchise en base, art. 293 B du CGI).
+    # NOT NULL with a server default so every existing row gets a regime on
+    # migration; drives whether quotes carry VAT at all (see QuoteService.create).
+    vat_regime: Mapped[str] = mapped_column(default="normal", server_default="normal")
+    # Durée de validité d'un devis, en jours (configurable, défaut 30).
+    quote_validity_days: Mapped[int] = mapped_column(default=30, server_default="30")
+
 
 class BrandProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "brand_profiles"

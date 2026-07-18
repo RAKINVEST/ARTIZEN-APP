@@ -16,7 +16,7 @@ This is a translation, not a calculation.
 from datetime import date
 from decimal import Decimal
 
-from app.branding.schemas import BrandingProfileRead
+from app.branding.schemas import BrandingProfileRead, CompanyRead
 from app.clients.models import Client
 from app.pdf.schemas import (
     Document,
@@ -34,12 +34,52 @@ from app.quotes.models import Quote, QuoteLine
 #: needing a branch per document type.
 QUOTE_TITLE = "DEVIS"
 
-#: Only what applies to a *quote*. An invoice's mentions are different and
-#: are not this module's business — each document type states its own.
-QUOTE_LEGAL_MENTIONS = [
-    "Devis gratuit et sans engagement. Validité : 30 jours à compter de la date d'émission.",
-    "Le présent devis vaut acceptation des conditions dès signature du client.",
-]
+#: Drawn as a signature area at the bottom of a quote — the "Bon pour accord"
+#: a devis needs to play its contractual role (the document claims acceptance
+#: on signature, so it must give the client somewhere to sign).
+QUOTE_SIGNATURE_LABEL = "Bon pour accord — Date et signature du client :"
+
+
+def _legal_identity_line(company: CompanyRead) -> str | None:
+    """Forme juridique (+ capital social) on one line, the way it reads on a
+    real French commercial document ("SARL au capital de 5 000 €")."""
+    if company.legal_form and company.share_capital:
+        return f"{company.legal_form} au capital de {company.share_capital}"
+    if company.legal_form:
+        return company.legal_form
+    if company.share_capital:
+        return f"Capital social : {company.share_capital}"
+    return None
+
+
+def _quote_legal_mentions(company: CompanyRead) -> list[str]:
+    """The legal mentions a French building-trade *quote* must carry, built
+    from the company's own regulatory data. Only what is actually configured
+    is printed — a missing field is left out rather than shown empty — so the
+    document is as complete as the artisan has made themselves.
+
+    An invoice's mentions differ and are not this module's business.
+    """
+    validity = company.quote_validity_days or 30
+    mentions = [
+        f"Devis gratuit et sans engagement. Validité : {validity} jours à compter de la date "
+        "d'émission.",
+    ]
+    if company.vat_regime == "franchise":
+        mentions.append("TVA non applicable, art. 293 B du CGI.")
+    if company.payment_terms:
+        mentions.append(f"Conditions de règlement : {company.payment_terms}")
+    if company.insurance_name:
+        insurance = f"Assurance décennale : {company.insurance_name}"
+        if company.insurance_contract:
+            insurance += f", contrat n° {company.insurance_contract}"
+        if company.insurance_coverage:
+            insurance += f" (couverture : {company.insurance_coverage})"
+        mentions.append(insurance)
+    if company.rge_number:
+        mentions.append(f"Certification RGE : {company.rge_number}")
+    mentions.append("Le présent devis vaut acceptation des conditions dès signature du client.")
+    return mentions
 
 
 def _company_party(profile: BrandingProfileRead) -> DocumentParty:
@@ -56,7 +96,10 @@ def _company_party(profile: BrandingProfileRead) -> DocumentParty:
     details = [
         label
         for label in (
+            _legal_identity_line(company),
             f"SIRET : {company.siret}" if company.siret else None,
+            f"{company.rcs_rm}" if company.rcs_rm else None,
+            f"APE : {company.ape_code}" if company.ape_code else None,
             f"TVA : {company.vat_number}" if company.vat_number else None,
             f"Tél : {company.phone}" if company.phone else None,
             company.email,
@@ -81,6 +124,32 @@ def _company_party(profile: BrandingProfileRead) -> DocumentParty:
 #: thing.
 def sample_document(*, profile: BrandingProfileRead, logo: bytes | None) -> Document:
     brand = profile.brand
+    company = profile.company
+    # The preview must be faithful to the company's regime: a franchise-en-base
+    # artisan sees an HT-only document, exactly like their real quotes will be.
+    vat_exempt = company.vat_regime == "franchise"
+    line_vat = Decimal("0.00") if vat_exempt else None
+    if vat_exempt:
+        totals = DocumentTotals(
+            total_ht=Decimal("1200.00"),
+            total_vat=Decimal("0.00"),
+            total_ttc=Decimal("1200.00"),
+            vat_rows=[],
+        )
+    else:
+        totals = DocumentTotals(
+            total_ht=Decimal("1200.00"),
+            total_vat=Decimal("210.00"),
+            total_ttc=Decimal("1410.00"),
+            vat_rows=[
+                DocumentVatRow(
+                    rate=Decimal("10.00"), base_ht=Decimal("300.00"), vat_amount=Decimal("30.00")
+                ),
+                DocumentVatRow(
+                    rate=Decimal("20.00"), base_ht=Decimal("900.00"), vat_amount=Decimal("180.00")
+                ),
+            ],
+        )
     return Document(
         title=QUOTE_TITLE,
         number="DEV-2026-0001",
@@ -97,7 +166,7 @@ def sample_document(*, profile: BrandingProfileRead, logo: bytes | None) -> Docu
                 unit="u",
                 quantity=Decimal("2.00"),
                 unit_price_ht=Decimal("450.00"),
-                vat_rate=Decimal("20.00"),
+                vat_rate=line_vat if line_vat is not None else Decimal("20.00"),
                 total_ht=Decimal("900.00"),
             ),
             DocumentLine(
@@ -105,30 +174,20 @@ def sample_document(*, profile: BrandingProfileRead, logo: bytes | None) -> Docu
                 unit="h",
                 quantity=Decimal("5.00"),
                 unit_price_ht=Decimal("60.00"),
-                vat_rate=Decimal("10.00"),
+                vat_rate=line_vat if line_vat is not None else Decimal("10.00"),
                 total_ht=Decimal("300.00"),
             ),
         ],
-        totals=DocumentTotals(
-            total_ht=Decimal("1200.00"),
-            total_vat=Decimal("210.00"),
-            total_ttc=Decimal("1410.00"),
-            vat_rows=[
-                DocumentVatRow(
-                    rate=Decimal("10.00"), base_ht=Decimal("300.00"), vat_amount=Decimal("30.00")
-                ),
-                DocumentVatRow(
-                    rate=Decimal("20.00"), base_ht=Decimal("900.00"), vat_amount=Decimal("180.00")
-                ),
-            ],
-        ),
-        legal_mentions=QUOTE_LEGAL_MENTIONS,
+        totals=totals,
+        legal_mentions=_quote_legal_mentions(company),
         branding=DocumentBranding(
             logo=logo,
             primary_color=brand.primary_color,
             secondary_color=brand.secondary_color,
             tagline=brand.tagline,
         ),
+        show_vat=not vat_exempt,
+        signature_label=QUOTE_SIGNATURE_LABEL,
     )
 
 
@@ -188,11 +247,16 @@ def quote_to_document(
                 for b in vat_breakdown
             ],
         ),
-        legal_mentions=QUOTE_LEGAL_MENTIONS,
+        legal_mentions=_quote_legal_mentions(profile.company),
         branding=DocumentBranding(
             logo=logo,
             primary_color=brand.primary_color,
             secondary_color=brand.secondary_color,
             tagline=brand.tagline,
         ),
+        # Franchise-en-base quotes carry no VAT (the rate was forced to 0 at
+        # creation), so the document shows no VAT column/total and states the
+        # 293 B mention instead.
+        show_vat=profile.company.vat_regime != "franchise",
+        signature_label=QUOTE_SIGNATURE_LABEL,
     )

@@ -4,10 +4,16 @@ API, plus upload-result shapes.
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.branding.models import TemplateType
+
+#: The only two VAT regimes the product supports today. "franchise" is the
+#: micro-entrepreneur / franchise-en-base case (art. 293 B du CGI): quotes carry
+#: no VAT and the PDF prints the mention instead.
+VatRegime = Literal["normal", "franchise"]
 
 
 class StoredFileInfo(BaseModel):
@@ -34,6 +40,18 @@ class CompanyRead(BaseModel):
     phone: str | None
     email: str | None
     website: str | None
+    # Regulatory identity (Phase 1)
+    legal_form: str | None
+    share_capital: str | None
+    rcs_rm: str | None
+    ape_code: str | None
+    insurance_name: str | None
+    insurance_contract: str | None
+    insurance_coverage: str | None
+    rge_number: str | None
+    payment_terms: str | None
+    vat_regime: VatRegime
+    quote_validity_days: int
 
 
 class BrandProfileRead(BaseModel):
@@ -96,6 +114,18 @@ class CompanyUpdate(BaseModel):
     phone: str | None = None
     email: str | None = None
     website: str | None = None
+    # Regulatory identity (Phase 1)
+    legal_form: str | None = None
+    share_capital: str | None = None
+    rcs_rm: str | None = None
+    ape_code: str | None = None
+    insurance_name: str | None = None
+    insurance_contract: str | None = None
+    insurance_coverage: str | None = None
+    rge_number: str | None = None
+    payment_terms: str | None = None
+    vat_regime: VatRegime | None = None
+    quote_validity_days: int | None = Field(default=None, ge=1, le=365)
 
 
 class BrandProfileUpdate(BaseModel):

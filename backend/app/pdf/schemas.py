@@ -111,3 +111,11 @@ class Document:
     #: requires of *this* document type — the engine only lays it out.
     legal_mentions: list[str] = field(default_factory=list)
     branding: DocumentBranding = field(default_factory=DocumentBranding)
+    #: Layout flag, not a tax opinion: when ``False`` the engine omits the VAT
+    #: column and the VAT total. The caller (which knows the issuer's regime)
+    #: decides — a franchise-en-base document shows no VAT and states the
+    #: "art. 293 B" mention in ``legal_mentions`` instead of a "Total TVA 0 €".
+    show_vat: bool = True
+    #: When set, the engine draws a signature area with this label (a quote's
+    #: "Bon pour accord"). ``None`` for documents that don't need one.
+    signature_label: str | None = None

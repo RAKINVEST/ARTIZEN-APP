@@ -14,6 +14,7 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -88,6 +89,15 @@ class QuoteService:
         if client is None or client.company_id != data.company_id:
             raise NotFoundError(f"Client {data.client_id} not found.")
 
+        # A company under the franchise-en-base regime (art. 293 B du CGI, the
+        # micro-entrepreneur case) charges NO VAT: every line is HT only. The
+        # regime belongs to the company, not the catalog item, so the service
+        # applies it here by overriding the rate to 0 before the calculator
+        # runs — the calculator stays the one place amounts are computed, and
+        # the stored line snapshot (vat_rate=0) matches the total (VAT=0).
+        company = await self._branding.get_company(data.company_id)
+        vat_exempt = company.vat_regime == "franchise"
+
         line_models: list[QuoteLine] = []
         line_totals: list[LineTotals] = []
         for line_data in data.lines:
@@ -99,10 +109,11 @@ class QuoteService:
                     f"Catalog item {item.id} is inactive and cannot be used in a quote."
                 )
 
+            effective_vat_rate = Decimal("0.00") if vat_exempt else item.vat_rate
             totals = self._calculator.calculate_line(
                 quantity=line_data.quantity,
                 unit_price_ht=item.unit_price_ht,
-                vat_rate=item.vat_rate,
+                vat_rate=effective_vat_rate,
             )
             line_totals.append(totals)
             line_models.append(
@@ -112,7 +123,7 @@ class QuoteService:
                     unit=item.unit,
                     quantity=line_data.quantity,
                     unit_price_ht=item.unit_price_ht,
-                    vat_rate=item.vat_rate,
+                    vat_rate=effective_vat_rate,
                     total_ht=totals.total_ht,
                     total_vat=totals.total_vat,
                     total_ttc=totals.total_ttc,

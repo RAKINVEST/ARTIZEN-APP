@@ -209,6 +209,13 @@ class BrandingService:
         await self._session.refresh(profile)
         return BrandProfileRead.model_validate(profile)
 
+    async def get_company(self, company_id: uuid.UUID) -> CompanyRead:
+        """The company's own record, without the brand profile or template
+        history ``get_profile`` also loads. ``QuoteService`` uses it to read
+        the VAT regime when creating a quote — one row, not three."""
+        company = await self._get_company(company_id)
+        return CompanyRead.model_validate(company)
+
     async def get_company_name(self, company_id: uuid.UUID) -> str | None:
         """Lighter than `get_profile()`: callers that only need the
         company's display name (e.g. `quote_assistant`'s prompt context)

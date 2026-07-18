@@ -144,6 +144,7 @@ class PdfRenderer:
         story.append(self._lines_table(document, primary))
         story.append(Spacer(1, 6 * mm))
         story.append(self._totals_block(document, primary))
+        story += self._signature_block(document)
         if document.legal_mentions:
             story.append(Spacer(1, 10 * mm))
             story += self._legal(document)
@@ -242,23 +243,32 @@ class PdfRenderer:
 
     def _lines_table(self, document: Document, primary: colors.Color) -> Table:
         styles = _styles()
-        header = ["Désignation", "Qté", "Unité", "P.U. HT", "TVA", "Total HT"]
+        # A franchise-en-base document carries no VAT, so it drops the TVA
+        # column entirely (rather than printing a column of "0 %"), and the
+        # freed width goes to the designation.
+        show_vat = document.show_vat
+        if show_vat:
+            header = ["Désignation", "Qté", "Unité", "P.U. HT", "TVA", "Total HT"]
+            col_widths = [74 * mm, 14 * mm, 18 * mm, 24 * mm, 18 * mm, 26 * mm]
+        else:
+            header = ["Désignation", "Qté", "Unité", "P.U. HT", "Total HT"]
+            col_widths = [92 * mm, 14 * mm, 18 * mm, 24 * mm, 26 * mm]
         rows: list[list[object]] = [
             [Paragraph(f"<b>{h}</b>", styles["th"]) for h in header]
         ]
         for line in document.lines:
-            rows.append(
-                [
-                    Paragraph(line.designation, styles["td"]),
-                    _quantity(line.quantity),
-                    line.unit,
-                    f"{_money(line.unit_price_ht)} €",
-                    _rate(line.vat_rate),
-                    f"{_money(line.total_ht)} €",
-                ]
-            )
+            row: list[object] = [
+                Paragraph(line.designation, styles["td"]),
+                _quantity(line.quantity),
+                line.unit,
+                f"{_money(line.unit_price_ht)} €",
+            ]
+            if show_vat:
+                row.append(_rate(line.vat_rate))
+            row.append(f"{_money(line.total_ht)} €")
+            rows.append(row)
 
-        table = Table(rows, colWidths=[74 * mm, 14 * mm, 18 * mm, 24 * mm, 18 * mm, 26 * mm], repeatRows=1)
+        table = Table(rows, colWidths=col_widths, repeatRows=1)
         table.setStyle(
             TableStyle(
                 [
@@ -281,36 +291,40 @@ class PdfRenderer:
         totals = document.totals
         rows: list[list[object]] = []
 
-        # The per-rate summary only earns its space when there is more than
-        # one rate: on a single-rate document it would restate the line
-        # below it.
-        if len(totals.vat_rows) > 1:
-            for row in totals.vat_rows:
-                rows.append(
-                    [
-                        f"Base HT à {_rate(row.rate)}",
-                        f"{_money(row.base_ht)} €",
-                        f"TVA {_rate(row.rate)}",
-                        f"{_money(row.vat_amount)} €",
-                    ]
-                )
-
-        summary = Table(
-            [
+        # No VAT (franchise-en-base): a single "Total" line, no VAT total, no
+        # per-rate breakdown — the 293 B mention in the legal block says why.
+        if not document.show_vat:
+            summary_rows = [["Total", f"{_money(totals.total_ttc)} €"]]
+        else:
+            summary_rows = [
                 ["Total HT", f"{_money(totals.total_ht)} €"],
                 ["Total TVA", f"{_money(totals.total_vat)} €"],
                 ["Total TTC", f"{_money(totals.total_ttc)} €"],
-            ],
-            colWidths=[38 * mm, 32 * mm],
-        )
+            ]
+            # The per-rate summary only earns its space when there is more than
+            # one rate: on a single-rate document it would restate the line
+            # below it.
+            if len(totals.vat_rows) > 1:
+                for row in totals.vat_rows:
+                    rows.append(
+                        [
+                            f"Base HT à {_rate(row.rate)}",
+                            f"{_money(row.base_ht)} €",
+                            f"TVA {_rate(row.rate)}",
+                            f"{_money(row.vat_amount)} €",
+                        ]
+                    )
+
+        last = len(summary_rows) - 1
+        summary = Table(summary_rows, colWidths=[38 * mm, 32 * mm])
         summary.setStyle(
             TableStyle(
                 [
                     ("ALIGN", (1, 0), (1, -1), "RIGHT"),
                     ("FONTSIZE", (0, 0), (-1, -1), 9),
-                    ("LINEABOVE", (0, 2), (-1, 2), 0.8, primary),
-                    ("FONTNAME", (0, 2), (-1, 2), "Helvetica-Bold"),
-                    ("TEXTCOLOR", (0, 2), (-1, 2), primary),
+                    ("LINEABOVE", (0, last), (-1, last), 0.8, primary),
+                    ("FONTNAME", (0, last), (-1, last), "Helvetica-Bold"),
+                    ("TEXTCOLOR", (0, last), (-1, last), primary),
                     ("TOPPADDING", (0, 0), (-1, -1), 3),
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
                 ]
@@ -334,6 +348,35 @@ class PdfRenderer:
             wrapper = Table([[breakdown, summary]], colWidths=[104 * mm, 70 * mm])
         wrapper.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
         return wrapper
+
+    def _signature_block(self, document: Document) -> list[object]:
+        """A bordered "Bon pour accord" area for the client to date and sign.
+
+        Without it, a quote that states it "vaut acceptation dès signature"
+        gives nowhere to sign — the document couldn't play its contractual
+        role. Right-aligned, kept together so it never splits across a page.
+        """
+        if not document.signature_label:
+            return []
+        styles = _styles()
+        box = Table(
+            [[Paragraph(document.signature_label, styles["signature"])]],
+            colWidths=[80 * mm],
+            rowHeights=[26 * mm],
+        )
+        box.setStyle(
+            TableStyle(
+                [
+                    ("BOX", (0, 0), (-1, -1), 0.6, _RULE),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
+        wrapper = Table([["", box]], colWidths=[94 * mm, 80 * mm])
+        wrapper.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+        return [Spacer(1, 8 * mm), KeepTogether([wrapper])]
 
     def _legal(self, document: Document) -> list[object]:
         styles = _styles()
@@ -373,4 +416,7 @@ def _styles() -> dict[str, ParagraphStyle]:
         "th": ParagraphStyle("th", parent=base, fontSize=8.5, textColor=colors.white),
         "td": ParagraphStyle("td", parent=base, fontSize=8.5, leading=11),
         "legal": ParagraphStyle("legal", parent=base, fontSize=7, textColor=_MUTED, leading=9),
+        "signature": ParagraphStyle(
+            "signature", parent=base, fontSize=8, textColor=_DEFAULT_TEXT, leading=11
+        ),
     }
