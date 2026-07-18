@@ -61,11 +61,46 @@ class BrandingService:
             upload, allowed_content_types=_LOGO_CONTENT_TYPES, max_size_bytes=_LOGO_MAX_SIZE_BYTES
         )
         profile = await self._get_or_create_profile(company_id)
+        return await self._store_logo(
+            profile,
+            company_id,
+            content=content,
+            content_type=upload.content_type or "application/octet-stream",
+            filename=upload.filename or "logo",
+        )
+
+    async def set_logo_from_bytes(
+        self,
+        company_id: uuid.UUID,
+        content: bytes,
+        *,
+        content_type: str = "image/png",
+        filename: str = "logo.png",
+    ) -> StoredFileInfo:
+        """Persists already-in-hand image bytes as the company logo, without
+        an ``UploadFile`` or MIME re-validation. Used by ``template_import``,
+        which extracts the logo from an imported PDF and must store it the
+        same way an explicit upload would — same replace-and-cleanup path, so
+        a re-import never leaks the previous logo file."""
+        profile = await self._get_or_create_profile(company_id)
+        return await self._store_logo(
+            profile, company_id, content=content, content_type=content_type, filename=filename
+        )
+
+    async def _store_logo(
+        self,
+        profile: BrandProfile,
+        company_id: uuid.UUID,
+        *,
+        content: bytes,
+        content_type: str,
+        filename: str,
+    ) -> StoredFileInfo:
         previous_logo_key = profile.logo_path
         stored = await self._storage.save(
             category="logos",
-            filename=upload.filename or "logo",
-            content_type=upload.content_type or "application/octet-stream",
+            filename=filename,
+            content_type=content_type,
             content=content,
         )
         profile.logo_path = stored.key

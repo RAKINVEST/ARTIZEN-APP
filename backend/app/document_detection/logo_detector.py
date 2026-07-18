@@ -27,6 +27,40 @@ from app.document_detection import image_limits  # noqa: F401
 logger = logging.getLogger(__name__)
 
 
+def extract_first_image_png(content: bytes) -> bytes | None:
+    """Returns the first embedded image of page 1, re-encoded as PNG bytes.
+
+    Same candidate the ``LogoDetector`` scores — the first image on the
+    first page — but materialised so ``template_import`` can persist it as
+    the company logo. Kept next to the detector on purpose: both answer
+    "what is the logo in this PDF?", and the detector already owns the
+    fragile pypdf/Pillow reading. Re-encoded to PNG so the stored bytes are
+    a format the PDF renderer and browsers both handle, whatever exotic
+    codec the source used. Degrades to ``None`` on any failure — a logo we
+    cannot read is simply not imported, never a crash.
+    """
+    try:
+        reader = PdfReader(BytesIO(content))
+        if not reader.pages:
+            return None
+        images = reader.pages[0].images
+        if len(images) == 0:
+            return None
+        image = images[0].image
+        if image is None:
+            return None
+        # PNG can't hold CMYK or palette-with-transparency cleanly; normalise
+        # to a mode it always encodes rather than let .save() raise.
+        if image.mode not in ("RGB", "RGBA", "L", "LA"):
+            image = image.convert("RGBA")
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        return buffer.getvalue()
+    except Exception:
+        logger.warning("logo_extractor.failed", exc_info=True)
+        return None
+
+
 class LogoDetector(VisualDetector):
     async def detect(self, content: bytes) -> DetectorResult:
         # pypdf parsing and Pillow decoding are synchronous and CPU-bound;

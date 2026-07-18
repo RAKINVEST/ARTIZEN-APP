@@ -179,6 +179,20 @@ def test_an_unreadable_logo_degrades_instead_of_raising() -> None:
     assert "DEVIS" in _text_of(pdf)
 
 
+def test_a_second_brand_colour_renders_without_raising() -> None:
+    """The secondary colour accents the header rule and the party labels.
+    It must render whether it is set, absent (falls back to primary), or
+    malformed (falls back like the primary does)."""
+    for secondary in ("#8a5a2b", None, "#NOPE"):
+        pdf = PdfRenderer().render(
+            _document(
+                branding=DocumentBranding(primary_color="#1a2b3c", secondary_color=secondary)
+            )
+        )
+        assert pdf.startswith(b"%PDF-")
+        assert "DEVIS" in _text_of(pdf)
+
+
 def test_a_valid_logo_is_drawn() -> None:
     png = (
         b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06"

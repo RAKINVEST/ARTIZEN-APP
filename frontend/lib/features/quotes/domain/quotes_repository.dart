@@ -26,6 +26,11 @@ abstract class QuotesRepository {
   /// would 403. Fetching through Dio is what makes the interceptor apply.
   Future<Uint8List> downloadPdf(String id);
 
+  /// A demo quote rendered with the company's current branding — the
+  /// "aperçu du rendu" shown after importing a template, so the artisan sees
+  /// their logo, colours and identity applied without creating a real quote.
+  Future<Uint8List> downloadSamplePdf();
+
   /// Deletes a quote. The backend only allows it while the quote is a
   /// draft (409 otherwise) — deleting and recreating is how a mistyped
   /// quote gets corrected, since a quote has no update path.

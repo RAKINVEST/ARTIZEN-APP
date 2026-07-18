@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/providers/current_company_provider.dart';
@@ -69,6 +71,22 @@ final quotesNotifierProvider = AsyncNotifierProvider<QuotesNotifier, List<Quote>
 
 final quoteByIdProvider = FutureProvider.family<Quote, String>((ref, id) {
   return ref.watch(quotesRepositoryProvider).get(id);
+});
+
+/// The rendered PDF bytes of a quote, for the in-app preview. Same endpoint
+/// (and therefore the exact same document) the "Télécharger" action sends —
+/// available in every status, drafts included, since the backend renders on
+/// demand and never needs the quote to be sent first.
+final quotePdfProvider = FutureProvider.family<Uint8List, String>((ref, id) {
+  return ref.watch(quotesRepositoryProvider).downloadPdf(id);
+});
+
+/// The demo-quote PDF rendered with the company's current branding — powers
+/// the "aperçu du rendu" after a template import and from Paramètres. Not a
+/// `.family`: there is one sample per company, and it should re-fetch each
+/// time it is opened so a just-imported logo shows immediately.
+final quoteSamplePdfProvider = FutureProvider.autoDispose<Uint8List>((ref) {
+  return ref.watch(quotesRepositoryProvider).downloadSamplePdf();
 });
 
 /// One line being assembled in the "new quote" form, before it's ever sent

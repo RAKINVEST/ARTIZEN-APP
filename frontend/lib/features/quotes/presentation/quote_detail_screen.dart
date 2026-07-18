@@ -47,15 +47,15 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     }
   }
 
-  Future<void> _openPdf(Quote quote) => _run(
+  Future<void> _downloadPdf(Quote quote) => _run(
         () async {
           final bytes = await ref.read(quotesRepositoryProvider).downloadPdf(quote.id);
-          // Preview, print and share in one sheet: an artisan wants to look
-          // at it, print it, or mail it — and which of the three depends on
-          // the moment, not on the app.
+          // The OS share sheet is how a file gets saved or sent on mobile —
+          // available at any status, a draft included: the artisan can hold
+          // the finished document before ever marking it sent.
           await Printing.sharePdf(bytes: bytes, filename: '${quote.quoteNumber}.pdf');
         },
-        failureLabel: 'Impossible d\'ouvrir le PDF',
+        failureLabel: 'Téléchargement impossible',
       );
 
   Future<void> _changeStatus(Quote quote, QuoteStatus next) async {
@@ -136,9 +136,18 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
               onPressed: _busy ? null : () => _duplicate(quoteAsync.value!),
             ),
             IconButton(
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-              tooltip: 'PDF',
-              onPressed: _busy ? null : () => _openPdf(quoteAsync.value!),
+              icon: const Icon(Icons.visibility_outlined),
+              // Preview works on a draft: the artisan sees the finished
+              // document without having to send it first.
+              tooltip: 'Aperçu du PDF',
+              onPressed: _busy
+                  ? null
+                  : () => context.push('/quotes/${quoteAsync.value!.id}/pdf'),
+            ),
+            IconButton(
+              icon: const Icon(Icons.download_outlined),
+              tooltip: 'Télécharger le PDF',
+              onPressed: _busy ? null : () => _downloadPdf(quoteAsync.value!),
             ),
           ],
         ],
@@ -183,7 +192,8 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                       ListTile(
                         title: Text(line.designation),
                         subtitle: Text(
-                          '${line.quantity} ${line.unit} × ${CurrencyFormatter.format(line.unitPriceHt)} HT',
+                          'Qté : ${CurrencyFormatter.formatQuantity(line.quantity)} ${line.unit} '
+                          '× ${CurrencyFormatter.format(line.unitPriceHt)} HT',
                         ),
                         trailing: Text(CurrencyFormatter.format(line.totalTtc)),
                       ),

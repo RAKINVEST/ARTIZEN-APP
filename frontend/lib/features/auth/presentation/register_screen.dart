@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/api/api_exception.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_components.dart';
 import 'auth_providers.dart';
 
 /// Registration creates both the [User] and its [Company] in one call
@@ -61,67 +63,77 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       appBar: AppBar(title: const Text('Créer un compte')),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(ArtizenSpacing.md),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
+            constraints: const BoxConstraints(maxWidth: 440),
             child: Form(
               key: _formKey,
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  TextFormField(
+                  AppTextField(
+                    label: 'Email *',
                     controller: _email,
-                    decoration: const InputDecoration(labelText: 'Email *'),
+                    hintText: 'Votre email',
+                    icon: Icons.mail_outline,
                     keyboardType: TextInputType.emailAddress,
                     autofillHints: const [AutofillHints.email],
+                    textInputAction: TextInputAction.next,
                     validator: (value) =>
                         (value == null || value.trim().isEmpty) ? 'L\'email est requis' : null,
                   ),
-                  const SizedBox(height: 12),
-                  TextFormField(
+                  const SizedBox(height: ArtizenSpacing.sm),
+                  AppTextField(
+                    label: 'Mot de passe *',
                     controller: _password,
-                    decoration: const InputDecoration(labelText: 'Mot de passe *'),
-                    obscureText: true,
+                    hintText: 'Au moins 8 caractères',
+                    icon: Icons.lock_outline,
+                    obscure: true,
                     autofillHints: const [AutofillHints.newPassword],
+                    textInputAction: TextInputAction.next,
                     validator: (value) {
                       if (value == null || value.isEmpty) return 'Le mot de passe est requis';
                       if (value.length < 8) return '8 caractères minimum';
                       return null;
                     },
                   ),
-                  const SizedBox(height: 12),
-                  TextFormField(
+                  const SizedBox(height: ArtizenSpacing.sm),
+                  AppTextField(
+                    label: 'Nom complet',
                     controller: _fullName,
-                    decoration: const InputDecoration(labelText: 'Nom complet'),
+                    hintText: 'Votre nom',
+                    icon: Icons.person_outline,
+                    textInputAction: TextInputAction.next,
                   ),
-                  const SizedBox(height: 12),
-                  TextFormField(
+                  const SizedBox(height: ArtizenSpacing.sm),
+                  AppTextField(
+                    label: 'Nom de l\'entreprise',
                     controller: _companyName,
-                    decoration: const InputDecoration(labelText: 'Nom de l\'entreprise'),
+                    hintText: 'Votre entreprise',
+                    icon: Icons.business_outlined,
+                    textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _submit(),
                   ),
                   if (_error != null) ...[
-                    const SizedBox(height: 16),
-                    Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                    const SizedBox(height: ArtizenSpacing.sm),
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: ArtizenColors.error, fontSize: 13),
+                    ),
                   ],
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: _loading ? null : _submit,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 16,
-                            width: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            child: Text('Créer mon compte'),
-                          ),
+                  const SizedBox(height: ArtizenSpacing.md),
+                  AppPrimaryButton(
+                    label: 'Créer mon compte',
+                    icon: Icons.check_circle_outline,
+                    loading: _loading,
+                    onPressed: _submit,
                   ),
-                  const SizedBox(height: 8),
-                  TextButton(
+                  const SizedBox(height: ArtizenSpacing.xs),
+                  AppLink(
+                    label: 'J\'ai déjà un compte',
+                    icon: Icons.login,
                     onPressed: _loading ? null : () => context.go('/login'),
-                    child: const Text('J\'ai déjà un compte'),
                   ),
                 ],
               ),

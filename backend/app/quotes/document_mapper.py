@@ -14,6 +14,7 @@ This is a translation, not a calculation.
 """
 
 from datetime import date
+from decimal import Decimal
 
 from app.branding.schemas import BrandingProfileRead
 from app.clients.models import Client
@@ -69,6 +70,65 @@ def _company_party(profile: BrandingProfileRead) -> DocumentParty:
         name=company.legal_name or company.name or "—",
         address_lines=address,
         detail_lines=details,
+    )
+
+
+#: A canned demo used only for the "aperçu du rendu" a company sees right
+#: after importing a template — real amounts, a fictitious client — so the
+#: artisan can confirm their identity and colours are applied without having
+#: to create a real quote first. Reuses the exact same ``Document`` shape and
+#: renderer as a genuine quote, so the preview cannot drift from the real
+#: thing.
+def sample_document(*, profile: BrandingProfileRead, logo: bytes | None) -> Document:
+    brand = profile.brand
+    return Document(
+        title=QUOTE_TITLE,
+        number="DEV-2026-0001",
+        issued_on=date(2026, 1, 1),
+        issuer=_company_party(profile),
+        recipient=DocumentParty(
+            name="Client Démonstration",
+            address_lines=["10 rue de l'Exemple", "75000 Paris"],
+            detail_lines=[],
+        ),
+        lines=[
+            DocumentLine(
+                designation="Fourniture et pose (exemple)",
+                unit="u",
+                quantity=Decimal("2.00"),
+                unit_price_ht=Decimal("450.00"),
+                vat_rate=Decimal("20.00"),
+                total_ht=Decimal("900.00"),
+            ),
+            DocumentLine(
+                designation="Main-d'œuvre (exemple)",
+                unit="h",
+                quantity=Decimal("5.00"),
+                unit_price_ht=Decimal("60.00"),
+                vat_rate=Decimal("10.00"),
+                total_ht=Decimal("300.00"),
+            ),
+        ],
+        totals=DocumentTotals(
+            total_ht=Decimal("1200.00"),
+            total_vat=Decimal("210.00"),
+            total_ttc=Decimal("1410.00"),
+            vat_rows=[
+                DocumentVatRow(
+                    rate=Decimal("10.00"), base_ht=Decimal("300.00"), vat_amount=Decimal("30.00")
+                ),
+                DocumentVatRow(
+                    rate=Decimal("20.00"), base_ht=Decimal("900.00"), vat_amount=Decimal("180.00")
+                ),
+            ],
+        ),
+        legal_mentions=QUOTE_LEGAL_MENTIONS,
+        branding=DocumentBranding(
+            logo=logo,
+            primary_color=brand.primary_color,
+            secondary_color=brand.secondary_color,
+            tagline=brand.tagline,
+        ),
     )
 
 

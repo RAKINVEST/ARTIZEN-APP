@@ -122,6 +122,11 @@ class FakeQuotesRepository implements QuotesRepository {
   }
 
   @override
+  Future<Uint8List> downloadSamplePdf() async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> delete(String id) async {
     throw UnimplementedError();
   }

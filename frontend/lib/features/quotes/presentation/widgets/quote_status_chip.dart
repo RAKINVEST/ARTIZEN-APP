@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../data/quote_models.dart';
 
 /// The status, readable at a glance.
@@ -16,12 +17,14 @@ class QuoteStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    // Status colours are semantic tokens on the ARTIZEN design system, not
+    // hardcoded here: draft neutral, sent blue, accepted gold (a
+    // confirmation), refused the danger token.
     final (background, foreground, icon) = switch (status) {
-      QuoteStatus.draft => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant, Icons.edit_outlined),
-      QuoteStatus.sent => (scheme.primaryContainer, scheme.onPrimaryContainer, Icons.send_outlined),
-      QuoteStatus.accepted => (const Color(0xFFD8F3DC), const Color(0xFF1B4332), Icons.check_circle_outline),
-      QuoteStatus.refused => (scheme.errorContainer, scheme.onErrorContainer, Icons.cancel_outlined),
+      QuoteStatus.draft => (ArtizenColors.statusDraftBg, ArtizenColors.statusDraftFg, Icons.edit_outlined),
+      QuoteStatus.sent => (ArtizenColors.statusSentBg, ArtizenColors.statusSentFg, Icons.send_outlined),
+      QuoteStatus.accepted => (ArtizenColors.statusAcceptedBg, ArtizenColors.statusAcceptedFg, Icons.check_circle_outline),
+      QuoteStatus.refused => (ArtizenColors.statusRefusedBg, ArtizenColors.statusRefusedFg, Icons.cancel_outlined),
     };
 
     return Container(

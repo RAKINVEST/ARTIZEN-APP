@@ -40,12 +40,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Artizen'), findsOneWidget);
-    expect(find.text('Se connecter'), findsOneWidget);
+    // The wordmark and CTA are uppercase in the premium identity.
+    expect(find.text('ARTIZEN'), findsOneWidget);
+    expect(find.text('SE CONNECTER'), findsOneWidget);
 
     await tester.enterText(find.byType(TextFormField).at(0), 'demo@artizen-qa.io');
     await tester.enterText(find.byType(TextFormField).at(1), 'Password123!');
-    await tester.tap(find.text('Se connecter'));
+    // The premium login now leads with a brand banner, so the button can sit
+    // below the fold on a small test surface — scroll it into view first.
+    await tester.ensureVisible(find.text('SE CONNECTER'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('SE CONNECTER'));
     await tester.pumpAndSettle();
 
     // Appears twice: the AppBar title and the bottom-nav label.

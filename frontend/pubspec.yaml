@@ -56,3 +56,13 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    # Exo 2 — the geometric, technical, modern app font (ENR-inspired).
+    # Variable font: Flutter applies fontWeight along the weight axis.
+    - family: Exo2
+      fonts:
+        - asset: assets/fonts/Exo2.ttf
+    # Orbitron — the ARTIZEN brand wordmark (display only).
+    - family: Orbitron
+      fonts:
+        - asset: assets/fonts/Orbitron.ttf

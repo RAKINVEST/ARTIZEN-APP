@@ -41,6 +41,32 @@ async def list_quotes(
     return await service.list(company_id=current_user.company_id, offset=offset, limit=limit)
 
 
+@router.get(
+    "/sample-pdf",
+    response_class=Response,
+    responses={
+        200: {
+            "content": {"application/pdf": {}},
+            "description": "A demo quote rendered with the company's current branding.",
+        }
+    },
+)
+async def download_sample_pdf(service: QuoteServiceDep, current_user: CurrentUserDep) -> Response:
+    """A demo quote rendered with the caller's current identity, logo and
+    colours — the "aperçu du rendu" shown after importing a template, so an
+    artisan can confirm their branding landed without creating a real quote.
+
+    Declared before ``/{quote_id}`` so "sample-pdf" is matched as this static
+    route, never parsed as a quote id.
+    """
+    filename, pdf = await service.render_sample_pdf(current_user.company_id)
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
 @router.get("/{quote_id}", response_model=QuoteRead)
 async def get_quote(
     service: QuoteServiceDep, current_user: CurrentUserDep, quote_id: uuid.UUID

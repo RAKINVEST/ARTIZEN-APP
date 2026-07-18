@@ -27,6 +27,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import (
+    HRFlowable,
     Image,
     KeepTogether,
     Paragraph,
@@ -40,13 +41,16 @@ from app.pdf.schemas import Document
 
 logger = logging.getLogger(__name__)
 
-# Used when the artisan never set a brand colour. Not an error: a document
-# must always be produceable, even for an account that has configured
-# nothing at all.
-_DEFAULT_PRIMARY = colors.HexColor("#2F4858")
-_DEFAULT_TEXT = colors.HexColor("#1A1A1A")
-_MUTED = colors.HexColor("#6B7280")
-_RULE = colors.HexColor("#E5E7EB")
+# The ARTIZEN palette, used when the artisan never set a brand colour. Not an
+# error: a document must always be produceable, even for an account that has
+# configured nothing — and its default look should be the premium house style
+# (bleu nuit dominant, or en accent). A company's own imported colours still
+# override these.
+_DEFAULT_PRIMARY = colors.HexColor("#10233F")  # bleu nuit premium
+_DEFAULT_ACCENT = colors.HexColor("#D4AF37")   # or premium — the accent
+_DEFAULT_TEXT = colors.HexColor("#1E293B")     # texte principal ARTIZEN
+_MUTED = colors.HexColor("#64748B")            # texte secondaire ARTIZEN
+_RULE = colors.HexColor("#E2E8F0")
 
 _LOGO_MAX_WIDTH = 45 * mm
 _LOGO_MAX_HEIGHT = 22 * mm
@@ -111,6 +115,13 @@ class PdfRenderer:
     def render(self, document: Document) -> bytes:
         buffer = BytesIO()
         primary = _parse_color(document.branding.primary_color, _DEFAULT_PRIMARY)
+        # The second brand colour accents the rule under the header and the
+        # party labels. A company that set only a primary keeps its own colour
+        # as the accent (coherent with their brand); an account that configured
+        # nothing falls back to the ARTIZEN gold, giving the default document
+        # the house premium look rather than a flat one-colour page.
+        accent_fallback = primary if document.branding.primary_color else _DEFAULT_ACCENT
+        secondary = _parse_color(document.branding.secondary_color, accent_fallback)
 
         doc = SimpleDocTemplate(
             buffer,
@@ -125,8 +136,10 @@ class PdfRenderer:
 
         story: list[object] = []
         story += self._header(document, primary)
-        story.append(Spacer(1, 8 * mm))
-        story += self._parties(document)
+        story.append(Spacer(1, 4 * mm))
+        story.append(HRFlowable(width="100%", thickness=1.2, color=secondary, spaceBefore=0, spaceAfter=0))
+        story.append(Spacer(1, 6 * mm))
+        story += self._parties(document, secondary)
         story.append(Spacer(1, 8 * mm))
         story.append(self._lines_table(document, primary))
         story.append(Spacer(1, 6 * mm))
@@ -195,12 +208,18 @@ class PdfRenderer:
             logger.warning("pdf.unreadable_logo — rendering without it", exc_info=True)
             return None
 
-    def _parties(self, document: Document) -> list[object]:
+    def _parties(self, document: Document, secondary: colors.Color) -> list[object]:
         styles = _styles()
+        # The ÉMETTEUR / CLIENT labels carry the secondary brand accent rather
+        # than the default grey, so the artisan's identity shows even in the
+        # small type.
+        label_style = ParagraphStyle(
+            "party_label_accent", parent=styles["party_label"], textColor=secondary
+        )
 
         def block(party: object, label: str) -> list[object]:
             assert not isinstance(party, str)
-            out: list[object] = [Paragraph(label, styles["party_label"])]
+            out: list[object] = [Paragraph(label, label_style)]
             out.append(Paragraph(party.name, styles["party_name"]))  # type: ignore[attr-defined]
             for line in [*party.address_lines, *party.detail_lines]:  # type: ignore[attr-defined]
                 out.append(Paragraph(line, styles["party_line"]))

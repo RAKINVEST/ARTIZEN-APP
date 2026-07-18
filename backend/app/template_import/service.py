@@ -68,7 +68,7 @@ class TemplateImportService:
         analysis = await self._get_quote_analysis(analysis_id, company_id=company_id)
         # Ensures detection actually completed (raises DocumentNotProcessedError
         # via the same guard GET /document-analysis/{id}/detection uses).
-        await self._detection.get_or_run(analysis_id, company_id=company_id)
+        detection = await self._detection.get_or_run(analysis_id, company_id=company_id)
 
         company_fields = data.model_dump(include=_COMPANY_FIELDS, exclude_unset=True)
         if company_fields:
@@ -77,6 +77,18 @@ class TemplateImportService:
         brand_fields = data.model_dump(include=_BRAND_FIELDS, exclude_unset=True)
         if brand_fields:
             await self._branding.update_profile(company_id, BrandProfileUpdate(**brand_fields))
+
+        # The identity fields above were already reviewed and confirmed in the
+        # preview form, but the logo never had a form field — it was only ever
+        # *detected*, not applied — which is why an imported quote still came
+        # out with no logo on the generated PDF. When one was detected, pull
+        # its pixels from the imported PDF and store them as the company logo
+        # so the PDF engine (which reads brand.logo_path) actually shows it.
+        # Best-effort: a logo we cannot re-read must not fail the import.
+        if detection.logo_detected:
+            logo_bytes = await self._detection.extract_logo(analysis_id, company_id=company_id)
+            if logo_bytes:
+                await self._branding.set_logo_from_bytes(company_id, logo_bytes)
 
         template = await self._branding.create_template_from_existing_file(
             company_id,

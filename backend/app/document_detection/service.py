@@ -8,6 +8,7 @@ caches the result. Routes never touch the repositories, storage or
 aggregator directly.
 """
 
+import asyncio
 import logging
 import uuid
 
@@ -20,6 +21,7 @@ from app.document_analysis.models import DocumentStatus
 from app.document_analysis.repository import DocumentAnalysisRepository
 from app.document_detection.aggregator import DetectionAggregator
 from app.document_detection.exceptions import DocumentNotProcessedError
+from app.document_detection.logo_detector import extract_first_image_png
 from app.document_detection.models import DocumentDetectionResult
 from app.document_detection.repository import DocumentDetectionResultRepository
 from app.storage import StorageProvider
@@ -36,6 +38,22 @@ class DocumentDetectionService:
         self._aggregator = aggregator
         self._analyses = DocumentAnalysisRepository(session)
         self._detections = DocumentDetectionResultRepository(session)
+
+    async def extract_logo(
+        self, analysis_id: uuid.UUID, *, company_id: uuid.UUID
+    ) -> bytes | None:
+        """The logo image bytes of the analysed PDF, or ``None`` if there is
+        no readable one. ``detect`` only scores whether a logo exists;
+        ``template_import`` needs the pixels to persist it as the company
+        logo, so this materialises the same first-page candidate. Loads and
+        decodes off the event loop — pypdf/Pillow are CPU-bound, exactly like
+        the detectors."""
+        analysis = await self._analyses.get(analysis_id)
+        if analysis is None:
+            raise NotFoundError(f"Document analysis {analysis_id} not found.")
+        ensure_same_company(analysis.company_id, analysis_id, company_id)
+        content = await self._storage.load(analysis.storage_key)
+        return await asyncio.to_thread(extract_first_image_png, content)
 
     async def get_or_run(
         self, analysis_id: uuid.UUID, *, company_id: uuid.UUID

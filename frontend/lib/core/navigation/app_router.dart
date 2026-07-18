@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/auth_providers.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/branding/presentation/branding_sample_preview_screen.dart';
 import '../../features/catalog/presentation/catalog_screen.dart';
 import '../../features/catalog/presentation/item_form_screen.dart';
 import '../../features/clients/presentation/client_form_screen.dart';
@@ -13,6 +14,7 @@ import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/quote_assistant/presentation/quote_assistant_screen.dart';
 import '../../features/quotes/presentation/quote_detail_screen.dart';
 import '../../features/quotes/presentation/quote_form_screen.dart';
+import '../../features/quotes/presentation/quote_pdf_preview_screen.dart';
 import '../../features/quotes/presentation/quotes_list_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/template_import/presentation/template_import_screen.dart';
@@ -111,9 +113,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const TemplateImportScreen(),
       ),
       GoRoute(
+        path: '/branding/sample-preview',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const BrandingSamplePreviewScreen(),
+      ),
+      GoRoute(
         path: '/quotes/:id',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => QuoteDetailScreen(quoteId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/quotes/:id/pdf',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => QuotePdfPreviewScreen(quoteId: state.pathParameters['id']!),
       ),
     ],
   );

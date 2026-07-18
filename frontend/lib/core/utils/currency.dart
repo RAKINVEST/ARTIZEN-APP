@@ -20,4 +20,17 @@ class CurrencyFormatter {
     if (value == null) return backendAmount;
     return _format.format(value);
   }
+
+  /// Trims the trailing zeros a `Numeric(10,2)` column always carries: the
+  /// artisan wrote "1", not "1.00". Mirrors the backend PDF renderer's own
+  /// quantity formatting so the screen and the document agree. French
+  /// decimal comma. Falls back to the raw string when it has no fractional
+  /// part or isn't a plain decimal — never throws.
+  static String formatQuantity(String backendQuantity) {
+    if (!backendQuantity.contains('.')) return backendQuantity;
+    final trimmed = backendQuantity
+        .replaceAll(RegExp(r'0+$'), '')
+        .replaceAll(RegExp(r'\.$'), '');
+    return trimmed.replaceAll('.', ',');
+  }
 }

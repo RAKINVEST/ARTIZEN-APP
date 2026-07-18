@@ -29,6 +29,21 @@ async def client_id(client: AsyncClient, company_id: str) -> str:
     return response.json()["id"]
 
 
+async def test_sample_pdf_renders_with_current_branding(client: AsyncClient) -> None:
+    """The "aperçu du rendu" a company sees after importing a template: a demo
+    quote rendered with their current identity, needing no real quote to
+    exist. Same renderer as a real quote, so it proves the branding pipeline
+    without a full lifecycle."""
+    response = await client.get("/api/quotes/sample-pdf")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/pdf")
+    assert response.content.startswith(b"%PDF-")
+    text = PdfReader(io.BytesIO(response.content)).pages[0].extract_text()
+    assert "DEVIS" in text
+    assert "1 410,00" in text  # sample TTC, French formatting
+
+
 @pytest.fixture
 async def item_id(client: AsyncClient, company_id: str) -> str:
     category = await client.post("/api/catalog/categories", json={"name": "Cycle"})

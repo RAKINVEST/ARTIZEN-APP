@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../data/template_import_models.dart';
 import 'template_import_providers.dart';
@@ -138,6 +139,14 @@ class _DoneView extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
+            // Let the artisan immediately see their identity applied on a
+            // demo quote, without having to create a real one first.
+            OutlinedButton.icon(
+              onPressed: () => context.push('/branding/sample-preview'),
+              icon: const Icon(Icons.visibility_outlined),
+              label: const Text('Aperçu du rendu'),
+            ),
+            const SizedBox(height: 8),
             FilledButton(onPressed: onFinish, child: const Text('Terminer')),
           ],
         ),

@@ -22,7 +22,7 @@ from app.catalog.repository import CatalogItemRepository
 from app.clients.repository import ClientRepository
 from app.core.exceptions import NotFoundError
 from app.pdf.renderer import PdfRenderer
-from app.quotes.document_mapper import quote_to_document
+from app.quotes.document_mapper import quote_to_document, sample_document
 from app.storage import StorageProvider
 from app.quotes.calculator import LineTotals, QuoteCalculator, QuoteTotals
 from app.quotes.exceptions import (
@@ -280,6 +280,19 @@ class QuoteService:
         )
         pdf = await asyncio.to_thread(self._renderer.render, document)
         return f"{quote.quote_number}.pdf", pdf
+
+    async def render_sample_pdf(self, company_id: uuid.UUID) -> tuple[str, bytes]:
+        """A demo quote rendered with the company's *current* branding, for
+        the "aperçu du rendu" shown right after importing a template. Same
+        renderer, same ``Document`` shape and same logo loading as a real
+        quote — only the lines and client are canned — so the preview is
+        faithful to what a real quote will look like, and an artisan can
+        confirm their logo, colours and identity landed before creating one."""
+        profile = await self._branding.get_profile(company_id)
+        logo = await self._load_logo(profile.brand.logo_path)
+        document = sample_document(profile=profile, logo=logo)
+        pdf = await asyncio.to_thread(self._renderer.render, document)
+        return "apercu-modele.pdf", pdf
 
     async def _load_logo(self, logo_path: str | None) -> bytes | None:
         """A missing or unreadable logo costs the artisan a logo, never

@@ -51,6 +51,15 @@ class QuotesRepositoryImpl implements QuotesRepository {
   }
 
   @override
+  Future<Uint8List> downloadSamplePdf() async {
+    final response = await _dio.get<List<int>>(
+      '/quotes/sample-pdf',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return Uint8List.fromList(response.data!);
+  }
+
+  @override
   Future<void> delete(String id) async {
     await _dio.delete<void>('/quotes/$id');
   }
