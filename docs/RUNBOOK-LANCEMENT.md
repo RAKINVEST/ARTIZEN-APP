@@ -12,6 +12,11 @@
 **Légende statut** : ✅ fait · 🟡 partiel / contenu prêt · ⬜ à faire
 **Type** : 🧑 Vous/Ops (action externe) · 🛠️ Dev (à construire) · 📝 Contenu (rédactionnel) · 🏁 Jalon
 
+> **Mise à jour (dev P0 livrés)** : **infra email transactionnelle** (marche sans compte), **reset mot
+> de passe** (backend + écrans) et **onboarding guidé** sont **construits, testés et commités** — 276
+> tests backend + 104 tests Flutter verts. Reste, côté vous : domaine, hébergement HTTPS, sauvegardes,
+> monitoring, **compte email de prod** (pour envoyer réellement), Stripe, légal, et la mise en ligne.
+
 ---
 
 ## 1. Tableau de bord des 21 items
@@ -24,10 +29,10 @@
 | 4 | **Sauvegardes** | ⬜ | 🧑 Ops | 1 | 0,5 j | `pg_dump` planifié + test de restauration |
 | 5 | **Stripe connecté** | ⬜ | 🛠️ Dev + 🧑 | Compte Stripe (vous) | **~1 sem** | **Non construit** : abonnement/paiement à intégrer + page tarifs branchée |
 | 6 | **Landing publiée** | 🟡 | 📝→🧑 | 1, 2, 3, 11, 12 | 1–2 j | **Copie prête** ([kit](KIT-LANCEMENT.md)) → intégrer + mettre en ligne |
-| 7 | **Emails fonctionnels** | ⬜ | 🛠️ Dev + 🧑 | Compte email (Postmark/Brevo/SES) | **~2–3 j** | **Non construit** (aucune infra mail). Prérequis de #8 et des emails de cycle de vie |
-| 8 | **Reset mot de passe** | ⬜ | 🛠️ Dev | 7 | **~2–3 j** | **Absent** (confirmé). Endpoints + token expirable + 2 écrans. **P0** |
-| 9 | **Envoi du devis** | 🟡 | 🛠️/🧑 | (7 si email) | 0–4 j | Partage OS **déjà là** (télécharger + partager). Envoi **email intégré** = à construire (ou assumer le partage) |
-| 10 | **Onboarding** | ⬜ | 🛠️ Dev | — | **~3–5 j** | **Aucun** (démarrage à froid). Check-list guidée « 1. Entreprise → 2. Catalogue → 3. Client → 4. Devis ». **P1 activation** |
+| 7 | **Emails fonctionnels** | 🟡 | 🛠️ Dev ✅ + 🧑 | Compte email (prod) | fait (infra) | **Infra construite** (`app/email/`, abstraction + mock, marche sans compte). Reste : brancher un **vrai fournisseur** (compte SMTP/Postmark) = config, sans code |
+| 8 | **Reset mot de passe** | ✅ | 🛠️ Dev | 7 | fait | **Livré** : `forgot-password`/`reset-password` (token haché, expirant, usage unique, anti-énumération) + écrans Flutter + lien login. 6 tests |
+| 9 | **Envoi du devis** | 🟡 | 🛠️/🧑 | (7 si email) | 0–4 j | Partage OS **déjà là** (télécharger + partager). Envoi **email intégré** = à construire (ou assumer le partage) — **non demandé dans ce lot** |
+| 10 | **Onboarding** | ✅ | 🛠️ Dev | — | fait | **Livré** : check-list de démarrage guidée sur le dashboard (4 étapes cliquables, progression, se masque quand complet) |
 | 11 | **CGU / CGV** | ⬜ | 📝 + juridique | — | 1–2 j | À rédiger (je fournis un gabarit) + **revue juridique** |
 | 12 | **RGPD** | ⬜ | 📝 + juridique | — | 1–2 j | Politique de confidentialité + registre + base légale (gabarit + revue) |
 | 13 | **Support** | ⬜ | 🧑 Vous | — | 1–2 h | Canal + `bonjour@`/`support@` relevé ; SLA 24 h |
