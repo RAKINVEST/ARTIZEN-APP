@@ -35,10 +35,34 @@ class DashboardSummary {
     required this.catalogItemCount,
     required this.quoteCount,
     required this.recentQuotes,
+    required this.companyHasSiret,
   });
 
   final ApproximateCount clientCount;
   final ApproximateCount catalogItemCount;
   final ApproximateCount quoteCount;
   final List<Quote> recentQuotes;
+
+  /// Whether the company already carries a SIRET — the signal the onboarding
+  /// checklist uses to mark "Configurer mon entreprise" as done. Read from
+  /// `/branding/profile`, never computed here.
+  final bool companyHasSiret;
+
+  /// The four onboarding milestones, in order. A step is done once its
+  /// underlying data exists; the checklist disappears when all four are done.
+  bool get companyConfigured => companyHasSiret;
+  bool get hasCatalogItem => catalogItemCount.value > 0;
+  bool get hasClient => clientCount.value > 0;
+  bool get hasQuote => quoteCount.value > 0;
+
+  /// How many onboarding steps are complete (0–4).
+  int get onboardingDoneCount => [
+        companyConfigured,
+        hasCatalogItem,
+        hasClient,
+        hasQuote,
+      ].where((done) => done).length;
+
+  /// True once every onboarding step is done — the checklist stops showing.
+  bool get onboardingComplete => onboardingDoneCount == 4;
 }

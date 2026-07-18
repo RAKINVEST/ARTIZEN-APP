@@ -8,6 +8,15 @@ class FakeAuthRepository implements AuthRepository {
   String? lastRegisterCompanyName;
   bool shouldFailLogin = false;
 
+  /// Records the last password-reset interactions so tests can assert them.
+  String? lastForgotPasswordEmail;
+  String? lastResetToken;
+  String? lastResetPassword;
+
+  /// When set, [resetPassword] throws it — lets a test simulate a 400 (expired
+  /// or invalid token) without a real HTTP layer.
+  Object? resetPasswordError;
+
   @override
   Future<bool> isLoggedIn() async => loggedIn;
 
@@ -27,6 +36,18 @@ class FakeAuthRepository implements AuthRepository {
   }) async {
     lastRegisterCompanyName = companyName;
     loggedIn = true;
+  }
+
+  @override
+  Future<void> requestPasswordReset(String email) async {
+    lastForgotPasswordEmail = email;
+  }
+
+  @override
+  Future<void> resetPassword({required String token, required String password}) async {
+    if (resetPasswordError != null) throw resetPasswordError!;
+    lastResetToken = token;
+    lastResetPassword = password;
   }
 
   @override

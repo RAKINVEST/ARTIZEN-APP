@@ -1,5 +1,7 @@
 import 'package:artizen/core/api/auth_token_storage.dart';
 import 'package:artizen/features/auth/data/auth_repository.dart';
+import 'package:artizen/features/branding/data/branding_models.dart';
+import 'package:artizen/features/branding/data/branding_repository_impl.dart';
 import 'package:artizen/features/catalog/data/catalog_repository_impl.dart';
 import 'package:artizen/features/clients/data/clients_repository_impl.dart';
 import 'package:artizen/features/quotes/data/quotes_repository_impl.dart';
@@ -12,6 +14,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support/fake_auth_repository.dart';
 import 'support/fake_auth_token_storage.dart';
 import 'support/fake_repositories.dart';
+
+/// A minimal company/brand profile for the dashboard's onboarding step, which
+/// now reads `/branding/profile` to know whether the company has a SIRET.
+BrandingProfile _emptyProfile() => const BrandingProfile(
+      company: Company(id: 'co1'),
+      brand: BrandProfile(id: 'b1'),
+      templates: [],
+    );
 
 void main() {
   testWidgets('App boots to the login screen and logs in to the dashboard', (tester) async {
@@ -34,6 +44,7 @@ void main() {
           clientsRepositoryProvider.overrideWithValue(FakeClientsRepository([])),
           catalogRepositoryProvider.overrideWithValue(FakeCatalogRepository([], [])),
           quotesRepositoryProvider.overrideWithValue(FakeQuotesRepository([])),
+          brandingRepositoryProvider.overrideWithValue(FakeBrandingRepository(_emptyProfile())),
         ],
         child: const ArtizenApp(),
       ),
@@ -55,6 +66,14 @@ void main() {
 
     // Appears twice: the AppBar title and the bottom-nav label.
     expect(find.text('Tableau de bord'), findsNWidgets(2));
+
+    // A brand-new account (empty fakes, no SIRET) lands on the onboarding
+    // checklist. Dismiss it via "Masquer" to reveal the underlying empty
+    // dashboard — this also exercises the dismiss control.
+    expect(find.text('Bienvenue ! Voici comment démarrer'), findsOneWidget);
+    await tester.tap(find.text('Masquer'));
+    await tester.pumpAndSettle();
+
     // The three stat cards, all backed by the empty fakes above.
     expect(find.text('0'), findsNWidgets(3));
   });

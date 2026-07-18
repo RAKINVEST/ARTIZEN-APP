@@ -7,6 +7,7 @@ import '../../../core/widgets/async_value_view.dart';
 import '../../../shared/providers/current_company_provider.dart';
 import '../../quotes/presentation/widgets/quote_status_chip.dart';
 import 'dashboard_providers.dart';
+import 'widgets/onboarding_checklist.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -22,6 +23,9 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(dashboardSummaryProvider);
+    // The manual "Masquer" escape hatch; the checklist also hides itself once
+    // every step is done.
+    final onboardingDismissed = ref.watch(onboardingDismissedProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Tableau de bord')),
@@ -33,6 +37,10 @@ class DashboardScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (!data.onboardingComplete && !onboardingDismissed) ...[
+                OnboardingChecklist(summary: data),
+                const SizedBox(height: 24),
+              ],
               Row(
                 children: [
                   Expanded(

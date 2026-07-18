@@ -110,6 +110,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           validator: (value) =>
                               (value == null || value.isEmpty) ? 'Le mot de passe est requis' : null,
                         ),
+                        const SizedBox(height: ArtizenSpacing.xs),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: AppLink(
+                            label: 'Mot de passe oublié ?',
+                            onPressed: _loading ? null : () => context.go('/forgot-password'),
+                          ),
+                        ),
                         if (_error != null) ...[
                           const SizedBox(height: ArtizenSpacing.sm),
                           Text(

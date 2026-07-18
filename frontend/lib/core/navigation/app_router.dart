@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/auth_providers.dart';
+import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/branding/presentation/branding_sample_preview_screen.dart';
 import '../../features/branding/presentation/company_profile_screen.dart';
 import '../../features/catalog/presentation/catalog_screen.dart';
@@ -23,6 +25,16 @@ import 'app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
+/// Routes reachable while signed out. `/reset-password` and `/forgot-password`
+/// belong here so a logged-out user following the reset-email link isn't
+/// bounced to `/login` before they can set a new password.
+const _publicRoutes = {'/login', '/register', '/forgot-password', '/reset-password'};
+
+/// Routes a signed-in user is sent away from (they've already authenticated).
+/// Narrower than [_publicRoutes] on purpose: a logged-in user *may* still open
+/// the reset screens (e.g. from an email link), so those are not bounced.
+const _signedInRedirectRoutes = {'/login', '/register'};
 
 /// Bridges [authNotifierProvider] to GoRouter's `refreshListenable` so a
 /// logout that isn't triggered by the user tapping something in the app —
@@ -49,14 +61,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: refresh,
     redirect: (context, state) async {
       final isLoggedIn = await ref.read(authNotifierProvider.future);
-      final isAuthRoute = state.matchedLocation == '/login' || state.matchedLocation == '/register';
-      if (!isLoggedIn && !isAuthRoute) return '/login';
-      if (isLoggedIn && isAuthRoute) return '/dashboard';
+      final location = state.matchedLocation;
+      if (!isLoggedIn && !_publicRoutes.contains(location)) return '/login';
+      if (isLoggedIn && _signedInRedirectRoutes.contains(location)) return '/dashboard';
       return null;
     },
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        // The reset link is `<APP_BASE_URL>/reset-password?token=XXXX`, so the
+        // token arrives as a query parameter, not a path segment.
+        builder: (context, state) =>
+            ResetPasswordScreen(token: state.uri.queryParameters['token']),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),
         branches: [

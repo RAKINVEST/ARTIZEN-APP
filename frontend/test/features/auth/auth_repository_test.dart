@@ -98,4 +98,42 @@ void main() {
 
     expect(await tokenStorage.readToken(), isNull);
   });
+
+  test('requestPasswordReset() posts the email and ignores the (204) body', () async {
+    when(() => dio.post<void>(
+          '/auth/forgot-password',
+          data: {'email': 'a@artizen-qa.io'},
+        )).thenAnswer(
+      (_) async => Response(
+        requestOptions: RequestOptions(path: '/auth/forgot-password'),
+        statusCode: 204,
+      ),
+    );
+
+    await repository.requestPasswordReset('a@artizen-qa.io');
+
+    verify(() => dio.post<void>(
+          '/auth/forgot-password',
+          data: {'email': 'a@artizen-qa.io'},
+        )).called(1);
+  });
+
+  test('resetPassword() posts the token and the new password', () async {
+    when(() => dio.post<void>(
+          '/auth/reset-password',
+          data: {'token': 'reset-tok', 'password': 'secret123'},
+        )).thenAnswer(
+      (_) async => Response(
+        requestOptions: RequestOptions(path: '/auth/reset-password'),
+        statusCode: 204,
+      ),
+    );
+
+    await repository.resetPassword(token: 'reset-tok', password: 'secret123');
+
+    verify(() => dio.post<void>(
+          '/auth/reset-password',
+          data: {'token': 'reset-tok', 'password': 'secret123'},
+        )).called(1);
+  });
 }

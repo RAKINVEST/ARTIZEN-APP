@@ -22,6 +22,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   final _fullName = TextEditingController();
   final _companyName = TextEditingController();
   bool _loading = false;
@@ -31,6 +32,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void dispose() {
     _email.dispose();
     _password.dispose();
+    _confirmPassword.dispose();
     _fullName.dispose();
     _companyName.dispose();
     super.dispose();
@@ -94,6 +96,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     validator: (value) {
                       if (value == null || value.isEmpty) return 'Le mot de passe est requis';
                       if (value.length < 8) return '8 caractères minimum';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: ArtizenSpacing.sm),
+                  AppTextField(
+                    label: 'Confirmer le mot de passe *',
+                    controller: _confirmPassword,
+                    hintText: 'Retapez le mot de passe',
+                    icon: Icons.lock_outline,
+                    obscure: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                    textInputAction: TextInputAction.next,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Confirmez le mot de passe';
+                      if (value != _password.text) return 'Les mots de passe ne correspondent pas';
                       return null;
                     },
                   ),

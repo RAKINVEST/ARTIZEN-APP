@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/providers/current_company_provider.dart';
+import '../../branding/data/branding_repository_impl.dart';
 import '../../catalog/data/catalog_repository_impl.dart';
 import '../../clients/data/clients_repository_impl.dart';
 import '../../quotes/data/quotes_repository_impl.dart';
@@ -33,20 +34,35 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
       .watch(catalogRepositoryProvider)
       .listItems(companyId: companyId, activeOnly: true);
   final quotesFuture = ref.watch(quotesRepositoryProvider).list(companyId: companyId);
+  // The company profile drives the onboarding "Configurer mon entreprise"
+  // step. Fetched directly here — like the three counts above — so a single
+  // invalidation of this provider re-runs everything fresh (no separate
+  // notifier cache to keep in sync). Started before any await, so it runs
+  // concurrently with the three list calls.
+  final profileFuture = ref.watch(brandingRepositoryProvider).getProfile();
 
   final clients = await clientsFuture;
   final items = await itemsFuture;
   final quotes = await quotesFuture;
+  final profile = await profileFuture;
 
   final recentQuotes = [...quotes]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  final siret = profile.company.siret?.trim() ?? '';
 
   return DashboardSummary(
     clientCount: _countOf(clients),
     catalogItemCount: _countOf(items),
     quoteCount: _countOf(quotes),
     recentQuotes: recentQuotes.take(5).toList(),
+    companyHasSiret: siret.isNotEmpty,
   );
 });
+
+/// Whether the artisan dismissed the onboarding checklist this session (the
+/// "Masquer" button). In-memory on purpose: the checklist also disappears on
+/// its own once all four steps are done, so this is only the manual escape
+/// hatch, not durable state worth persisting.
+final onboardingDismissedProvider = StateProvider<bool>((ref) => false);
 
 /// A full page means the backend had at least this many rows and possibly
 /// more, so the number is a floor — not a total.

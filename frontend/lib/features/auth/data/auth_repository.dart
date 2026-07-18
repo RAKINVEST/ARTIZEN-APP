@@ -45,6 +45,21 @@ class AuthRepository {
     await _tokenStorage.saveToken(response.data!['access_token'] as String);
   }
 
+  /// Asks the backend to email a reset link. The endpoint always answers 204
+  /// and never reveals whether an account exists for [email] (anti-enumeration,
+  /// see `POST /auth/forgot-password`), so a successful return here means only
+  /// "the request was accepted" — never "this email is registered".
+  Future<void> requestPasswordReset(String email) async {
+    await _dio.post<void>('/auth/forgot-password', data: {'email': email});
+  }
+
+  /// Sets a new [password] from the [token] carried by the reset link. The
+  /// backend answers 204 on success and 400 (surfaced as an [ApiException])
+  /// when the token is invalid or expired.
+  Future<void> resetPassword({required String token, required String password}) async {
+    await _dio.post<void>('/auth/reset-password', data: {'token': token, 'password': password});
+  }
+
   Future<void> logout() => _tokenStorage.clearToken();
 }
 
