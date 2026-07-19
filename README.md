@@ -1,5 +1,12 @@
 # Artizen
 
+> **Bêta privée / déploiement** — ARTIZEN se déploie sur un domaine public via Docker + reverse-proxy
+> HTTPS. Guides : [docs/GUIDE-DEPLOIEMENT-PRODUCTION.md](docs/GUIDE-DEPLOIEMENT-PRODUCTION.md) (pas à pas),
+> [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md), kit de bêta dans [docs/beta/](docs/beta/). L'URL de l'API
+> Flutter est centralisée dans `frontend/lib/core/api/api_config.dart` (défaut prod
+> `https://artizenapp.com/api`, override dev via `--dart-define=API_BASE_URL=…`). ⚠️ Le reverse-proxy
+> doit **préserver** le préfixe `/api` (voir le guide) — pas de `rewrite` qui le retire.
+
 Artizen est le copilote IA des artisans (plombiers, chauffagistes,
 électriciens, climaticiens, ...). Ce dépôt contient les **fondations
 techniques** du SaaS (Étape 1), le module **branding** (Étape 2 :

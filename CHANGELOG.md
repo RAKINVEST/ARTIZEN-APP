@@ -6,6 +6,34 @@ Ce fichier commence à la V2 : la V1 a été construite en 10 étapes dont
 commit — un changelog rétroactif n'apporterait rien que `README.md` ne dise
 déjà mieux.
 
+## [v1.0.0-beta] — 2026-07-19 (branche `develop/v3`)
+
+Première version prête pour une **bêta privée** commerciale : le devis conforme
+pour artisans, déployable sur un domaine public. Ce jalon ne touche qu'à la
+**configuration réseau de production** et au **routage du reverse-proxy** — aucun
+changement métier, UX ou d'architecture. *(Le champ applicatif `VERSION` reste
+`2.0.0`, hérité du cycle de dev ; `v1.0.0-beta` est le jalon **commercial**.)*
+
+### Modifié
+- **Frontend** — `ApiConfig.baseUrl` par défaut passe à `https://artizenapp.com/api`.
+  Plus **aucune** référence `localhost` / IP locale dans le code ; l'override pour
+  le développement se fait par `--dart-define=API_BASE_URL=…` sans toucher au code.
+  Classe `ApiConfig` = source unique de l'URL (tous les clients Dio / repositories
+  la lisent).
+- **Backend** — `/health` est désormais **aussi** exposé sous `/api/health`. Cela
+  permet à un reverse-proxy mono-domaine de **préserver** le préfixe `/api` (une
+  seule règle propre pour la sonde *et* toutes les routes métier), au lieu d'un
+  `rewrite` qui casse les routes métier.
+
+### Déploiement (à respecter)
+- Le reverse-proxy (Nginx/Caddy) doit **préserver** `/api` :
+  `location /api/ { proxy_pass http://127.0.0.1:8000; }` — **sans**
+  `rewrite ^/api/(.*)$ /$1`, qui transformerait `/api/auth/login` en `/auth/login`
+  et renverrait 404 sur toutes les routes métier.
+- Déployer le **backend courant** (ce dépôt) avec `ENVIRONMENT=production` — ne pas
+  laisser tourner un ancien build en mode `development`.
+- Guides : `docs/GUIDE-DEPLOIEMENT-PRODUCTION.md`, `docs/DEPLOIEMENT.md`.
+
 ## [v2.0.0-rc2] — 2026-07-17 (branche `v2`)
 
 **RC2 minimale — alignement des versions.** Unique objet : aligner les

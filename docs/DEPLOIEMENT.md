@@ -8,6 +8,14 @@
 > artisans, il suffit de passer `EMAIL_PROVIDER=smtp` et de renseigner les variables `SMTP_*` (voir §7) —
 > aucun développement à faire. En `mock` (défaut), les emails sont seulement journalisés (pas d'envoi).
 
+> 🔴 **Routage du reverse-proxy (mono-domaine `/api`) — à ne PAS rater.** Si l'API est servie sous
+> `https://VOTRE-DOMAINE/api`, le proxy doit **préserver** le préfixe : `location /api/ { proxy_pass
+> http://127.0.0.1:8000; }`. **N'utilisez PAS** `rewrite ^/api/(.*)$ /$1 break;` — il retire le `/api`, et
+> comme les routes métier du backend sont sous `/api`, elles renverraient **404** (seul `/health` non
+> préfixé répondrait). La sonde est exposée sous `/health` **et** `/api/health`, donc `…/api/health`
+> fonctionne avec la règle correcte. Et déployez le **backend courant** en `ENVIRONMENT=production`
+> (pas un ancien build en mode `development`).
+
 ---
 
 ## 1. Prérequis serveur

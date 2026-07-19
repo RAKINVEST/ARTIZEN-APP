@@ -72,7 +72,11 @@ register_exception_handlers(app)
 
 # Health is unprefixed so container/orchestrator probes can hit /health directly.
 app.include_router(health.router, tags=["health"])
-# All future business endpoints are registered on api_router and mounted here.
+# Also exposed under the API prefix (/api/health): a single-domain reverse proxy
+# (Nginx `location /api/` -> backend, prefix preserved) then serves the probe and
+# every business route through one clean rule, with no path-stripping rewrite.
+app.include_router(health.router, prefix=settings.API_PREFIX, tags=["health"])
+# All business endpoints are registered on api_router and mounted here.
 app.include_router(api_router, prefix=settings.API_PREFIX)
 
 
