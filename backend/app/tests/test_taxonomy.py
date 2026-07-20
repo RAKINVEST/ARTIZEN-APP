@@ -7,8 +7,29 @@ importable without being declared here, and nothing is declared "implemented"
 without real packs behind it.
 """
 
+from httpx import AsyncClient
+
 from app.catalog import trades
 from app.catalog.trades.taxonomy import TradeStatus
+
+
+def test_deprecated_is_an_official_status() -> None:
+    """The full life-cycle exists: planned -> implemented -> deprecated."""
+    assert {s.value for s in TradeStatus} >= {"planned", "implemented", "deprecated"}
+
+
+async def test_taxonomy_endpoint_filters_by_status(client: AsyncClient) -> None:
+    everything = (await client.get("/api/catalog/taxonomy")).json()
+    implemented = (await client.get("/api/catalog/taxonomy?status=implemented")).json()
+
+    for family in implemented:
+        for entry in family["activities"] + family["qualifications"]:
+            assert entry["status"] == "implemented"
+
+    def total(families: list) -> int:
+        return sum(len(f["activities"]) + len(f["qualifications"]) for f in families)
+
+    assert 0 < total(implemented) < total(everything)  # a real, narrowing filter
 
 
 def test_all_slugs_are_globally_unique() -> None:

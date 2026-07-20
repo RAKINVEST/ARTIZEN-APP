@@ -96,11 +96,22 @@ async def remove_qualification(
 
 
 @router.get("/taxonomy", response_model=list[TaxonomyFamilyRead])
-async def get_taxonomy(current_user: CurrentUserDep) -> list[TaxonomyFamilyRead]:
+async def get_taxonomy(
+    current_user: CurrentUserDep, status: str | None = Query(None)
+) -> list[TaxonomyFamilyRead]:
     """The official Artizen trade taxonomy — families → activities →
     qualifications, with each entry's status. The single reference the whole
     app (search, filters, stats, marketplace, AI, API) keys on. Static data,
-    frozen slugs."""
+    frozen slugs.
+
+    Optional ``?status=`` filters entries by life-cycle status
+    (``implemented`` / ``planned`` / ``deferred_v2`` / ``deprecated``) — e.g.
+    the app lists only ``implemented`` activities as available.
+    """
+
+    def keep(entry: trades.TaxonomyEntry) -> bool:
+        return status is None or entry.status.value == status
+
     return [
         TaxonomyFamilyRead(
             slug=family.slug,
@@ -108,10 +119,12 @@ async def get_taxonomy(current_user: CurrentUserDep) -> list[TaxonomyFamilyRead]
             activities=[
                 TaxonomyEntryRead(slug=e.slug, label=e.label, status=e.status.value)
                 for e in family.activities
+                if keep(e)
             ],
             qualifications=[
                 TaxonomyEntryRead(slug=e.slug, label=e.label, status=e.status.value)
                 for e in family.qualifications
+                if keep(e)
             ],
         )
         for family in trades.FAMILIES

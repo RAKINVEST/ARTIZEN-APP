@@ -9,6 +9,8 @@ than not offering it yet. An activity appears the day its packs exist.
 from app.catalog.trades.chauffage import CHAUFFAGE
 from app.catalog.trades.climatisation import CLIMATISATION, FLUIDES_FRIGORIGENES
 from app.catalog.trades.commun import CHANTIER
+from app.catalog.trades.electricite import ELECTRICITE_GENERALE, IRVE
+from app.catalog.trades.photovoltaique import PHOTOVOLTAIQUE
 from app.catalog.trades.definitions import (
     Activity,
     CatalogPack,
@@ -38,12 +40,24 @@ from app.catalog.trades.ventilation import VENTILATION
 #: What the company does. Keyed by the slug persisted on the company.
 ACTIVITIES: dict[str, Activity] = {
     activity.slug: activity
-    for activity in (PLOMBERIE, CHAUFFAGE, CLIMATISATION, VENTILATION, TRAITEMENT_EAU)
+    for activity in (
+        PLOMBERIE,
+        CHAUFFAGE,
+        CLIMATISATION,
+        VENTILATION,
+        TRAITEMENT_EAU,
+        ELECTRICITE_GENERALE,
+        PHOTOVOLTAIQUE,
+    )
 }
 
-#: What the company is certified to do. Never loaded by default.
+#: What the company is certified to do. Never loaded by default. Only
+#: qualifications that reserve a *pack* are registered here (PG, fluides,
+#: IRVE) — mention-only ones (RGE, QualiPV, QualiPAC…) grant no articles and
+#: are handled as PDF mentions, not imports.
 QUALIFICATIONS: dict[str, Qualification] = {
-    qualification.slug: qualification for qualification in (PG, FLUIDES_FRIGORIGENES)
+    qualification.slug: qualification
+    for qualification in (PG, FLUIDES_FRIGORIGENES, IRVE)
 }
 
 

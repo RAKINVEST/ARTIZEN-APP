@@ -22,8 +22,9 @@
    QualiPV, QualiBois, QualiSol), pas un métier.
 4. **Un slug identifie exactement une chose, pour toujours** (familles, activités et
    qualifications partagent un seul espace de noms — unicité globale garantie par test).
-5. **Statuts** : `implemented` (activité + packs, importable) · `planned` (au périmètre V1,
-   contenu à développer) · `deferred_v2` (repoussé).
+5. **Statuts** (cycle de vie officiel, lu par l'API `?status=`, le back-office, les tests) :
+   `implemented` (activité + packs, importable) · `planned` (au périmètre V1, à développer) ·
+   `deferred_v2` (repoussé en V2) · `deprecated` (était disponible, en retrait).
 
 ## Les 6 familles
 
@@ -33,9 +34,9 @@
 **Qualifications** : `pg` ✅ · `fluides-frigorigenes` ✅ · `qualipac` · `qualibois` · `qualisol`
 
 ### 🟨 electricite — Électricité & courants faibles
-**Activités** : `electricite-generale` · `domotique` · `photovoltaique` · `reseaux-vdi` ·
+**Activités** : `electricite-generale` ✅ · `domotique` · `photovoltaique` ✅ · `reseaux-vdi` ·
 `alarme-intrusion` · `videosurveillance` · `controle-acces` · `interphonie`
-**Qualifications** : `irve` · `qualipv`
+**Qualifications** : `irve` ✅ · `qualipv` *(mention)*
 
 ### 🟩 finition — Finition intérieure (second œuvre)
 **Activités** : `platrerie` · `peinture` · `carrelage` · `revetements-sol` · `parquet` ·

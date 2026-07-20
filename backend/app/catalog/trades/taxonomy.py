@@ -25,9 +25,13 @@ from enum import Enum
 
 
 class TradeStatus(str, Enum):
+    """Official life-cycle status of a taxonomy entry — the state the whole app
+    reads (API filtering, back-office, tests, docs)."""
+
     IMPLEMENTED = "implemented"  # activité + packs, importable aujourd'hui
     PLANNED = "planned"          # au périmètre V1, contenu à développer
-    DEFERRED = "deferred_v2"     # repoussé en V2
+    DEFERRED = "deferred_v2"     # au périmètre mais repoussé en V2
+    DEPRECATED = "deprecated"    # était disponible, en retrait — ne plus proposer
 
 
 @dataclass(frozen=True)
@@ -80,9 +84,9 @@ FAMILIES: tuple[Family, ...] = (
         slug="electricite",
         label="Électricité & courants faibles",
         activities=(
-            _e("electricite-generale", "Électricité générale"),
+            _e("electricite-generale", "Électricité générale", _IMPL),
             _e("domotique", "Domotique / Smart Home"),
-            _e("photovoltaique", "Photovoltaïque"),
+            _e("photovoltaique", "Photovoltaïque", _IMPL),
             _e("reseaux-vdi", "Réseaux VDI / fibre"),
             _e("alarme-intrusion", "Alarme intrusion"),
             _e("videosurveillance", "Vidéosurveillance"),
@@ -90,7 +94,7 @@ FAMILIES: tuple[Family, ...] = (
             _e("interphonie", "Interphonie / Visiophonie"),
         ),
         qualifications=(
-            _e("irve", "IRVE (bornes de recharge)"),
+            _e("irve", "IRVE — bornes de recharge", _IMPL),
             _e("qualipv", "QualiPV"),
         ),
     ),
