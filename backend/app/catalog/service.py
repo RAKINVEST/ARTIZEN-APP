@@ -64,12 +64,15 @@ class CatalogService:
         if entry is None:
             status = "available"
             update_item_count = None
+            update_notes = None
         elif source.version > imported_version:
             status = "update_available"
             update_item_count = await self._count_new_items(company_id, source)
+            update_notes = trades.notes_since(source.changelog, imported_version)
         else:
             status = "imported"
             update_item_count = None
+            update_notes = None
 
         return schema(
             slug=source.slug,
@@ -85,6 +88,7 @@ class CatalogService:
             imported_version=imported_version,
             imported_at=imported_at,
             update_item_count=update_item_count,
+            update_notes=update_notes,
         )
 
     async def _count_new_items(self, company_id: uuid.UUID, source) -> int:  # type: ignore[no-untyped-def]

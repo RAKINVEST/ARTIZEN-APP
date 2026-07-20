@@ -127,6 +127,10 @@ class _SelectableRead(BaseModel):
     #: Only when ``status == "update_available"``: how many articles updating
     #: would add to the catalog right now. None otherwise.
     update_item_count: int | None = None
+    #: Only when ``status == "update_available"``: the "Nouveautés" of the
+    #: newer version(s) — "Ajout des PAC R290", etc. — so the update button
+    #: says why. Empty list if the version was bumped without notes.
+    update_notes: list[str] | None = None
 
 
 class ActivityRead(_SelectableRead):

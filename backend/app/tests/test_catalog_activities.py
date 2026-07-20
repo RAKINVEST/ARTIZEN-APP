@@ -158,13 +158,14 @@ async def test_a_newer_version_surfaces_an_update_without_touching_prices(
     « mise à jour disponible » avec le bon décompte, la mise à jour ajoute
     seulement le nouvel article, et ne touche pas aux prix personnalisés."""
     from app.catalog import trades
-    from app.catalog.trades.definitions import Activity, CatalogPack, PackItem
+    from app.catalog.trades.definitions import Activity, CatalogPack, PackItem, VersionNotes
     from decimal import Decimal
 
     v1 = trades.get_activity("plomberie")
     await client.post("/api/catalog/activities/plomberie")  # importe la v1
 
-    # Artizen publie une v2 : même contenu + un article neuf dans un pack.
+    # Artizen publie une v2 : même contenu + un article neuf dans un pack,
+    # avec ses nouveautés.
     pack0 = v1.packs[0]
     v2_pack = CatalogPack(
         name=pack0.name,
@@ -174,13 +175,15 @@ async def test_a_newer_version_surfaces_an_update_without_touching_prices(
     v2 = Activity(
         slug=v1.slug, label=v1.label, version=v1.version + 1,
         packs=(v2_pack, *v1.packs[1:]), description=v1.description,
+        changelog=(VersionNotes(version=v1.version + 1, changes=("Ajout de l'article tout neuf",)),),
     )
     monkeypatch.setitem(trades.ACTIVITIES, "plomberie", v2)
 
-    # L'activité signale la mise à jour, +1 article.
+    # L'activité signale la mise à jour, +1 article, avec ses nouveautés.
     activities = {a["slug"]: a for a in (await client.get("/api/catalog/activities")).json()}
     assert activities["plomberie"]["status"] == "update_available"
     assert activities["plomberie"]["update_item_count"] == 1
+    assert activities["plomberie"]["update_notes"] == ["Ajout de l'article tout neuf"]
 
     # La mise à jour n'ajoute que le nouvel article.
     result = (await client.post("/api/catalog/activities/plomberie")).json()

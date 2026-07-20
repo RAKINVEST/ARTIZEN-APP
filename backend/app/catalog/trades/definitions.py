@@ -72,6 +72,19 @@ class CatalogPack:
 
 
 @dataclass(frozen=True)
+class VersionNotes:
+    """What changed at one version bump — the "Nouveautés" of a store update.
+
+    Authored when the version is published (the moment the info is known), and
+    shown so the "Mettre à jour" button says *why*: "Ajout des PAC R290",
+    "3 nouveaux articles"… Pure display metadata — it never touches the import.
+    """
+
+    version: int
+    changes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class Activity:
     """What the company *does* — plomberie, chauffage, électricité…
 
@@ -92,6 +105,9 @@ class Activity:
     version: int = 1
     packs: tuple[CatalogPack, ...] = field(default_factory=tuple)
     description: str | None = None
+    #: One entry per version that added or changed something. Ordered any way;
+    #: read via :func:`notes_since`.
+    changelog: tuple[VersionNotes, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -112,6 +128,23 @@ class Qualification:
     version: int = 1
     packs: tuple[CatalogPack, ...] = field(default_factory=tuple)
     description: str | None = None
+    changelog: tuple[VersionNotes, ...] = field(default_factory=tuple)
+
+
+def notes_since(
+    changelog: tuple[VersionNotes, ...], imported_version: int | None
+) -> list[str]:
+    """The changes an artisan on ``imported_version`` hasn't seen yet.
+
+    Flattened across every version newer than his — a jump from v1 to v3 lists
+    v2's and v3's changes together, so "Nouveautés" answers "what will I get"
+    whatever version he was on.
+    """
+    lines: list[str] = []
+    for entry in sorted(changelog, key=lambda note: note.version):
+        if imported_version is None or entry.version > imported_version:
+            lines.extend(entry.changes)
+    return lines
 
 
 _TVA_RENOVATION = Decimal("10.00")
