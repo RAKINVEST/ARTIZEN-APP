@@ -7,6 +7,7 @@ than not offering it yet. An activity appears the day its packs exist.
 """
 
 from app.catalog.trades.chauffage import CHAUFFAGE
+from app.catalog.trades.climatisation import CLIMATISATION, FLUIDES_FRIGORIGENES
 from app.catalog.trades.commun import CHANTIER
 from app.catalog.trades.definitions import (
     Activity,
@@ -27,11 +28,13 @@ from app.catalog.trades.ventilation import VENTILATION
 #: What the company does. Keyed by the slug persisted on the company.
 ACTIVITIES: dict[str, Activity] = {
     activity.slug: activity
-    for activity in (PLOMBERIE, CHAUFFAGE, VENTILATION, TRAITEMENT_EAU)
+    for activity in (PLOMBERIE, CHAUFFAGE, CLIMATISATION, VENTILATION, TRAITEMENT_EAU)
 }
 
 #: What the company is certified to do. Never loaded by default.
-QUALIFICATIONS: dict[str, Qualification] = {qualification.slug: qualification for qualification in (PG,)}
+QUALIFICATIONS: dict[str, Qualification] = {
+    qualification.slug: qualification for qualification in (PG, FLUIDES_FRIGORIGENES)
+}
 
 
 def list_activities() -> list[Activity]:
