@@ -14,6 +14,7 @@ import uuid
 
 from fastapi import APIRouter, Query, status
 
+from app.catalog import trades
 from app.catalog.deps import CatalogServiceDep
 from app.catalog.schemas import (
     ActivityRead,
@@ -21,6 +22,8 @@ from app.catalog.schemas import (
     CatalogCategoryOverview,
     CatalogCategoryRead,
     CatalogCategoryUpdate,
+    TaxonomyEntryRead,
+    TaxonomyFamilyRead,
     CatalogImportResult,
     CatalogItemCreate,
     CatalogItemRead,
@@ -90,6 +93,29 @@ async def remove_qualification(
     slug: str, service: CatalogServiceDep, current_user: CurrentUserDep
 ) -> None:
     await service.remove_qualification(current_user.company_id, slug)
+
+
+@router.get("/taxonomy", response_model=list[TaxonomyFamilyRead])
+async def get_taxonomy(current_user: CurrentUserDep) -> list[TaxonomyFamilyRead]:
+    """The official Artizen trade taxonomy — families → activities →
+    qualifications, with each entry's status. The single reference the whole
+    app (search, filters, stats, marketplace, AI, API) keys on. Static data,
+    frozen slugs."""
+    return [
+        TaxonomyFamilyRead(
+            slug=family.slug,
+            label=family.label,
+            activities=[
+                TaxonomyEntryRead(slug=e.slug, label=e.label, status=e.status.value)
+                for e in family.activities
+            ],
+            qualifications=[
+                TaxonomyEntryRead(slug=e.slug, label=e.label, status=e.status.value)
+                for e in family.qualifications
+            ],
+        )
+        for family in trades.FAMILIES
+    ]
 
 
 @router.post("/categories", response_model=CatalogCategoryRead, status_code=status.HTTP_201_CREATED)

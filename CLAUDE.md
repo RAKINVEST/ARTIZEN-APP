@@ -46,6 +46,11 @@ du compose lui-même. Servir le frontend sur un autre port exige donc de modifie
 
 Ces règles traversent tout le code. Les enfreindre casse la promesse du produit, pas seulement un test.
 
+> **Taxonomie officielle des métiers : [docs/TAXONOMIE-METIERS.md](docs/TAXONOMIE-METIERS.md)**
+> (source machine : `catalog/trades/taxonomy.py`). Familles → activités → qualifications, la
+> référence unique de toute l'app — **slugs gelés**. Ajouter un métier = un fichier de données
+> `trades/*.py` + une ligne au registre, **zéro moteur** ([test de généricité](backend/app/tests/test_trades_generic.py)).
+>
 > **Décisions d'architecture figées : [docs/DECISIONS.md](docs/DECISIONS.md).** Sept règles
 > structurantes (catalogue personnel, métier = propriété du compte, backend seule source de
 > vérité, brouillon ≠ devis, ligne = photographie autonome, en ligne requis en V1, activités

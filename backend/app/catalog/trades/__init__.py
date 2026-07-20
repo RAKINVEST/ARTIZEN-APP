@@ -22,6 +22,16 @@ from app.catalog.trades.definitions import (
 )
 from app.catalog.trades.gaz import PG
 from app.catalog.trades.plomberie import PLOMBERIE
+from app.catalog.trades.taxonomy import (
+    FAMILIES,
+    Family,
+    TaxonomyEntry,
+    TradeStatus,
+    all_activities as taxonomy_activities,
+    all_qualifications as taxonomy_qualifications,
+    all_slugs,
+    family_of,
+)
 from app.catalog.trades.traitement_eau import TRAITEMENT_EAU
 from app.catalog.trades.ventilation import VENTILATION
 
@@ -87,13 +97,19 @@ def compose_catalog(
 __all__ = [
     "ACTIVITIES",
     "CHANTIER",
+    "FAMILIES",
     "QUALIFICATIONS",
     "Activity",
     "CatalogPack",
+    "Family",
     "PackItem",
     "Qualification",
+    "TaxonomyEntry",
+    "TradeStatus",
     "VersionNotes",
+    "all_slugs",
     "compose_catalog",
+    "family_of",
     "get_activity",
     "get_qualification",
     "list_activities",
@@ -102,4 +118,6 @@ __all__ = [
     "notes_since",
     "prestation",
     "produit",
+    "taxonomy_activities",
+    "taxonomy_qualifications",
 ]

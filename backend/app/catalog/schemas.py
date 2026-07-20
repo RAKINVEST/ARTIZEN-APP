@@ -42,6 +42,24 @@ class CatalogCategoryRead(BaseModel):
     updated_at: datetime
 
 
+class TaxonomyEntryRead(BaseModel):
+    """One activity or qualification of the official taxonomy."""
+
+    slug: str
+    label: str
+    status: str  # implemented | planned | deferred_v2
+
+
+class TaxonomyFamilyRead(BaseModel):
+    """One family of the official taxonomy, with its activities and
+    qualifications — the single reference the whole app keys on."""
+
+    slug: str
+    label: str
+    activities: list[TaxonomyEntryRead]
+    qualifications: list[TaxonomyEntryRead]
+
+
 class CatalogCategoryOverview(BaseModel):
     """A folder for the guided assistant's "Dossier" picker: its name, how many
     articles it holds, and a few example designations — just enough for the
