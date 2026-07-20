@@ -29,6 +29,26 @@ def test_every_activity_offers_a_prestations_folder(slug: str) -> None:
 
 
 @pytest.mark.parametrize("slug", ACTIVITY_SLUGS)
+def test_every_activity_offers_material_and_prestations(slug: str) -> None:
+    """Intégrité métier : une activité n'est complète que si elle propose des
+    choses à *fournir* **et** des choses à *faire*. Concrètement, au moins un
+    dossier de matériel/équipement (n'importe quel pack qui n'est pas
+    « Prestations », le nom est libre — « Peintures », « Tuiles », « Serrures »…)
+    garni d'au moins un article, et au moins un dossier de prestations. Cela
+    interdit un catalogue qui ne contiendrait que de la main-d'œuvre. Règle
+    volontairement agnostique aux libellés : elle vaut pour tous les métiers,
+    présents et à venir, sans figer aucun nom de dossier."""
+    activity = trades.get_activity(slug)
+    assert activity is not None
+    material_packs = [
+        pack for pack in activity.packs if pack.name != "Prestations" and pack.items
+    ]
+    assert material_packs, f"{slug} n'a aucun dossier de matériel/équipement fourni"
+    prestation_packs = [pack for pack in activity.packs if pack.name == "Prestations" and pack.items]
+    assert prestation_packs, f"{slug} n'a pas de dossier « Prestations » garni"
+
+
+@pytest.mark.parametrize("slug", ACTIVITY_SLUGS)
 async def test_every_activity_composes_a_real_catalog(client: AsyncClient, slug: str) -> None:
     """Importing any activity fills the artisan's catalog, and the exact
     endpoint the wizard's Dossier step reads then returns real folders."""
