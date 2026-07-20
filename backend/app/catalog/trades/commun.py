@@ -24,17 +24,46 @@ a price, not a rate — the artisan adjusts, and the usual market practice is
 from decimal import Decimal
 
 from app.catalog.models import ItemType
-from app.catalog.trades.definitions import TradeCategory, TradeItem
+from app.catalog.trades.definitions import CatalogPack, PackItem
 
 _RENO = Decimal("10.00")
 _SERVICE = ItemType.SERVICE
 
-CHANTIER = TradeCategory(
+CHANTIER = CatalogPack(
     name="Chantier et prestations communes",
     description="Déplacement, dépose, déchets, protection, essais — les lignes qu'on oublie.",
     items=(
+        # --- Unités de temps génériques ---
+        # Ici et pas dans une activité : elles ne dépendent d'aucun métier, et
+        # les loger dans "Plomberie" les ferait disparaître pour un artisan qui
+        # n'active que le chauffage.
+        PackItem(
+            "Main-d'œuvre aide ou apprenti",
+            "heure",
+            Decimal("35.00"),
+            _RENO,
+            _SERVICE,
+            estimated_duration_minutes=60,
+        ),
+        PackItem(
+            "Demi-journée d'intervention",
+            "forfait",
+            Decimal("230.00"),
+            _RENO,
+            _SERVICE,
+            estimated_duration_minutes=240,
+            description="Extrapolé (~55-60 % du tarif journée) : aucune source de marché chiffrée.",
+        ),
+        PackItem(
+            "Journée d'intervention",
+            "jour",
+            Decimal("420.00"),
+            _RENO,
+            _SERVICE,
+            estimated_duration_minutes=480,
+        ),
         # --- Déplacement ---
-        TradeItem(
+        PackItem(
             "Déplacement zone 1 (0 à 20 km)",
             "forfait",
             Decimal("35.00"),
@@ -42,7 +71,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=30,
         ),
-        TradeItem(
+        PackItem(
             "Déplacement zone 2 (20 à 50 km)",
             "forfait",
             Decimal("55.00"),
@@ -50,7 +79,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=60,
         ),
-        TradeItem(
+        PackItem(
             "Déplacement et diagnostic",
             "forfait",
             Decimal("60.00"),
@@ -58,11 +87,11 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=45,
         ),
-        TradeItem(
+        PackItem(
             "Frais de stationnement ou de péage", "forfait", Decimal("15.00"), _RENO, _SERVICE
         ),
         # --- Majorations horaires ---
-        TradeItem(
+        PackItem(
             "Majoration intervention en soirée (après 19 h)",
             "forfait",
             Decimal("60.00"),
@@ -70,7 +99,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
             description="Usage courant : +25 à +50 % du montant de l'intervention.",
         ),
-        TradeItem(
+        PackItem(
             "Majoration nuit, dimanche ou jour férié",
             "forfait",
             Decimal("120.00"),
@@ -78,7 +107,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
             description="Usage courant : +50 à +100 % du montant de l'intervention.",
         ),
-        TradeItem(
+        PackItem(
             "Majoration intervention urgente (sous 2 h)",
             "forfait",
             Decimal("80.00"),
@@ -86,7 +115,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
         ),
         # --- Préparation et dépose ---
-        TradeItem(
+        PackItem(
             "Installation et repli de chantier",
             "forfait",
             Decimal("90.00"),
@@ -94,7 +123,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=60,
         ),
-        TradeItem(
+        PackItem(
             "Protection des sols et du mobilier",
             "forfait",
             Decimal("45.00"),
@@ -102,7 +131,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=30,
         ),
-        TradeItem(
+        PackItem(
             "Dépose de l'ancien équipement",
             "forfait",
             Decimal("80.00"),
@@ -110,7 +139,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=60,
         ),
-        TradeItem(
+        PackItem(
             "Percement ou carottage",
             "unité",
             Decimal("45.00"),
@@ -118,7 +147,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=30,
         ),
-        TradeItem(
+        PackItem(
             "Saignée dans mur ou cloison",
             "m",
             Decimal("25.00"),
@@ -126,7 +155,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=20,
         ),
-        TradeItem(
+        PackItem(
             "Rebouchage et scellement",
             "forfait",
             Decimal("35.00"),
@@ -135,7 +164,7 @@ CHANTIER = TradeCategory(
             estimated_duration_minutes=30,
         ),
         # --- Déchets (mention obligatoire sur devis, décret n° 2020-1817) ---
-        TradeItem(
+        PackItem(
             "Évacuation des gravats et déchets",
             "forfait",
             Decimal("50.00"),
@@ -144,7 +173,7 @@ CHANTIER = TradeCategory(
             estimated_duration_minutes=45,
             description="Le devis doit indiquer les installations de collecte (décret n° 2020-1817).",
         ),
-        TradeItem(
+        PackItem(
             "Dépôt en déchetterie",
             "forfait",
             Decimal("45.00"),
@@ -152,11 +181,11 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=45,
         ),
-        TradeItem("Location de benne 8 m³", "forfait", Decimal("280.00"), _RENO, _SERVICE),
-        TradeItem("Big-bag de chantier", "unité", Decimal("35.00"), _RENO),
+        PackItem("Location de benne 8 m³", "forfait", Decimal("280.00"), _RENO, _SERVICE),
+        PackItem("Big-bag de chantier", "unité", Decimal("35.00"), _RENO),
         # --- Matériel ---
-        TradeItem("Location d'échafaudage", "jour", Decimal("120.00"), _RENO, _SERVICE),
-        TradeItem(
+        PackItem("Location d'échafaudage", "jour", Decimal("120.00"), _RENO, _SERVICE),
+        PackItem(
             "Montage et démontage d'échafaudage",
             "forfait",
             Decimal("180.00"),
@@ -164,14 +193,14 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=120,
         ),
-        TradeItem(
+        PackItem(
             "Location d'un nettoyeur haute pression", "jour", Decimal("60.00"), _RENO, _SERVICE
         ),
-        TradeItem(
+        PackItem(
             "Location d'une caméra d'inspection", "jour", Decimal("90.00"), _RENO, _SERVICE
         ),
         # --- Finition et administratif ---
-        TradeItem(
+        PackItem(
             "Nettoyage de fin de chantier",
             "forfait",
             Decimal("60.00"),
@@ -179,7 +208,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=60,
         ),
-        TradeItem(
+        PackItem(
             "Mise en service et essais",
             "forfait",
             Decimal("40.00"),
@@ -187,7 +216,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=30,
         ),
-        TradeItem(
+        PackItem(
             "Étude, visite technique et métré",
             "forfait",
             Decimal("90.00"),
@@ -195,7 +224,7 @@ CHANTIER = TradeCategory(
             _SERVICE,
             estimated_duration_minutes=60,
         ),
-        TradeItem(
+        PackItem(
             "Montage du dossier d'aides (MaPrimeRénov', CEE)",
             "forfait",
             Decimal("150.00"),

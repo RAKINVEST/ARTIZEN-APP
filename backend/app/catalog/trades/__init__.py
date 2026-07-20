@@ -1,53 +1,98 @@
-"""Registry of the trades an artisan can load into his catalog.
+"""Registry of activities and qualifications, and how they compose a catalog.
 
-Only trades that actually carry a catalog are registered. Listing the ten
-trades of the roadmap here with empty ``categories`` would let an artisan tick
-"Électricien" and receive an empty toolbox — the exact opposite of the promise,
-and worse than not offering it yet. A trade appears the day its catalog exists.
+Only activities that actually carry packs are registered. Listing the ten
+trades of the roadmap with empty packs would let an artisan tick "Électricien"
+and receive an empty toolbox — the exact opposite of the promise, and worse
+than not offering it yet. An activity appears the day its packs exist.
 """
 
+from app.catalog.trades.chauffage import CHAUFFAGE
 from app.catalog.trades.commun import CHANTIER
-from app.catalog.trades.definitions import Trade, TradeCategory, TradeItem
-from app.catalog.trades.plombier import PLOMBIER
+from app.catalog.trades.definitions import (
+    Activity,
+    CatalogPack,
+    PackItem,
+    Qualification,
+    merge_packs,
+    prestation,
+    produit,
+)
+from app.catalog.trades.gaz import PG
+from app.catalog.trades.plomberie import PLOMBERIE
+from app.catalog.trades.traitement_eau import TRAITEMENT_EAU
+from app.catalog.trades.ventilation import VENTILATION
 
-#: Registered trades, keyed by the slug persisted on the company.
-TRADES: dict[str, Trade] = {trade.slug: trade for trade in (PLOMBIER,)}
+#: What the company does. Keyed by the slug persisted on the company.
+ACTIVITIES: dict[str, Activity] = {
+    activity.slug: activity
+    for activity in (PLOMBERIE, CHAUFFAGE, VENTILATION, TRAITEMENT_EAU)
+}
+
+#: What the company is certified to do. Never loaded by default.
+QUALIFICATIONS: dict[str, Qualification] = {qualification.slug: qualification for qualification in (PG,)}
 
 
-def list_trades() -> list[Trade]:
-    """Every selectable trade, alphabetically by label — the order the artisan
-    sees when ticking his trades."""
-    return sorted(TRADES.values(), key=lambda trade: trade.label)
+def list_activities() -> list[Activity]:
+    """Alphabetically by label — the order the artisan sees when ticking."""
+    return sorted(ACTIVITIES.values(), key=lambda activity: activity.label)
 
 
-def get_trade(slug: str) -> Trade | None:
-    return TRADES.get(slug)
+def list_qualifications() -> list[Qualification]:
+    return sorted(QUALIFICATIONS.values(), key=lambda qualification: qualification.label)
 
 
-def categories_for(trade: Trade, *, include_optional: bool = False) -> list[TradeCategory]:
-    """The folders to actually create for ``trade``.
+def get_activity(slug: str) -> Activity | None:
+    return ACTIVITIES.get(slug)
 
-    Its own folders plus :data:`~app.catalog.trades.commun.CHANTIER`, which
-    every trade needs and no trade owns. Optional folders (gas, reserved to
-    PG-certified professionals) stay out unless explicitly asked for: a quote
-    line the artisan is not allowed to carry out is worse than a missing one.
+
+def get_qualification(slug: str) -> Qualification | None:
+    return QUALIFICATIONS.get(slug)
+
+
+def compose_catalog(
+    *, activities: list[str], qualifications: list[str] | None = None
+) -> list[CatalogPack]:
+    """The folders to create for a company, from what it does and is certified for.
+
+    Packs sharing a name are merged, so activating Plomberie and Chauffage
+    yields **one** "Prestations" folder rather than two — the artisan sees a
+    single catalog (`docs/DECISIONS.md`, décision 2).
+
+    :data:`~app.catalog.trades.commun.CHANTIER` is always added: travel,
+    removal, waste and testing belong to every trade and to none.
+
+    Unknown slugs are ignored rather than raising. A company stores its slugs;
+    if an activity is ever renamed or retired, its catalog must still compose
+    instead of failing. Validating that a slug exists is the router's job, at
+    the moment the artisan picks it.
     """
-    categories = [
-        category
-        for category in trade.categories
-        if include_optional or not category.optional
-    ]
-    categories.append(CHANTIER)
-    return categories
+    packs: list[CatalogPack] = []
+    for slug in activities:
+        activity = ACTIVITIES.get(slug)
+        if activity is not None:
+            packs.extend(activity.packs)
+    for slug in qualifications or []:
+        qualification = QUALIFICATIONS.get(slug)
+        if qualification is not None:
+            packs.extend(qualification.packs)
+    packs.append(CHANTIER)
+    return merge_packs(packs)
 
 
 __all__ = [
+    "ACTIVITIES",
     "CHANTIER",
-    "TRADES",
-    "Trade",
-    "TradeCategory",
-    "TradeItem",
-    "categories_for",
-    "get_trade",
-    "list_trades",
+    "QUALIFICATIONS",
+    "Activity",
+    "CatalogPack",
+    "PackItem",
+    "Qualification",
+    "compose_catalog",
+    "get_activity",
+    "get_qualification",
+    "list_activities",
+    "list_qualifications",
+    "merge_packs",
+    "prestation",
+    "produit",
 ]
