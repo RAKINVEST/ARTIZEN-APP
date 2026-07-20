@@ -18,7 +18,14 @@ from fastapi import APIRouter, Query, Response, status
 from app.core.authorization import ensure_same_company
 from app.quotes.deps import QuoteServiceDep
 from app.quotes.models import QuoteStatus
-from app.quotes.schemas import QuoteCreate, QuoteRead, QuoteReadiness, QuoteStatusUpdate
+from app.quotes.schemas import (
+    QuoteCalculation,
+    QuoteCalculationRequest,
+    QuoteCreate,
+    QuoteRead,
+    QuoteReadiness,
+    QuoteStatusUpdate,
+)
 from app.users.deps import CurrentUserDep
 
 router = APIRouter(prefix="/quotes", tags=["quotes"])
@@ -30,6 +37,21 @@ async def create_quote(
 ) -> QuoteRead:
     payload = payload.model_copy(update={"company_id": current_user.company_id})
     return await service.create(payload)
+
+
+@router.post("/calculate", response_model=QuoteCalculation)
+async def calculate_quote(
+    service: QuoteServiceDep,
+    current_user: CurrentUserDep,
+    payload: QuoteCalculationRequest,
+) -> QuoteCalculation:
+    """Prices a draft live while the artisan edits it. Persists nothing.
+
+    Declared before ``/{quote_id}`` so the literal "calculate" is never
+    parsed as a quote id. Answers 200, not 201: nothing is created.
+    """
+    payload = payload.model_copy(update={"company_id": current_user.company_id})
+    return await service.calculate(payload)
 
 
 @router.get("", response_model=list[QuoteRead])

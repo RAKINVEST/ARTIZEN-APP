@@ -38,7 +38,16 @@ from app.quotes.repository import (
     QuoteLineRepository,
     QuoteRepository,
 )
-from app.quotes.schemas import QuoteCreate, QuoteLineRead, QuoteRead, QuoteReadiness
+from app.quotes.schemas import (
+    QuoteCalculation,
+    QuoteCalculationRequest,
+    QuoteCreate,
+    QuoteLineCalculation,
+    QuoteLineCreate,
+    QuoteLineRead,
+    QuoteRead,
+    QuoteReadiness,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -90,20 +99,66 @@ class QuoteService:
         if client is None or client.company_id != data.company_id:
             raise NotFoundError(f"Client {data.client_id} not found.")
 
+        line_models, quote_totals = await self._price_lines(
+            company_id=data.company_id, lines_data=data.lines
+        )
+        return await self._persist_new_quote(
+            company_id=data.company_id,
+            client_id=data.client_id,
+            line_models=line_models,
+            totals=quote_totals,
+        )
+
+    async def calculate(self, data: QuoteCalculationRequest) -> QuoteCalculation:
+        """Prices a draft **without persisting anything**.
+
+        The guided flow lets the artisan add, remove and re-quantify lines
+        and must show the running HT/VAT/TTC as they do. That total is a
+        monetary amount like any other, so it cannot be added up in Flutter:
+        the client displays what this returns and computes nothing.
+
+        This is not an edit path and does not weaken "a quote is never
+        modified": no ``Quote`` row is touched, no number is burned from the
+        counter, no status exists. It is a pure function of (company, lines).
+
+        It shares ``_price_lines`` with :meth:`create`, which is the point —
+        a preview that could disagree with the quote finally created would be
+        worse than no preview at all.
+        """
+        line_models, totals = await self._price_lines(
+            company_id=data.company_id, lines_data=data.lines
+        )
+        return QuoteCalculation(
+            total_ht=totals.total_ht,
+            total_vat=totals.total_vat,
+            total_ttc=totals.total_ttc,
+            lines=[QuoteLineCalculation.model_validate(line) for line in line_models],
+        )
+
+    async def _price_lines(
+        self, *, company_id: uuid.UUID, lines_data: list[QuoteLineCreate]
+    ) -> tuple[list[QuoteLine], QuoteTotals]:
+        """Turns requested (catalog item, quantity) pairs into priced lines.
+
+        Shared by :meth:`create` and :meth:`calculate` so the live preview and
+        the persisted quote walk the exact same catalog lookups, the same
+        VAT-regime override and the same calculator. Returned ``QuoteLine``
+        objects are unsaved: only ``create`` gives them a ``quote_id``.
+        """
         # A company under the franchise-en-base regime (art. 293 B du CGI, the
         # micro-entrepreneur case) charges NO VAT: every line is HT only. The
         # regime belongs to the company, not the catalog item, so the service
         # applies it here by overriding the rate to 0 before the calculator
         # runs — the calculator stays the one place amounts are computed, and
         # the stored line snapshot (vat_rate=0) matches the total (VAT=0).
-        company = await self._branding.get_company(data.company_id)
+        company = await self._branding.get_company(company_id)
         vat_exempt = company.vat_regime == "franchise"
 
         line_models: list[QuoteLine] = []
         line_totals: list[LineTotals] = []
-        for line_data in data.lines:
+        for line_data in lines_data:
             item = await self._catalog_items.get(line_data.catalog_item_id)
-            if item is None or item.company_id != data.company_id:
+            if item is None or item.company_id != company_id:
                 raise NotFoundError(f"Catalog item {line_data.catalog_item_id} not found.")
             if not item.active:
                 raise InactiveCatalogItemError(
@@ -131,13 +186,7 @@ class QuoteService:
                 )
             )
 
-        quote_totals = self._calculator.calculate_quote(line_totals)
-        return await self._persist_new_quote(
-            company_id=data.company_id,
-            client_id=data.client_id,
-            line_models=line_models,
-            totals=quote_totals,
-        )
+        return line_models, self._calculator.calculate_quote(line_totals)
 
     async def _persist_new_quote(
         self,
