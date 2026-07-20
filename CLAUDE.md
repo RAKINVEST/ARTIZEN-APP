@@ -46,6 +46,12 @@ du compose lui-même. Servir le frontend sur un autre port exige donc de modifie
 
 Ces règles traversent tout le code. Les enfreindre casse la promesse du produit, pas seulement un test.
 
+> **Décisions d'architecture figées : [docs/DECISIONS.md](docs/DECISIONS.md).** Sept règles
+> structurantes (catalogue personnel, métier = propriété du compte, backend seule source de
+> vérité, brouillon ≠ devis, ligne = photographie autonome, en ligne requis en V1, activités
+> vs qualifications) avec leur *pourquoi*. À lire **avant** toute modification du modèle de
+> données ou du parcours de devis : ce sont les choix coûteux à revenir en arrière.
+
 1. **L'IA ne choisit aucun prix, aucune TVA, aucun montant, et ne persiste rien.**
    `quote_assistant` ne fait que *sélectionner* des articles du catalogue existant. Il ne crée
    jamais de `Quote` — la création reste un geste explicite de l'utilisateur via `POST /quotes`.
