@@ -50,6 +50,12 @@ class TradeCategory:
     name: str
     items: tuple[TradeItem, ...]
     description: str | None = None
+    #: Loaded only if the artisan asks for it. Gas work is the reason this
+    #: flag exists: it is legally reserved to PG-certified professionals, so
+    #: offering those articles to everyone would put lines in a quote the
+    #: artisan is not allowed to carry out. Same logic for trades a plumber
+    #: may simply not practise (solar, pools).
+    optional: bool = False
 
 
 @dataclass(frozen=True)
