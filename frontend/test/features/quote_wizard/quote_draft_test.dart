@@ -1,5 +1,6 @@
 import 'package:artizen/features/quote_wizard/data/quote_draft.dart';
 import 'package:artizen/features/quote_wizard/presentation/quote_draft_provider.dart';
+import 'package:artizen/features/quote_wizard/presentation/wizard_step.dart';
 import 'package:artizen/features/quotes/data/quotes_repository_impl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,6 +83,26 @@ void main() {
     draft.removeLine('b');
     await draft.recalculate();
     expect(container.read(quoteDraftProvider).calculation, isNull);
+  });
+
+  test('step completion is decided from the draft, not the widgets', () {
+    final container = makeContainer();
+    final draft = container.read(quoteDraftProvider.notifier);
+
+    // Client step needs a client.
+    expect(container.read(stepCompleteProvider(WizardStep.client)), isFalse);
+    draft.selectClient(id: 'cl1', label: 'Martin');
+    expect(container.read(stepCompleteProvider(WizardStep.client)), isTrue);
+
+    // Dossier step needs a chosen folder.
+    expect(container.read(stepCompleteProvider(WizardStep.dossier)), isFalse);
+    draft.selectCategory('cat1');
+    expect(container.read(stepCompleteProvider(WizardStep.dossier)), isTrue);
+
+    // Articles step needs at least one line.
+    expect(container.read(stepCompleteProvider(WizardStep.articles)), isFalse);
+    draft.addArticle(_line('a'));
+    expect(container.read(stepCompleteProvider(WizardStep.articles)), isTrue);
   });
 
   test('reset clears the client and the lines', () {

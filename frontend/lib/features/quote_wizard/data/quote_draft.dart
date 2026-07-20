@@ -38,6 +38,11 @@ class QuoteDraft with _$QuoteDraft {
   const factory QuoteDraft({
     String? clientId,
     String? clientLabel,
+    // Working context, not part of the final quote: which catalog folder the
+    // artisan is browsing at the "Dossier" step. Kept on the draft so a future
+    // resume reopens where he was, and so step-completion can be answered from
+    // the draft alone.
+    String? selectedCategoryId,
     @Default(<DraftLine>[]) List<DraftLine> lines,
     QuoteCalculation? calculation,
   }) = _QuoteDraft;
@@ -45,8 +50,14 @@ class QuoteDraft with _$QuoteDraft {
   const QuoteDraft._();
 
   bool get hasClient => clientId != null;
+  bool get hasSelectedCategory => selectedCategoryId != null;
   bool get hasLines => lines.isNotEmpty;
   bool get isEmpty => clientId == null && lines.isEmpty;
+
+  /// The last server calculation is present — the "Vérifier" step has real
+  /// amounts to show. (Freshness vs the current lines firms up when the
+  /// Personnaliser step wires live recalculation.)
+  bool get hasValidCalculation => calculation != null;
 
   /// A client and at least one line: enough to price and create a quote.
   bool get canCreate => hasClient && hasLines;

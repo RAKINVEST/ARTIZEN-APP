@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/error_state.dart';
+import '../../../shared/widgets/debounced_search_field.dart';
+import '../../clients/presentation/clients_providers.dart';
+import 'quote_draft_provider.dart';
 import 'wizard_step.dart';
 
 /// Renders the body of a step. Shell version: mock content only, so we can
@@ -15,6 +21,8 @@ class WizardStepView extends StatelessWidget {
   Widget build(BuildContext context) {
     return _StepScaffold(
       step: step,
+      // Client is wired to the real API; the others still show mock data.
+      mock: step != WizardStep.client,
       child: switch (step) {
         WizardStep.client => const _ClientStep(),
         WizardStep.dossier => const _DossierStep(),
@@ -29,10 +37,11 @@ class WizardStepView extends StatelessWidget {
 }
 
 class _StepScaffold extends StatelessWidget {
-  const _StepScaffold({required this.step, required this.child});
+  const _StepScaffold({required this.step, required this.child, this.mock = true});
 
   final WizardStep step;
   final Widget child;
+  final bool mock;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +66,7 @@ class _StepScaffold extends StatelessWidget {
                 ),
               ],
             ),
-            const _MockBadge(),
+            if (mock) const _MockBadge(),
             const SizedBox(height: ArtizenSpacing.md),
             child,
           ],
@@ -89,39 +98,68 @@ class _MockBadge extends StatelessWidget {
   }
 }
 
-// --- Étape 1 : Client — pour qui ? -----------------------------------------
+// --- Étape 1 : Client — pour qui ? (câblé sur l'API) -----------------------
 
-class _ClientStep extends StatelessWidget {
+class _ClientStep extends ConsumerWidget {
   const _ClientStep();
 
   @override
-  Widget build(BuildContext context) {
-    const clients = ['Martin Dubois', 'SCI Les Tilleuls', 'Boulangerie Petit'];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final results = ref.watch(clientSearchProvider);
+    final selectedId = ref.watch(quoteDraftProvider.select((draft) => draft.clientId));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const TextField(
-          decoration: InputDecoration(
-            prefixIcon: Icon(Icons.search),
-            hintText: 'Rechercher un client',
-            border: OutlineInputBorder(),
-          ),
+        DebouncedSearchField(
+          hintText: 'Rechercher un client',
+          onChanged: (query) => ref.read(clientSearchProvider.notifier).search(query),
         ),
         const SizedBox(height: ArtizenSpacing.sm),
-        for (var i = 0; i < clients.length; i++)
-          Card(
-            child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-              title: Text(clients[i]),
-              subtitle: const Text('Dernier devis : mai 2026'),
-              trailing: i == 0 ? const Icon(Icons.check_circle, color: ArtizenColors.success) : null,
-              selected: i == 0,
-              onTap: () {},
-            ),
+        results.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(ArtizenSpacing.lg),
+            child: Center(child: CircularProgressIndicator()),
           ),
+          error: (error, _) => ErrorState(
+            error: error,
+            onRetry: () => ref.read(clientSearchProvider.notifier).search(''),
+          ),
+          data: (clients) => clients.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.all(ArtizenSpacing.md),
+                  child: Text('Aucun client trouvé. Créez-en un ci-dessous.'),
+                )
+              : Column(
+                  children: [
+                    for (final client in clients)
+                      Card(
+                        child: ListTile(
+                          leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                          title: Text(client.displayName),
+                          subtitle: client.email == null ? null : Text(client.email!),
+                          trailing: client.id == selectedId
+                              ? const Icon(Icons.check_circle, color: ArtizenColors.success)
+                              : null,
+                          selected: client.id == selectedId,
+                          // The one thing this step does: tell the draft who
+                          // the quote is for. Nothing else.
+                          onTap: () => ref.read(quoteDraftProvider.notifier).selectClient(
+                                id: client.id,
+                                label: client.displayName,
+                              ),
+                        ),
+                      ),
+                  ],
+                ),
+        ),
         const SizedBox(height: ArtizenSpacing.sm),
         OutlinedButton.icon(
-          onPressed: () {},
+          onPressed: () async {
+            await context.push('/clients/new');
+            // A just-created client should appear in the list.
+            ref.invalidate(clientSearchProvider);
+          },
           icon: const Icon(Icons.person_add_outlined),
           label: const Text('Nouveau client'),
         ),

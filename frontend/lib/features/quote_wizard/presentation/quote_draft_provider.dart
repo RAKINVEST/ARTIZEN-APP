@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../quotes/data/quote_models.dart';
 import '../../quotes/data/quotes_repository_impl.dart';
 import '../data/quote_draft.dart';
+import 'wizard_step.dart';
 
 /// Owns the [QuoteDraft] and every operation on it. The seven wizard screens
 /// go through this — they ask "add this article", "change this quantity",
@@ -18,6 +19,11 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
 
   void selectClient({required String id, required String label}) {
     state = state.copyWith(clientId: id, clientLabel: label);
+  }
+
+  /// Which catalog folder the artisan opened at the "Dossier" step.
+  void selectCategory(String categoryId) {
+    state = state.copyWith(selectedCategoryId: categoryId);
   }
 
   /// Add an article. If it's already in the draft, bump its quantity rather
@@ -83,3 +89,21 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
 
 final quoteDraftProvider =
     NotifierProvider<QuoteDraftNotifier, QuoteDraft>(QuoteDraftNotifier.new);
+
+/// Whether the artisan may leave [step] — the single place step-completion is
+/// decided. The wizard's Précédent/Suivant/progress ask *this*, never the
+/// widgets ("does this screen contain something?"). Reactive: it recomputes
+/// when the draft changes, so the Suivant button enables itself the moment a
+/// step is satisfied.
+final stepCompleteProvider = Provider.family<bool, WizardStep>((ref, step) {
+  final draft = ref.watch(quoteDraftProvider);
+  return switch (step) {
+    WizardStep.client => draft.hasClient,
+    WizardStep.dossier => draft.hasSelectedCategory,
+    WizardStep.articles => draft.hasLines,
+    WizardStep.personnaliser => draft.hasLines,
+    WizardStep.recap => draft.hasValidCalculation,
+    WizardStep.creer => draft.canCreate,
+    WizardStep.envoyer => true,
+  };
+});

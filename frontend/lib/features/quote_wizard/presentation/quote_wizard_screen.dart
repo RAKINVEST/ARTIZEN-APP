@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import 'quote_draft_provider.dart';
 import 'widgets/wizard_left_menu.dart';
 import 'widgets/wizard_nav_bar.dart';
 import 'widgets/wizard_progress_bar.dart';
@@ -10,28 +12,50 @@ import 'wizard_step_views.dart';
 /// The guided quote assistant shell: a permanent left menu, a horizontal
 /// progress bar, the current step in the centre, and Précédent/Suivant below.
 ///
-/// Steps live in a [PageView] so the artisan can swipe or use the buttons —
-/// both drive the same controller, so they never disagree. Mock data only for
-/// now: this validates the experience before each step is wired to its API.
-class QuoteWizardScreen extends StatefulWidget {
+/// Navigation is driven by the **draft**, not the widgets: you may only move
+/// forward through steps the draft reports complete ([stepCompleteProvider]).
+/// Both the Suivant button and swiping obey the same gate, so they never
+/// disagree.
+class QuoteWizardScreen extends ConsumerStatefulWidget {
   const QuoteWizardScreen({super.key});
 
   @override
-  State<QuoteWizardScreen> createState() => _QuoteWizardScreenState();
+  ConsumerState<QuoteWizardScreen> createState() => _QuoteWizardScreenState();
 }
 
-class _QuoteWizardScreenState extends State<QuoteWizardScreen> {
+class _QuoteWizardScreenState extends ConsumerState<QuoteWizardScreen> {
   final PageController _controller = PageController();
   int _index = 0;
 
   WizardStep get _step => WizardStep.values[_index];
 
-  void _goTo(int index) {
-    if (index < 0 || index >= WizardStep.values.length) return;
+  /// Backward is always free; forward only through steps the draft says are
+  /// complete. This is the one rule the buttons, the progress bar and swiping
+  /// all go through.
+  bool _canReach(int target) {
+    if (target <= _index) return true;
+    for (var j = _index; j < target; j++) {
+      if (!ref.read(stepCompleteProvider(WizardStep.values[j]))) return false;
+    }
+    return true;
+  }
+
+  void _goTo(int target) {
+    if (target < 0 || target >= WizardStep.values.length) return;
+    if (!_canReach(target)) {
+      _hintIncomplete();
+      return;
+    }
     _controller.animateToPage(
-      index,
+      target,
       duration: const Duration(milliseconds: 260),
       curve: Curves.easeInOut,
+    );
+  }
+
+  void _hintIncomplete() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Complétez cette étape pour avancer.')),
     );
   }
 
@@ -44,6 +68,8 @@ class _QuoteWizardScreenState extends State<QuoteWizardScreen> {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 760;
+    final canAdvance = ref.watch(stepCompleteProvider(_step));
+
     return Scaffold(
       body: SafeArea(
         child: Row(
@@ -58,7 +84,15 @@ class _QuoteWizardScreenState extends State<QuoteWizardScreen> {
                   Expanded(
                     child: PageView(
                       controller: _controller,
-                      onPageChanged: (index) => setState(() => _index = index),
+                      onPageChanged: (target) {
+                        // Bounce back a forward swipe onto an incomplete step.
+                        if (target > _index && !_canReach(target)) {
+                          _controller.jumpToPage(_index);
+                          _hintIncomplete();
+                          return;
+                        }
+                        setState(() => _index = target);
+                      },
                       children: [
                         for (final step in WizardStep.values) WizardStepView(step: step),
                       ],
@@ -66,6 +100,7 @@ class _QuoteWizardScreenState extends State<QuoteWizardScreen> {
                   ),
                   WizardNavBar(
                     step: _step,
+                    canAdvance: canAdvance,
                     onPrevious: () => _goTo(_index - 1),
                     onNext: () => _goTo(_index + 1),
                     onFinish: () => Navigator.of(context).maybePop(),

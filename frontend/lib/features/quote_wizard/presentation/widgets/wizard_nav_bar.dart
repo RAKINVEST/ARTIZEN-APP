@@ -10,6 +10,7 @@ import '../wizard_step.dart';
 class WizardNavBar extends StatelessWidget {
   const WizardNavBar({
     required this.step,
+    required this.canAdvance,
     required this.onPrevious,
     required this.onNext,
     required this.onFinish,
@@ -17,6 +18,11 @@ class WizardNavBar extends StatelessWidget {
   });
 
   final WizardStep step;
+
+  /// Whether the current step is complete — asked of the draft, not the
+  /// widgets. Gates Suivant so the artisan can't leave an unfinished step.
+  final bool canAdvance;
+
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final VoidCallback onFinish;
@@ -50,7 +56,7 @@ class WizardNavBar extends StatelessWidget {
             )
           else
             FilledButton.icon(
-              onPressed: onNext,
+              onPressed: canAdvance ? onNext : null,
               icon: const Icon(Icons.arrow_forward),
               label: const Text('Suivant'),
             ),
