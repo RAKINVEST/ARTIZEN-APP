@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/dio_client.dart';
 import '../domain/quotes_repository.dart';
+import 'quote_calculation.dart';
 import 'quote_models.dart';
 import 'quote_readiness.dart';
 
@@ -105,6 +106,15 @@ class QuotesRepositoryImpl implements QuotesRepository {
       },
     );
     return Quote.fromJson(response.data!);
+  }
+
+  @override
+  Future<QuoteCalculation> calculate({required List<QuoteLineInput> lines}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/quotes/calculate',
+      data: {'lines': lines.map((line) => line.toJson()).toList()},
+    );
+    return QuoteCalculation.fromJson(response.data!);
   }
 }
 

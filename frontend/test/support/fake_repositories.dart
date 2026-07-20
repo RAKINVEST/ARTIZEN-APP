@@ -10,6 +10,7 @@ import 'package:artizen/features/metiers/data/metiers_models.dart';
 import 'package:artizen/features/metiers/domain/metiers_repository.dart';
 import 'package:artizen/features/quote_assistant/data/quote_suggestion_models.dart';
 import 'package:artizen/features/quote_assistant/domain/quote_assistant_repository.dart';
+import 'package:artizen/features/quotes/data/quote_calculation.dart';
 import 'package:artizen/features/quotes/data/quote_models.dart';
 import 'package:artizen/features/quotes/data/quote_readiness.dart';
 import 'package:artizen/features/quotes/domain/quotes_repository.dart';
@@ -192,6 +193,31 @@ class FakeQuotesRepository implements QuotesRepository {
   @override
   Future<QuoteReadiness> readiness(String id) async =>
       readinessResult ?? const QuoteReadiness(ready: true);
+
+  /// Echoes the lines back with deterministic stub totals so a wizard test can
+  /// assert the draft stored the server's answer without needing real prices.
+  @override
+  Future<QuoteCalculation> calculate({required List<QuoteLineInput> lines}) async {
+    return QuoteCalculation(
+      totalHt: '${lines.length}',
+      totalVat: '0',
+      totalTtc: '${lines.length}',
+      lines: [
+        for (final line in lines)
+          QuoteCalculationLine(
+            catalogItemId: line.catalogItemId,
+            designation: 'Article ${line.catalogItemId}',
+            unit: 'unité',
+            quantity: line.quantity,
+            unitPriceHt: '0',
+            vatRate: '0',
+            totalHt: '0',
+            totalVat: '0',
+            totalTtc: '0',
+          ),
+      ],
+    );
+  }
 }
 
 class FakeQuoteAssistantRepository implements QuoteAssistantRepository {
