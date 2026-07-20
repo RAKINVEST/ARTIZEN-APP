@@ -6,6 +6,8 @@ import 'package:artizen/features/catalog/data/catalog_models.dart';
 import 'package:artizen/features/catalog/domain/catalog_repository.dart';
 import 'package:artizen/features/clients/data/client_model.dart';
 import 'package:artizen/features/clients/domain/clients_repository.dart';
+import 'package:artizen/features/metiers/data/metiers_models.dart';
+import 'package:artizen/features/metiers/domain/metiers_repository.dart';
 import 'package:artizen/features/quote_assistant/data/quote_suggestion_models.dart';
 import 'package:artizen/features/quote_assistant/domain/quote_assistant_repository.dart';
 import 'package:artizen/features/quotes/data/quote_models.dart';
@@ -277,4 +279,68 @@ class FakeTemplateImportRepository implements TemplateImportRepository {
     String analysisId,
     TemplateImportValidateInput input,
   ) async => validateResult;
+}
+
+/// In-memory metiers repository. Holds one mutable list of activities and one
+/// of qualifications; import/remove flip a source's status the way the real
+/// backend would, so notifier and widget tests can exercise the full cycle.
+class FakeMetiersRepository implements MetiersRepository {
+  FakeMetiersRepository({
+    List<CatalogSource>? activities,
+    List<CatalogSource>? qualifications,
+  })  : _activities = [...?activities],
+        _qualifications = [...?qualifications];
+
+  final List<CatalogSource> _activities;
+  final List<CatalogSource> _qualifications;
+
+  @override
+  Future<List<CatalogSource>> listActivities() async => List.unmodifiable(_activities);
+
+  @override
+  Future<List<CatalogSource>> listQualifications() async =>
+      List.unmodifiable(_qualifications);
+
+  @override
+  Future<CatalogImportResult> importActivity(String slug) =>
+      _import(_activities, slug);
+
+  @override
+  Future<CatalogImportResult> importQualification(String slug) =>
+      _import(_qualifications, slug);
+
+  @override
+  Future<void> removeActivity(String slug) => _remove(_activities, slug);
+
+  @override
+  Future<void> removeQualification(String slug) => _remove(_qualifications, slug);
+
+  Future<CatalogImportResult> _import(List<CatalogSource> list, String slug) async {
+    final index = list.indexWhere((source) => source.slug == slug);
+    final source = list[index];
+    final added = source.status == CatalogSourceStatus.imported ? 0 : source.itemCount;
+    list[index] = source.copyWith(
+      status: CatalogSourceStatus.imported,
+      importedVersion: source.version,
+      importedAt: DateTime(2026, 7, 20),
+      updateItemCount: null,
+      updateNotes: null,
+    );
+    return CatalogImportResult(
+      slug: slug,
+      label: source.label,
+      categoriesCreated: source.packCount,
+      itemsCreated: added,
+      itemsSkipped: 0,
+    );
+  }
+
+  Future<void> _remove(List<CatalogSource> list, String slug) async {
+    final index = list.indexWhere((source) => source.slug == slug);
+    list[index] = list[index].copyWith(
+      status: CatalogSourceStatus.available,
+      importedVersion: null,
+      importedAt: null,
+    );
+  }
 }

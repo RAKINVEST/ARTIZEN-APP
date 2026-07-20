@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.branding.models import Company
 from app.branding.repository import CompanyRepository
 from app.catalog import trades
-from app.catalog.models import CatalogCategory, CatalogItem
+from app.catalog.models import CatalogCategory, CatalogItem, ItemType
 from app.catalog.repository import CatalogCategoryRepository, CatalogItemRepository
 from app.catalog.schemas import (
     ActivityRead,
@@ -74,6 +74,7 @@ class CatalogService:
             update_item_count = None
             update_notes = None
 
+        items = [item for pack in source.packs for item in pack.items]
         return schema(
             slug=source.slug,
             label=source.label,
@@ -82,7 +83,9 @@ class CatalogService:
                 CatalogPackSummary(name=pack.name, item_count=len(pack.items))
                 for pack in source.packs
             ],
-            item_count=sum(len(pack.items) for pack in source.packs),
+            item_count=len(items),
+            product_count=sum(1 for item in items if item.item_type == ItemType.PRODUCT),
+            prestation_count=sum(1 for item in items if item.item_type == ItemType.SERVICE),
             status=status,
             version=source.version,
             imported_version=imported_version,

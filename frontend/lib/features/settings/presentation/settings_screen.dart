@@ -31,6 +31,15 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/company-profile'),
           ),
+          // The toolbox: activities compose the catalog, qualifications add
+          // their reserved packs (gas…). Configured once, applied everywhere.
+          ListTile(
+            leading: const Icon(Icons.handyman_outlined),
+            title: const Text('Mes métiers'),
+            subtitle: const Text('Composez votre catalogue selon vos activités et qualifications'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/metiers'),
+          ),
           const Divider(),
           const _SectionLabel('Modèle de devis'),
           // The active quote model — its identity and whether an imported

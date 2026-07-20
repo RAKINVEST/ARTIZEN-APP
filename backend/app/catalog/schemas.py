@@ -113,8 +113,12 @@ class _SelectableRead(BaseModel):
     label: str
     description: str | None = None
     packs: list[CatalogPackSummary] = Field(default_factory=list)
-    #: Articles the source carries in its current (published) version.
+    #: Everything the source carries in its current version…
     item_count: int
+    #: …split so the card can read "86 articles · 12 prestations": products…
+    product_count: int
+    #: …and services (main-d'œuvre, pose, dépose, mise en service…).
+    prestation_count: int
     #: available -> jamais importé · imported -> à jour · update_available ->
     #: importé mais une version plus récente existe.
     status: CatalogSourceStatus

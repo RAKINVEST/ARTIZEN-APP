@@ -35,6 +35,8 @@ async def test_activities_are_listed_with_what_they_would_add(
     assert plomberie["status"] == "available"  # rien n'est chargé par défaut
     assert plomberie["imported_version"] is None
     assert plomberie["item_count"] > 100
+    assert plomberie["item_count"] == plomberie["product_count"] + plomberie["prestation_count"]
+    assert plomberie["prestation_count"] > 0
     assert any(pack["name"] == "Sanitaires" for pack in plomberie["packs"])
 
 

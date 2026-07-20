@@ -15,6 +15,7 @@ import '../../features/clients/presentation/client_form_screen.dart';
 import '../../features/clients/presentation/clients_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/landing/presentation/landing_screen.dart';
+import '../../features/metiers/presentation/metiers_screen.dart';
 import '../../features/quote_assistant/presentation/quote_assistant_screen.dart';
 import '../../features/quotes/presentation/quote_detail_screen.dart';
 import '../../features/quotes/presentation/quote_form_screen.dart';
@@ -151,6 +152,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/branding/sample-preview',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const BrandingSamplePreviewScreen(),
+      ),
+      GoRoute(
+        path: '/metiers',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const MetiersScreen(),
       ),
       GoRoute(
         path: '/company-profile',
