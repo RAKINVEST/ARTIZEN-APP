@@ -87,3 +87,43 @@ class CatalogItemRead(BaseModel):
     active: bool
     created_at: datetime
     updated_at: datetime
+
+
+class CatalogPackSummary(BaseModel):
+    """A folder an activity or qualification would bring."""
+
+    name: str
+    item_count: int
+
+
+class _SelectableRead(BaseModel):
+    """What the artisan ticks in his settings, with what it would add."""
+
+    slug: str
+    label: str
+    description: str | None = None
+    packs: list[CatalogPackSummary] = Field(default_factory=list)
+    item_count: int
+    #: Already activated for this company.
+    enabled: bool
+
+
+class ActivityRead(_SelectableRead):
+    """What the company does — drives its catalog."""
+
+
+class QualificationRead(_SelectableRead):
+    """What the company is certified to do. Never enabled by default: a gas
+    article in the catalog of a non-PG artisan is work he may not carry out."""
+
+
+class CatalogImportResult(BaseModel):
+    """Outcome of importing a pack set. Importing is **additive only**: a
+    folder the artisan already has is reused, and an article he already has is
+    left untouched — his price, his wording (``items_skipped``)."""
+
+    slug: str
+    label: str
+    categories_created: int
+    items_created: int
+    items_skipped: int

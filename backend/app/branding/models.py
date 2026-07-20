@@ -16,7 +16,8 @@ import enum
 import uuid
 
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base, TimestampMixin, UUIDMixin
@@ -33,6 +34,20 @@ class Company(Base, UUIDMixin, TimestampMixin):
     name: Mapped[str | None] = mapped_column(default=None)
     legal_name: Mapped[str | None] = mapped_column(default=None)
     siret: Mapped[str | None] = mapped_column(default=None)
+
+    # What the company DOES, and what it is CERTIFIED to do — see
+    # docs/DECISIONS.md, décision 7. Slugs from app.catalog.trades, stored as
+    # plain arrays rather than join tables: they name code-defined packs, not
+    # rows, so there is nothing to reference and nothing to cascade. They
+    # compose the artisan's catalog once, and a qualification doubles as a
+    # legal mention on the quote (an RGE number is what opens MaPrimeRénov'
+    # to the customer).
+    activities: Mapped[list[str]] = mapped_column(
+        ARRAY(String), default=list, server_default="{}"
+    )
+    qualifications: Mapped[list[str]] = mapped_column(
+        ARRAY(String), default=list, server_default="{}"
+    )
     vat_number: Mapped[str | None] = mapped_column(default=None)
     address_line: Mapped[str | None] = mapped_column(default=None)
     postal_code: Mapped[str | None] = mapped_column(default=None)

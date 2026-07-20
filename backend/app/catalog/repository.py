@@ -34,6 +34,16 @@ class CatalogCategoryRepository(BaseRepository[CatalogCategory]):
         )
         return list(result.scalars().all())
 
+    async def get_by_name(self, company_id: uuid.UUID, name: str) -> CatalogCategory | None:
+        """Used when importing a pack: a folder the artisan already has is
+        reused, never duplicated — and never renamed."""
+        result = await self.session.execute(
+            select(CatalogCategory).where(
+                CatalogCategory.company_id == company_id, CatalogCategory.name == name
+            )
+        )
+        return result.scalars().first()
+
 
 class CatalogItemRepository(BaseRepository[CatalogItem]):
     def __init__(self, session: AsyncSession) -> None:
@@ -66,3 +76,15 @@ class CatalogItemRepository(BaseRepository[CatalogItem]):
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def designations_in_category(self, category_id: uuid.UUID) -> set[str]:
+        """What the artisan already has in this folder.
+
+        Importing a pack must never touch a line he already owns — his price,
+        his wording, his choice (`docs/DECISIONS.md`, décision 1). One query
+        per folder, compared by designation.
+        """
+        result = await self.session.execute(
+            select(CatalogItem.designation).where(CatalogItem.category_id == category_id)
+        )
+        return set(result.scalars().all())

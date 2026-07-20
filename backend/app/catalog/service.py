@@ -12,13 +12,20 @@ import uuid
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.branding.models import Company
+from app.branding.repository import CompanyRepository
+from app.catalog import trades
 from app.catalog.models import CatalogCategory, CatalogItem
 from app.catalog.repository import CatalogCategoryRepository, CatalogItemRepository
 from app.catalog.schemas import (
+    ActivityRead,
     CatalogCategoryCreate,
     CatalogCategoryUpdate,
+    CatalogImportResult,
     CatalogItemCreate,
     CatalogItemUpdate,
+    CatalogPackSummary,
+    QualificationRead,
 )
 from app.core.authorization import ensure_same_company
 from app.core.exceptions import ConflictError, NotFoundError
@@ -29,6 +36,146 @@ class CatalogService:
         self._session = session
         self._categories = CatalogCategoryRepository(session)
         self._items = CatalogItemRepository(session)
+        # The activities and qualifications a company has ticked live on the
+        # company row. Same one-way dependency users -> branding already has.
+        self._companies = CompanyRepository(session)
+
+    # --- Activités et qualifications : composition du catalogue ---
+
+    async def _company(self, company_id: uuid.UUID) -> Company:
+        company = await self._companies.get(company_id)
+        if company is None:
+            raise NotFoundError(f"Company {company_id} not found.")
+        return company
+
+    @staticmethod
+    def _describe(schema: type, source: object, enabled: set[str]):  # type: ignore[no-untyped-def]
+        return schema(
+            slug=source.slug,  # type: ignore[attr-defined]
+            label=source.label,  # type: ignore[attr-defined]
+            description=source.description,  # type: ignore[attr-defined]
+            packs=[
+                CatalogPackSummary(name=pack.name, item_count=len(pack.items))
+                for pack in source.packs  # type: ignore[attr-defined]
+            ],
+            item_count=sum(len(pack.items) for pack in source.packs),  # type: ignore[attr-defined]
+            enabled=source.slug in enabled,  # type: ignore[attr-defined]
+        )
+
+    async def list_activities(self, company_id: uuid.UUID) -> list[ActivityRead]:
+        enabled = set((await self._company(company_id)).activities)
+        return [
+            self._describe(ActivityRead, activity, enabled)
+            for activity in trades.list_activities()
+        ]
+
+    async def list_qualifications(self, company_id: uuid.UUID) -> list[QualificationRead]:
+        enabled = set((await self._company(company_id)).qualifications)
+        return [
+            self._describe(QualificationRead, qualification, enabled)
+            for qualification in trades.list_qualifications()
+        ]
+
+    async def import_activity(self, company_id: uuid.UUID, slug: str) -> CatalogImportResult:
+        activity = trades.get_activity(slug)
+        if activity is None:
+            raise NotFoundError(f"Activity '{slug}' not found.")
+        company = await self._company(company_id)
+        if slug not in company.activities:
+            # Reassigned, not mutated: SQLAlchemy only notices a new list.
+            company.activities = [*company.activities, slug]
+        return await self._seed(company_id, activity)
+
+    async def import_qualification(
+        self, company_id: uuid.UUID, slug: str
+    ) -> CatalogImportResult:
+        qualification = trades.get_qualification(slug)
+        if qualification is None:
+            raise NotFoundError(f"Qualification '{slug}' not found.")
+        company = await self._company(company_id)
+        if slug not in company.qualifications:
+            company.qualifications = [*company.qualifications, slug]
+        return await self._seed(company_id, qualification)
+
+    async def _seed(self, company_id: uuid.UUID, source: object) -> CatalogImportResult:
+        """Copie les packs dans le catalogue de l'entreprise.
+
+        **Purement additif.** Un dossier déjà présent est réutilisé (jamais
+        dupliqué, jamais renommé) et un article déjà présent est laissé
+        intact : son prix et son libellé appartiennent à l'artisan
+        (`docs/DECISIONS.md`, décision 1). Réimporter est donc sans risque,
+        et c'est ce qui rend l'opération idempotente.
+
+        C'est aussi ce qui fait la fusion : importer Chauffage après Plomberie
+        retrouve le dossier « Prestations » existant et y ajoute ses lignes,
+        au lieu d'en créer un second.
+        """
+        categories_created = items_created = items_skipped = 0
+        # Le pack Chantier accompagne tout import : déplacement, dépose,
+        # déchets et essais appartiennent à tous les métiers et à aucun. Le
+        # rajouter à chaque fois est sans effet dès la deuxième import — c'est
+        # précisément ce que garantit l'idempotence ci-dessous.
+        packs = trades.merge_packs([*source.packs, trades.CHANTIER])  # type: ignore[attr-defined]
+        for pack in packs:
+            category = await self._categories.get_by_name(company_id, pack.name)
+            if category is None:
+                category = await self._categories.create(
+                    CatalogCategory(
+                        company_id=company_id, name=pack.name, description=pack.description
+                    )
+                )
+                categories_created += 1
+                existing: set[str] = set()
+            else:
+                existing = await self._items.designations_in_category(category.id)
+
+            for item in pack.items:
+                if item.designation in existing:
+                    items_skipped += 1
+                    continue
+                await self._items.create(
+                    CatalogItem(
+                        company_id=company_id,
+                        category_id=category.id,
+                        designation=item.designation,
+                        description=item.description,
+                        item_type=item.item_type,
+                        unit=item.unit,
+                        unit_price_ht=item.unit_price_ht,
+                        vat_rate=item.vat_rate,
+                        estimated_duration_minutes=item.estimated_duration_minutes,
+                    )
+                )
+                existing.add(item.designation)
+                items_created += 1
+
+        await self._session.flush()
+        return CatalogImportResult(
+            slug=source.slug,  # type: ignore[attr-defined]
+            label=source.label,  # type: ignore[attr-defined]
+            categories_created=categories_created,
+            items_created=items_created,
+            items_skipped=items_skipped,
+        )
+
+    async def remove_activity(self, company_id: uuid.UUID, slug: str) -> None:
+        """Désactive une activité — **le catalogue n'est pas touché**.
+
+        Supprimer les articles serait détruire le travail de l'artisan : il a
+        pu corriger des prix, réécrire des libellés, en ajouter. Le catalogue
+        lui appartient (décision 1) ; Artizen n'efface pas ses données. Retirer
+        l'activité l'empêche seulement d'être réimportée, et il supprime
+        lui-même les articles dont il ne veut plus.
+        """
+        company = await self._company(company_id)
+        company.activities = [s for s in company.activities if s != slug]
+        await self._session.flush()
+
+    async def remove_qualification(self, company_id: uuid.UUID, slug: str) -> None:
+        """Retire une qualification. Même principe : le catalogue est intact."""
+        company = await self._company(company_id)
+        company.qualifications = [s for s in company.qualifications if s != slug]
+        await self._session.flush()
 
     # --- Categories ---
 

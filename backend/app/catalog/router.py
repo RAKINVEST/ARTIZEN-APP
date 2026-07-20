@@ -16,17 +16,79 @@ from fastapi import APIRouter, Query, status
 
 from app.catalog.deps import CatalogServiceDep
 from app.catalog.schemas import (
+    ActivityRead,
     CatalogCategoryCreate,
     CatalogCategoryRead,
     CatalogCategoryUpdate,
+    CatalogImportResult,
     CatalogItemCreate,
     CatalogItemRead,
     CatalogItemUpdate,
+    QualificationRead,
 )
 from app.core.authorization import ensure_same_company
 from app.users.deps import CurrentUserDep
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
+
+
+# --- Activités et qualifications : ce qui compose le catalogue ---
+#
+# L'artisan coche ses activités une fois, ici ; le parcours de devis ne lui
+# redemande jamais son métier (docs/DECISIONS.md, décision 2).
+
+
+@router.get("/activities", response_model=list[ActivityRead])
+async def list_activities(
+    service: CatalogServiceDep, current_user: CurrentUserDep
+) -> list[ActivityRead]:
+    """Les activités proposées, avec ce que chacune ajouterait et si elle est
+    déjà activée pour cette entreprise."""
+    return await service.list_activities(current_user.company_id)
+
+
+@router.post("/activities/{slug}", response_model=CatalogImportResult)
+async def import_activity(
+    slug: str, service: CatalogServiceDep, current_user: CurrentUserDep
+) -> CatalogImportResult:
+    """Active une activité et copie ses packs dans le catalogue.
+
+    Additif et idempotent : réimporter ne duplique rien et ne modifie aucun
+    article existant. 200, pas 201 : l'appel crée un nombre variable de
+    ressources, dont parfois aucune.
+    """
+    return await service.import_activity(current_user.company_id, slug)
+
+
+@router.delete("/activities/{slug}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_activity(
+    slug: str, service: CatalogServiceDep, current_user: CurrentUserDep
+) -> None:
+    """Désactive une activité. **Le catalogue n'est pas touché** : les articles
+    appartiennent à l'artisan, qui supprime lui-même ceux dont il ne veut plus."""
+    await service.remove_activity(current_user.company_id, slug)
+
+
+@router.get("/qualifications", response_model=list[QualificationRead])
+async def list_qualifications(
+    service: CatalogServiceDep, current_user: CurrentUserDep
+) -> list[QualificationRead]:
+    return await service.list_qualifications(current_user.company_id)
+
+
+@router.post("/qualifications/{slug}", response_model=CatalogImportResult)
+async def import_qualification(
+    slug: str, service: CatalogServiceDep, current_user: CurrentUserDep
+) -> CatalogImportResult:
+    """Active une qualification (PG, RGE…) et ajoute ses packs réservés."""
+    return await service.import_qualification(current_user.company_id, slug)
+
+
+@router.delete("/qualifications/{slug}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_qualification(
+    slug: str, service: CatalogServiceDep, current_user: CurrentUserDep
+) -> None:
+    await service.remove_qualification(current_user.company_id, slug)
 
 
 @router.post("/categories", response_model=CatalogCategoryRead, status_code=status.HTTP_201_CREATED)
