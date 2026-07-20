@@ -3,6 +3,7 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -96,16 +97,36 @@ class CatalogPackSummary(BaseModel):
     item_count: int
 
 
+#: The three states an activity/qualification can be in, on purpose modelled
+#: like an app store: not installed, installed, update available.
+CatalogSourceStatus = Literal["available", "imported", "update_available"]
+
+
 class _SelectableRead(BaseModel):
-    """What the artisan ticks in his settings, with what it would add."""
+    """What the artisan ticks in his settings — one card of the screen.
+
+    Carries everything the card shows: what it would add, whether it is
+    imported, and whether a newer catalog version is available.
+    """
 
     slug: str
     label: str
     description: str | None = None
     packs: list[CatalogPackSummary] = Field(default_factory=list)
+    #: Articles the source carries in its current (published) version.
     item_count: int
-    #: Already activated for this company.
-    enabled: bool
+    #: available -> jamais importé · imported -> à jour · update_available ->
+    #: importé mais une version plus récente existe.
+    status: CatalogSourceStatus
+    #: Published version, in code.
+    version: int
+    #: Version the artisan imported (None if never imported).
+    imported_version: int | None = None
+    #: When it was last imported/updated (None if never).
+    imported_at: datetime | None = None
+    #: Only when ``status == "update_available"``: how many articles updating
+    #: would add to the catalog right now. None otherwise.
+    update_item_count: int | None = None
 
 
 class ActivityRead(_SelectableRead):
@@ -113,7 +134,7 @@ class ActivityRead(_SelectableRead):
 
 
 class QualificationRead(_SelectableRead):
-    """What the company is certified to do. Never enabled by default: a gas
+    """What the company is certified to do. Never imported by default: a gas
     article in the catalog of a non-PG artisan is work he may not carry out."""
 
 

@@ -16,8 +16,8 @@ import enum
 import uuid
 
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy import ForeignKey, String
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import ForeignKey
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base, TimestampMixin, UUIDMixin
@@ -36,17 +36,22 @@ class Company(Base, UUIDMixin, TimestampMixin):
     siret: Mapped[str | None] = mapped_column(default=None)
 
     # What the company DOES, and what it is CERTIFIED to do — see
-    # docs/DECISIONS.md, décision 7. Slugs from app.catalog.trades, stored as
-    # plain arrays rather than join tables: they name code-defined packs, not
-    # rows, so there is nothing to reference and nothing to cascade. They
-    # compose the artisan's catalog once, and a qualification doubles as a
-    # legal mention on the quote (an RGE number is what opens MaPrimeRénov'
-    # to the customer).
-    activities: Mapped[list[str]] = mapped_column(
-        ARRAY(String), default=list, server_default="{}"
+    # docs/DECISIONS.md, décision 7. Slugs name code-defined packs, not rows,
+    # so there is nothing to reference and nothing to cascade — hence JSONB on
+    # the company rather than a join table.
+    #
+    # Shape: ``{slug: {"version": int, "imported_at": iso8601}}``. The version
+    # is the imported one, kept so a newer version in code surfaces "mise à
+    # jour disponible" — the app-store model, and the only reliable one: a
+    # diff would flag every article the artisan deleted as missing forever.
+    # A key present at all means the source is imported; its value carries the
+    # rest. An activity drives the *initial* import and its updates, never the
+    # ongoing life of the catalog, which belongs to the artisan (décision 1).
+    activities: Mapped[dict[str, dict]] = mapped_column(
+        JSONB, default=dict, server_default="{}"
     )
-    qualifications: Mapped[list[str]] = mapped_column(
-        ARRAY(String), default=list, server_default="{}"
+    qualifications: Mapped[dict[str, dict]] = mapped_column(
+        JSONB, default=dict, server_default="{}"
     )
     vat_number: Mapped[str | None] = mapped_column(default=None)
     address_line: Mapped[str | None] = mapped_column(default=None)

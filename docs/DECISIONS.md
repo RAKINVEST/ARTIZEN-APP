@@ -184,10 +184,28 @@ une **mention légale du devis** : sans n° RGE affiché, le client ne peut pré
 MaPrimeRénov' ni aux CEE ; le gaz exige la certification PG. La même saisie alimente donc le
 catalogue **et** les mentions obligatoires du PDF.
 
+**Une activité ne pilote que l'import, jamais la vie du catalogue.** Une fois les packs
+copiés, l'artisan change les prix, réécrit les libellés, ajoute et supprime des articles :
+ce n'est plus « le catalogue Plomberie », c'est **son** catalogue (décision 1). Désactiver
+une activité **n'efface donc aucun article** — Artizen ne supprime pas les données de
+l'artisan ; il retire seulement la source de l'import.
+
+**Mise à jour par version, comme un store d'applications.** Chaque activité et qualification
+porte un **numéro de version**, et l'entreprise mémorise la version qu'elle a importée. Trois
+états : *disponible* (jamais importée), *importée* (à jour), *mise à jour disponible* (une
+version plus récente existe en code). Détecter les mises à jour **par version** et non par
+différence d'articles est le seul modèle fiable : un diff signalerait chaque article que
+l'artisan a supprimé comme « manquant » pour toujours. La mise à jour est **additive** — elle
+n'ajoute que les articles absents, sans jamais toucher aux prix personnalisés — et le même
+geste d'import sert d'import initial et de mise à jour.
+
 **Conséquences.**
-- `Company` porte déjà `rge_number` — à généraliser en liste de qualifications (identifiant,
-  numéro, et à terme validité).
-- `TradeCategory.optional` marque les dossiers conditionnés à une qualification.
+- `Company.activities` et `Company.qualifications` : `{slug: {version, imported_at}}` en JSONB.
+- `Activity.version` / `Qualification.version` : à incrémenter **délibérément** quand on
+  publie de nouveaux articles — c'est ce geste, et lui seul, qui fait apparaître la mise à
+  jour chez les artisans.
+- `Company` porte déjà `rge_number` (une qualification est aussi une mention du PDF) ; à terme,
+  validité/expiration des qualifications (RGE et PG se renouvellent).
 - Ajouter une qualification plus tard = ajouter un **paquet de données**, pas un nouveau métier.
 
 ---

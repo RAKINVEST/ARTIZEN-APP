@@ -8,6 +8,7 @@ indirection without a real separation of concerns.
 """
 
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,43 +49,91 @@ class CatalogService:
             raise NotFoundError(f"Company {company_id} not found.")
         return company
 
-    @staticmethod
-    def _describe(schema: type, source: object, enabled: set[str]):  # type: ignore[no-untyped-def]
+    async def _describe(self, schema, company_id: uuid.UUID, source, imported: dict):  # type: ignore[no-untyped-def]
+        """Build one settings card: what the source adds, and its state.
+
+        Three states, app-store style. Not in ``imported`` -> available. Same
+        version -> up to date. A newer version in code than the one imported ->
+        update available, and only then do we count the articles it would add
+        (a per-source query, so it stays off the common path).
+        """
+        entry = imported.get(source.slug)
+        imported_version = entry.get("version") if entry else None
+        imported_at = entry.get("imported_at") if entry else None
+
+        if entry is None:
+            status = "available"
+            update_item_count = None
+        elif source.version > imported_version:
+            status = "update_available"
+            update_item_count = await self._count_new_items(company_id, source)
+        else:
+            status = "imported"
+            update_item_count = None
+
         return schema(
-            slug=source.slug,  # type: ignore[attr-defined]
-            label=source.label,  # type: ignore[attr-defined]
-            description=source.description,  # type: ignore[attr-defined]
+            slug=source.slug,
+            label=source.label,
+            description=source.description,
             packs=[
                 CatalogPackSummary(name=pack.name, item_count=len(pack.items))
-                for pack in source.packs  # type: ignore[attr-defined]
+                for pack in source.packs
             ],
-            item_count=sum(len(pack.items) for pack in source.packs),  # type: ignore[attr-defined]
-            enabled=source.slug in enabled,  # type: ignore[attr-defined]
+            item_count=sum(len(pack.items) for pack in source.packs),
+            status=status,
+            version=source.version,
+            imported_version=imported_version,
+            imported_at=imported_at,
+            update_item_count=update_item_count,
         )
 
+    async def _count_new_items(self, company_id: uuid.UUID, source) -> int:  # type: ignore[no-untyped-def]
+        """How many articles importing ``source`` right now would add.
+
+        A dry run of the additive seed: an article is "new" only if its folder
+        doesn't already hold that designation. Deleted-then-republished
+        articles do count — the update re-adds them, which is non-destructive.
+        """
+        count = 0
+        for pack in trades.merge_packs([*source.packs]):
+            category = await self._categories.get_by_name(company_id, pack.name)
+            existing = (
+                await self._items.designations_in_category(category.id)
+                if category is not None
+                else set()
+            )
+            count += sum(1 for item in pack.items if item.designation not in existing)
+        return count
+
     async def list_activities(self, company_id: uuid.UUID) -> list[ActivityRead]:
-        enabled = set((await self._company(company_id)).activities)
+        imported = (await self._company(company_id)).activities
         return [
-            self._describe(ActivityRead, activity, enabled)
+            await self._describe(ActivityRead, company_id, activity, imported)
             for activity in trades.list_activities()
         ]
 
     async def list_qualifications(self, company_id: uuid.UUID) -> list[QualificationRead]:
-        enabled = set((await self._company(company_id)).qualifications)
+        imported = (await self._company(company_id)).qualifications
         return [
-            self._describe(QualificationRead, qualification, enabled)
+            await self._describe(QualificationRead, company_id, qualification, imported)
             for qualification in trades.list_qualifications()
         ]
 
     async def import_activity(self, company_id: uuid.UUID, slug: str) -> CatalogImportResult:
+        """Import *or update* — the same additive seed serves both.
+
+        The "Importer" and "Mettre à jour" buttons hit this one route: adding
+        the new articles of a newer version is exactly importing while skipping
+        everything already there. On success the imported version is recorded,
+        which is what clears the "mise à jour disponible" badge.
+        """
         activity = trades.get_activity(slug)
         if activity is None:
             raise NotFoundError(f"Activity '{slug}' not found.")
         company = await self._company(company_id)
-        if slug not in company.activities:
-            # Reassigned, not mutated: SQLAlchemy only notices a new list.
-            company.activities = [*company.activities, slug]
-        return await self._seed(company_id, activity)
+        result = await self._seed(company_id, activity)
+        company.activities = {**company.activities, slug: self._stamp(activity.version)}
+        return result
 
     async def import_qualification(
         self, company_id: uuid.UUID, slug: str
@@ -93,9 +142,17 @@ class CatalogService:
         if qualification is None:
             raise NotFoundError(f"Qualification '{slug}' not found.")
         company = await self._company(company_id)
-        if slug not in company.qualifications:
-            company.qualifications = [*company.qualifications, slug]
-        return await self._seed(company_id, qualification)
+        result = await self._seed(company_id, qualification)
+        company.qualifications = {
+            **company.qualifications,
+            slug: self._stamp(qualification.version),
+        }
+        return result
+
+    @staticmethod
+    def _stamp(version: int) -> dict:
+        """The stored record of an import: which version, and when."""
+        return {"version": version, "imported_at": datetime.now(timezone.utc).isoformat()}
 
     async def _seed(self, company_id: uuid.UUID, source: object) -> CatalogImportResult:
         """Copie les packs dans le catalogue de l'entreprise.
@@ -168,13 +225,15 @@ class CatalogService:
         lui-même les articles dont il ne veut plus.
         """
         company = await self._company(company_id)
-        company.activities = [s for s in company.activities if s != slug]
+        company.activities = {s: v for s, v in company.activities.items() if s != slug}
         await self._session.flush()
 
     async def remove_qualification(self, company_id: uuid.UUID, slug: str) -> None:
         """Retire une qualification. Même principe : le catalogue est intact."""
         company = await self._company(company_id)
-        company.qualifications = [s for s in company.qualifications if s != slug]
+        company.qualifications = {
+            s: v for s, v in company.qualifications.items() if s != slug
+        }
         await self._session.flush()
 
     # --- Categories ---

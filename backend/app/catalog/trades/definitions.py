@@ -78,10 +78,18 @@ class Activity:
     Drives which packs make up its catalog. An artisan ticks his activities
     once, in his company settings; the quote flow never asks again
     (`docs/DECISIONS.md`, décision 2).
+
+    ``version`` is what makes "mise à jour disponible" reliable. Bump it —
+    deliberately, like publishing an app update — whenever this activity's
+    packs gain or change articles. A company remembers the version it imported;
+    a newer version here is what surfaces the update, and nothing else does.
+    Detecting updates by diffing articles instead would flag every article the
+    artisan deleted as "missing" forever. See `docs/DECISIONS.md`, décision 7.
     """
 
     slug: str
     label: str
+    version: int = 1
     packs: tuple[CatalogPack, ...] = field(default_factory=tuple)
     description: str | None = None
 
@@ -101,6 +109,7 @@ class Qualification:
 
     slug: str
     label: str
+    version: int = 1
     packs: tuple[CatalogPack, ...] = field(default_factory=tuple)
     description: str | None = None
 

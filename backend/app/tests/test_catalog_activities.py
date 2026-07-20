@@ -32,7 +32,8 @@ async def test_activities_are_listed_with_what_they_would_add(
     activities = {activity["slug"]: activity for activity in response.json()}
     assert "plomberie" in activities
     plomberie = activities["plomberie"]
-    assert plomberie["enabled"] is False  # rien n'est chargé par défaut
+    assert plomberie["status"] == "available"  # rien n'est chargé par défaut
+    assert plomberie["imported_version"] is None
     assert plomberie["item_count"] > 100
     assert any(pack["name"] == "Sanitaires" for pack in plomberie["packs"])
 
@@ -53,14 +54,17 @@ async def test_importing_an_activity_fills_the_catalog(
     assert "Chantier et prestations communes" in names  # le pack commun suit toujours
 
 
-async def test_activity_is_marked_enabled_after_import(
+async def test_activity_is_marked_imported_after_import(
     client: AsyncClient, company_id: str
 ) -> None:
     await client.post("/api/catalog/activities/plomberie")
 
     activities = {a["slug"]: a for a in (await client.get("/api/catalog/activities")).json()}
-    assert activities["plomberie"]["enabled"] is True
-    assert activities["chauffage"]["enabled"] is False
+    plomberie = activities["plomberie"]
+    assert plomberie["status"] == "imported"
+    assert plomberie["imported_version"] == plomberie["version"]
+    assert plomberie["imported_at"] is not None
+    assert activities["chauffage"]["status"] == "available"
 
 
 async def test_importing_twice_creates_nothing_new(
@@ -118,7 +122,7 @@ async def test_qualification_is_never_loaded_by_default(
     assert "Gaz" not in await _categories(client)
 
     qualifications = (await client.get("/api/catalog/qualifications")).json()
-    assert qualifications[0]["enabled"] is False
+    assert qualifications[0]["status"] == "available"
 
     result = (await client.post("/api/catalog/qualifications/pg")).json()
     assert result["items_created"] > 0
@@ -136,7 +140,7 @@ async def test_removing_an_activity_keeps_the_catalog(
 
     assert response.status_code == 204
     activities = {a["slug"]: a for a in (await client.get("/api/catalog/activities")).json()}
-    assert activities["plomberie"]["enabled"] is False
+    assert activities["plomberie"]["status"] == "available"
     assert await _categories(client) == before  # le catalogue est intact
 
 
@@ -144,3 +148,47 @@ async def test_unknown_activity_is_not_found(client: AsyncClient, company_id: st
     response = await client.post("/api/catalog/activities/souffleur-de-verre")
 
     assert response.status_code == 404
+
+
+async def test_a_newer_version_surfaces_an_update_without_touching_prices(
+    client: AsyncClient, company_id: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Le cœur du modèle « app store ». L'artisan importe la v1, puis Artizen
+    publie une v2 avec un article de plus : l'activité passe en
+    « mise à jour disponible » avec le bon décompte, la mise à jour ajoute
+    seulement le nouvel article, et ne touche pas aux prix personnalisés."""
+    from app.catalog import trades
+    from app.catalog.trades.definitions import Activity, CatalogPack, PackItem
+    from decimal import Decimal
+
+    v1 = trades.get_activity("plomberie")
+    await client.post("/api/catalog/activities/plomberie")  # importe la v1
+
+    # Artizen publie une v2 : même contenu + un article neuf dans un pack.
+    pack0 = v1.packs[0]
+    v2_pack = CatalogPack(
+        name=pack0.name,
+        items=pack0.items + (PackItem("Article tout neuf v2", "unité", Decimal("10.00"), Decimal("10.00")),),
+        description=pack0.description,
+    )
+    v2 = Activity(
+        slug=v1.slug, label=v1.label, version=v1.version + 1,
+        packs=(v2_pack, *v1.packs[1:]), description=v1.description,
+    )
+    monkeypatch.setitem(trades.ACTIVITIES, "plomberie", v2)
+
+    # L'activité signale la mise à jour, +1 article.
+    activities = {a["slug"]: a for a in (await client.get("/api/catalog/activities")).json()}
+    assert activities["plomberie"]["status"] == "update_available"
+    assert activities["plomberie"]["update_item_count"] == 1
+
+    # La mise à jour n'ajoute que le nouvel article.
+    result = (await client.post("/api/catalog/activities/plomberie")).json()
+    assert result["items_created"] == 1
+    assert "Article tout neuf v2" in {
+        i["designation"] for i in (await client.get("/api/catalog/items", params={"search": "tout neuf"})).json()
+    }
+
+    # Et l'activité repasse « à jour ».
+    activities = {a["slug"]: a for a in (await client.get("/api/catalog/activities")).json()}
+    assert activities["plomberie"]["status"] == "imported"
