@@ -19,16 +19,27 @@ Future<CatalogCategoryInput?> showAddCategoryDialog(BuildContext context) {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const Text(
+              'Regroupe des articles de même famille.',
+              style: TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 12),
             TextFormField(
               controller: nameController,
               autofocus: true,
-              decoration: const InputDecoration(labelText: 'Nom *'),
+              decoration: const InputDecoration(
+                labelText: 'Nom *',
+                hintText: 'Plomberie, Chauffage, Climatisation…',
+              ),
               validator: (value) => (value == null || value.trim().isEmpty) ? 'Requis' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'Optionnel',
+              ),
             ),
           ],
         ),

@@ -17,7 +17,7 @@ class ArtizenApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Artizen',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
+      theme: AppTheme.brand(),
       routerConfig: router,
     );
   }

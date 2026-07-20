@@ -5,6 +5,12 @@ import '../../catalog/data/catalog_models.dart';
 import '../../clients/data/client_model.dart';
 import '../data/quote_models.dart';
 import '../data/quotes_repository_impl.dart';
+import '../domain/quote_draft_line.dart';
+
+// Re-exported so existing callers can keep importing `QuoteDraftLine` from
+// this file; the type itself now lives in the domain layer so the pure
+// preview calculator can depend on it without pulling in Riverpod.
+export '../domain/quote_draft_line.dart';
 
 class QuotesNotifier extends AsyncNotifier<List<Quote>> {
   @override
@@ -46,23 +52,22 @@ final quoteByIdProvider = FutureProvider.family<Quote, String>((ref, id) {
   return ref.watch(quotesRepositoryProvider).get(id);
 });
 
-/// One line being assembled in the "new quote" form, before it's ever sent
-/// to the backend. Deliberately carries no computed amount — see
-/// `QuoteFormScreen`: nothing is calculated client-side, even for preview,
-/// so there is nothing here to compute either.
-class QuoteDraftLine {
-  const QuoteDraftLine({required this.item, required this.quantity});
-
-  final CatalogItem item;
-  final String quantity;
-}
-
 class QuoteDraftNotifier extends Notifier<List<QuoteDraftLine>> {
   @override
   List<QuoteDraftLine> build() => [];
 
   void addLine(CatalogItem item, String quantity) {
     state = [...state, QuoteDraftLine(item: item, quantity: quantity)];
+  }
+
+  /// Updates the quantity of the line at [index] in place. Called on every
+  /// keystroke of a line's quantity field so the preview totals recompute
+  /// live (the "Bêta Ready" requirement: quantity change -> total change).
+  void updateQuantityAt(int index, String quantity) {
+    if (index < 0 || index >= state.length) return;
+    final updated = [...state];
+    updated[index] = updated[index].copyWith(quantity: quantity);
+    state = updated;
   }
 
   void removeLineAt(int index) {

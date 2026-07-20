@@ -96,7 +96,7 @@ class TemplateImportNotifier extends Notifier<TemplateImportState> {
   void reset() => state = const TemplateImportIdle();
 
   String _describe(Object error) =>
-      error is ApiException ? error.displayMessage : 'Une erreur inattendue est survenue.';
+      asApiException(error).displayMessage;
 }
 
 final templateImportNotifierProvider =

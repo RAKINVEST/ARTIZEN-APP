@@ -8,6 +8,7 @@ indirection without a real separation of concerns.
 """
 
 import uuid
+from decimal import Decimal
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +20,10 @@ from app.catalog.schemas import (
     CatalogCategoryUpdate,
     CatalogItemCreate,
     CatalogItemUpdate,
+    TradeInstallResult,
+    TradeSummary,
 )
+from app.catalog.seed_data import TRADES, TRADES_BY_SLUG, SeedCategory
 from app.core.exceptions import ConflictError, NotFoundError
 
 
@@ -108,3 +112,72 @@ class CatalogService:
         await self._session.flush()
         await self._session.refresh(item)
         return item
+
+    # --- Trade packs (pre-installed catalogs per métier) ---
+
+    def list_trades(self) -> list[TradeSummary]:
+        """The installable trade packs, for the onboarding "Quel est votre
+        métier ?" screen. Static data — no DB access."""
+        return [
+            TradeSummary(
+                slug=trade.slug,
+                name=trade.name,
+                description=trade.description,
+                category_count=trade.category_count(),
+                item_count=trade.item_count(),
+            )
+            for trade in TRADES
+        ]
+
+    async def install_trade(
+        self, *, company_id: uuid.UUID, slug: str
+    ) -> TradeInstallResult:
+        """Creates a trade's whole category tree and its articles for the
+        company (prices left at 0 for the artisan to fill in). Idempotency is
+        the caller's concern — installing twice simply duplicates the pack."""
+        trade = TRADES_BY_SLUG.get(slug)
+        if trade is None:
+            raise NotFoundError(f"Trade pack '{slug}' not found.")
+
+        counters = {"categories": 0, "items": 0}
+
+        async def create_branch(
+            seed_categories: tuple[SeedCategory, ...], parent_id: uuid.UUID | None
+        ) -> None:
+            for order, seed_cat in enumerate(seed_categories):
+                category = await self._categories.create(
+                    CatalogCategory(
+                        company_id=company_id,
+                        name=seed_cat.name,
+                        parent_id=parent_id,
+                        sort_order=order,
+                    )
+                )
+                counters["categories"] += 1
+                for seed_item in seed_cat.items:
+                    await self._items.create(
+                        CatalogItem(
+                            company_id=company_id,
+                            category_id=category.id,
+                            designation=seed_item.designation,
+                            item_type=seed_item.item_type,
+                            unit=seed_item.unit,
+                            unit_price_ht=Decimal("0.00"),
+                            vat_rate=seed_item.vat_rate,
+                        )
+                    )
+                    counters["items"] += 1
+                await create_branch(seed_cat.children, category.id)
+
+        # The métier itself becomes the top-level folder (📁 Plomberie), and
+        # the pack's categories (📂 Tubes, Chauffe-eau…) nest beneath it.
+        root = await self._categories.create(
+            CatalogCategory(company_id=company_id, name=trade.name, parent_id=None, sort_order=0)
+        )
+        counters["categories"] += 1
+        await create_branch(trade.categories, root.id)
+        return TradeInstallResult(
+            slug=slug,
+            categories_created=counters["categories"],
+            items_created=counters["items"],
+        )

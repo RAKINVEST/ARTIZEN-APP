@@ -26,6 +26,20 @@ class QuoteCreate(BaseModel):
     lines: list[QuoteLineCreate] = Field(min_length=1)
 
 
+class QuoteUpdate(BaseModel):
+    """Full replacement of a quote's lines — a quote stays editable for as
+    long as the artisan needs it. Sending the lines wholesale (rather than
+    patching them one by one) keeps the amounts consistent: every total is
+    recomputed from scratch by ``QuoteCalculator``, so a quote can never
+    drift out of sync with its own lines.
+
+    ``client_id`` is optional: omit it to keep the quote's current client.
+    """
+
+    client_id: uuid.UUID | None = None
+    lines: list[QuoteLineCreate] = Field(min_length=1)
+
+
 class QuoteLineRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

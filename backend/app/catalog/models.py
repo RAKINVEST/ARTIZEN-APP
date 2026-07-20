@@ -32,6 +32,16 @@ class CatalogCategory(Base, UUIDMixin, TimestampMixin):
     )
     name: Mapped[str]
     description: Mapped[str | None] = mapped_column(default=None)
+    # Self-referencing tree: a category can be nested under another one, so
+    # the catalog can model Métier → Catégorie → Sous-catégorie → Article to
+    # any depth. Top-level nodes (a "métier" or a family) have parent_id NULL.
+    # ondelete=CASCADE: removing a branch removes its sub-categories with it.
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("catalog_categories.id", ondelete="CASCADE"), default=None, index=True
+    )
+    # Preserves the intended display order within a parent (seed packs rely on
+    # it so "Tubes" comes before "Chauffe-eau" as authored, not alphabetically).
+    sort_order: Mapped[int] = mapped_column(default=0)
 
 
 class CatalogItem(Base, UUIDMixin, TimestampMixin):

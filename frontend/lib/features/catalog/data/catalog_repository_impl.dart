@@ -73,6 +73,18 @@ class CatalogRepositoryImpl implements CatalogRepository {
     final response = await _dio.delete<Map<String, dynamic>>('/catalog/items/$id');
     return CatalogItem.fromJson(response.data!);
   }
+
+  @override
+  Future<List<Trade>> listTrades() async {
+    final response = await _dio.get<List<dynamic>>('/catalog/trades');
+    return response.data!.map((json) => Trade.fromJson(json as Map<String, dynamic>)).toList();
+  }
+
+  @override
+  Future<TradeInstallResult> installTrade(String slug) async {
+    final response = await _dio.post<Map<String, dynamic>>('/catalog/trades/$slug/install');
+    return TradeInstallResult.fromJson(response.data!);
+  }
 }
 
 final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {

@@ -7,6 +7,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/catalog/presentation/catalog_screen.dart';
 import '../../features/catalog/presentation/item_form_screen.dart';
+import '../../features/catalog/presentation/trade_picker_screen.dart';
 import '../../features/clients/presentation/client_form_screen.dart';
 import '../../features/clients/presentation/clients_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
@@ -84,6 +85,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/clients/:id/edit',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => ClientFormScreen(clientId: state.pathParameters['id']),
+      ),
+      GoRoute(
+        path: '/catalog/trades',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const TradePickerScreen(),
       ),
       GoRoute(
         path: '/catalog/items/new',

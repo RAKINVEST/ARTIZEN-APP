@@ -25,6 +25,8 @@ mixin _$CatalogCategory {
   String get companyId => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
+  String? get parentId => throw _privateConstructorUsedError;
+  int get sortOrder => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
 
@@ -50,6 +52,8 @@ abstract class $CatalogCategoryCopyWith<$Res> {
     String companyId,
     String name,
     String? description,
+    String? parentId,
+    int sortOrder,
     DateTime createdAt,
     DateTime updatedAt,
   });
@@ -74,6 +78,8 @@ class _$CatalogCategoryCopyWithImpl<$Res, $Val extends CatalogCategory>
     Object? companyId = null,
     Object? name = null,
     Object? description = freezed,
+    Object? parentId = freezed,
+    Object? sortOrder = null,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -95,6 +101,14 @@ class _$CatalogCategoryCopyWithImpl<$Res, $Val extends CatalogCategory>
                 ? _value.description
                 : description // ignore: cast_nullable_to_non_nullable
                       as String?,
+            parentId: freezed == parentId
+                ? _value.parentId
+                : parentId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            sortOrder: null == sortOrder
+                ? _value.sortOrder
+                : sortOrder // ignore: cast_nullable_to_non_nullable
+                      as int,
             createdAt: null == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -123,6 +137,8 @@ abstract class _$$CatalogCategoryImplCopyWith<$Res>
     String companyId,
     String name,
     String? description,
+    String? parentId,
+    int sortOrder,
     DateTime createdAt,
     DateTime updatedAt,
   });
@@ -146,6 +162,8 @@ class __$$CatalogCategoryImplCopyWithImpl<$Res>
     Object? companyId = null,
     Object? name = null,
     Object? description = freezed,
+    Object? parentId = freezed,
+    Object? sortOrder = null,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -167,6 +185,14 @@ class __$$CatalogCategoryImplCopyWithImpl<$Res>
             ? _value.description
             : description // ignore: cast_nullable_to_non_nullable
                   as String?,
+        parentId: freezed == parentId
+            ? _value.parentId
+            : parentId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        sortOrder: null == sortOrder
+            ? _value.sortOrder
+            : sortOrder // ignore: cast_nullable_to_non_nullable
+                  as int,
         createdAt: null == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -188,6 +214,8 @@ class _$CatalogCategoryImpl implements _CatalogCategory {
     required this.companyId,
     required this.name,
     this.description,
+    this.parentId,
+    this.sortOrder = 0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -204,13 +232,18 @@ class _$CatalogCategoryImpl implements _CatalogCategory {
   @override
   final String? description;
   @override
+  final String? parentId;
+  @override
+  @JsonKey()
+  final int sortOrder;
+  @override
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
 
   @override
   String toString() {
-    return 'CatalogCategory(id: $id, companyId: $companyId, name: $name, description: $description, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'CatalogCategory(id: $id, companyId: $companyId, name: $name, description: $description, parentId: $parentId, sortOrder: $sortOrder, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -224,6 +257,10 @@ class _$CatalogCategoryImpl implements _CatalogCategory {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.description, description) ||
                 other.description == description) &&
+            (identical(other.parentId, parentId) ||
+                other.parentId == parentId) &&
+            (identical(other.sortOrder, sortOrder) ||
+                other.sortOrder == sortOrder) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -238,6 +275,8 @@ class _$CatalogCategoryImpl implements _CatalogCategory {
     companyId,
     name,
     description,
+    parentId,
+    sortOrder,
     createdAt,
     updatedAt,
   );
@@ -265,6 +304,8 @@ abstract class _CatalogCategory implements CatalogCategory {
     required final String companyId,
     required final String name,
     final String? description,
+    final String? parentId,
+    final int sortOrder,
     required final DateTime createdAt,
     required final DateTime updatedAt,
   }) = _$CatalogCategoryImpl;
@@ -280,6 +321,10 @@ abstract class _CatalogCategory implements CatalogCategory {
   String get name;
   @override
   String? get description;
+  @override
+  String? get parentId;
+  @override
+  int get sortOrder;
   @override
   DateTime get createdAt;
   @override
@@ -301,6 +346,8 @@ CatalogCategoryInput _$CatalogCategoryInputFromJson(Map<String, dynamic> json) {
 mixin _$CatalogCategoryInput {
   String get name => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
+  String? get parentId => throw _privateConstructorUsedError;
+  int? get sortOrder => throw _privateConstructorUsedError;
 
   /// Serializes this CatalogCategoryInput to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -319,7 +366,12 @@ abstract class $CatalogCategoryInputCopyWith<$Res> {
     $Res Function(CatalogCategoryInput) then,
   ) = _$CatalogCategoryInputCopyWithImpl<$Res, CatalogCategoryInput>;
   @useResult
-  $Res call({String name, String? description});
+  $Res call({
+    String name,
+    String? description,
+    String? parentId,
+    int? sortOrder,
+  });
 }
 
 /// @nodoc
@@ -339,7 +391,12 @@ class _$CatalogCategoryInputCopyWithImpl<
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? name = null, Object? description = freezed}) {
+  $Res call({
+    Object? name = null,
+    Object? description = freezed,
+    Object? parentId = freezed,
+    Object? sortOrder = freezed,
+  }) {
     return _then(
       _value.copyWith(
             name: null == name
@@ -350,6 +407,14 @@ class _$CatalogCategoryInputCopyWithImpl<
                 ? _value.description
                 : description // ignore: cast_nullable_to_non_nullable
                       as String?,
+            parentId: freezed == parentId
+                ? _value.parentId
+                : parentId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            sortOrder: freezed == sortOrder
+                ? _value.sortOrder
+                : sortOrder // ignore: cast_nullable_to_non_nullable
+                      as int?,
           )
           as $Val,
     );
@@ -365,7 +430,12 @@ abstract class _$$CatalogCategoryInputImplCopyWith<$Res>
   ) = __$$CatalogCategoryInputImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String name, String? description});
+  $Res call({
+    String name,
+    String? description,
+    String? parentId,
+    int? sortOrder,
+  });
 }
 
 /// @nodoc
@@ -381,7 +451,12 @@ class __$$CatalogCategoryInputImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? name = null, Object? description = freezed}) {
+  $Res call({
+    Object? name = null,
+    Object? description = freezed,
+    Object? parentId = freezed,
+    Object? sortOrder = freezed,
+  }) {
     return _then(
       _$CatalogCategoryInputImpl(
         name: null == name
@@ -392,6 +467,14 @@ class __$$CatalogCategoryInputImplCopyWithImpl<$Res>
             ? _value.description
             : description // ignore: cast_nullable_to_non_nullable
                   as String?,
+        parentId: freezed == parentId
+            ? _value.parentId
+            : parentId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        sortOrder: freezed == sortOrder
+            ? _value.sortOrder
+            : sortOrder // ignore: cast_nullable_to_non_nullable
+                  as int?,
       ),
     );
   }
@@ -400,7 +483,12 @@ class __$$CatalogCategoryInputImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$CatalogCategoryInputImpl implements _CatalogCategoryInput {
-  const _$CatalogCategoryInputImpl({required this.name, this.description});
+  const _$CatalogCategoryInputImpl({
+    required this.name,
+    this.description,
+    this.parentId,
+    this.sortOrder,
+  });
 
   factory _$CatalogCategoryInputImpl.fromJson(Map<String, dynamic> json) =>
       _$$CatalogCategoryInputImplFromJson(json);
@@ -409,10 +497,14 @@ class _$CatalogCategoryInputImpl implements _CatalogCategoryInput {
   final String name;
   @override
   final String? description;
+  @override
+  final String? parentId;
+  @override
+  final int? sortOrder;
 
   @override
   String toString() {
-    return 'CatalogCategoryInput(name: $name, description: $description)';
+    return 'CatalogCategoryInput(name: $name, description: $description, parentId: $parentId, sortOrder: $sortOrder)';
   }
 
   @override
@@ -422,12 +514,17 @@ class _$CatalogCategoryInputImpl implements _CatalogCategoryInput {
             other is _$CatalogCategoryInputImpl &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.description, description) ||
-                other.description == description));
+                other.description == description) &&
+            (identical(other.parentId, parentId) ||
+                other.parentId == parentId) &&
+            (identical(other.sortOrder, sortOrder) ||
+                other.sortOrder == sortOrder));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, name, description);
+  int get hashCode =>
+      Object.hash(runtimeType, name, description, parentId, sortOrder);
 
   /// Create a copy of CatalogCategoryInput
   /// with the given fields replaced by the non-null parameter values.
@@ -451,6 +548,8 @@ abstract class _CatalogCategoryInput implements CatalogCategoryInput {
   const factory _CatalogCategoryInput({
     required final String name,
     final String? description,
+    final String? parentId,
+    final int? sortOrder,
   }) = _$CatalogCategoryInputImpl;
 
   factory _CatalogCategoryInput.fromJson(Map<String, dynamic> json) =
@@ -460,6 +559,10 @@ abstract class _CatalogCategoryInput implements CatalogCategoryInput {
   String get name;
   @override
   String? get description;
+  @override
+  String? get parentId;
+  @override
+  int? get sortOrder;
 
   /// Create a copy of CatalogCategoryInput
   /// with the given fields replaced by the non-null parameter values.
@@ -467,6 +570,455 @@ abstract class _CatalogCategoryInput implements CatalogCategoryInput {
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$CatalogCategoryInputImplCopyWith<_$CatalogCategoryInputImpl>
   get copyWith => throw _privateConstructorUsedError;
+}
+
+Trade _$TradeFromJson(Map<String, dynamic> json) {
+  return _Trade.fromJson(json);
+}
+
+/// @nodoc
+mixin _$Trade {
+  String get slug => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  String get description => throw _privateConstructorUsedError;
+  int get categoryCount => throw _privateConstructorUsedError;
+  int get itemCount => throw _privateConstructorUsedError;
+
+  /// Serializes this Trade to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of Trade
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $TradeCopyWith<Trade> get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TradeCopyWith<$Res> {
+  factory $TradeCopyWith(Trade value, $Res Function(Trade) then) =
+      _$TradeCopyWithImpl<$Res, Trade>;
+  @useResult
+  $Res call({
+    String slug,
+    String name,
+    String description,
+    int categoryCount,
+    int itemCount,
+  });
+}
+
+/// @nodoc
+class _$TradeCopyWithImpl<$Res, $Val extends Trade>
+    implements $TradeCopyWith<$Res> {
+  _$TradeCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of Trade
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? slug = null,
+    Object? name = null,
+    Object? description = null,
+    Object? categoryCount = null,
+    Object? itemCount = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            slug: null == slug
+                ? _value.slug
+                : slug // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            description: null == description
+                ? _value.description
+                : description // ignore: cast_nullable_to_non_nullable
+                      as String,
+            categoryCount: null == categoryCount
+                ? _value.categoryCount
+                : categoryCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            itemCount: null == itemCount
+                ? _value.itemCount
+                : itemCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$TradeImplCopyWith<$Res> implements $TradeCopyWith<$Res> {
+  factory _$$TradeImplCopyWith(
+    _$TradeImpl value,
+    $Res Function(_$TradeImpl) then,
+  ) = __$$TradeImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String slug,
+    String name,
+    String description,
+    int categoryCount,
+    int itemCount,
+  });
+}
+
+/// @nodoc
+class __$$TradeImplCopyWithImpl<$Res>
+    extends _$TradeCopyWithImpl<$Res, _$TradeImpl>
+    implements _$$TradeImplCopyWith<$Res> {
+  __$$TradeImplCopyWithImpl(
+    _$TradeImpl _value,
+    $Res Function(_$TradeImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of Trade
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? slug = null,
+    Object? name = null,
+    Object? description = null,
+    Object? categoryCount = null,
+    Object? itemCount = null,
+  }) {
+    return _then(
+      _$TradeImpl(
+        slug: null == slug
+            ? _value.slug
+            : slug // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        description: null == description
+            ? _value.description
+            : description // ignore: cast_nullable_to_non_nullable
+                  as String,
+        categoryCount: null == categoryCount
+            ? _value.categoryCount
+            : categoryCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        itemCount: null == itemCount
+            ? _value.itemCount
+            : itemCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TradeImpl implements _Trade {
+  const _$TradeImpl({
+    required this.slug,
+    required this.name,
+    required this.description,
+    required this.categoryCount,
+    required this.itemCount,
+  });
+
+  factory _$TradeImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TradeImplFromJson(json);
+
+  @override
+  final String slug;
+  @override
+  final String name;
+  @override
+  final String description;
+  @override
+  final int categoryCount;
+  @override
+  final int itemCount;
+
+  @override
+  String toString() {
+    return 'Trade(slug: $slug, name: $name, description: $description, categoryCount: $categoryCount, itemCount: $itemCount)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TradeImpl &&
+            (identical(other.slug, slug) || other.slug == slug) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.categoryCount, categoryCount) ||
+                other.categoryCount == categoryCount) &&
+            (identical(other.itemCount, itemCount) ||
+                other.itemCount == itemCount));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    slug,
+    name,
+    description,
+    categoryCount,
+    itemCount,
+  );
+
+  /// Create a copy of Trade
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TradeImplCopyWith<_$TradeImpl> get copyWith =>
+      __$$TradeImplCopyWithImpl<_$TradeImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TradeImplToJson(this);
+  }
+}
+
+abstract class _Trade implements Trade {
+  const factory _Trade({
+    required final String slug,
+    required final String name,
+    required final String description,
+    required final int categoryCount,
+    required final int itemCount,
+  }) = _$TradeImpl;
+
+  factory _Trade.fromJson(Map<String, dynamic> json) = _$TradeImpl.fromJson;
+
+  @override
+  String get slug;
+  @override
+  String get name;
+  @override
+  String get description;
+  @override
+  int get categoryCount;
+  @override
+  int get itemCount;
+
+  /// Create a copy of Trade
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$TradeImplCopyWith<_$TradeImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+TradeInstallResult _$TradeInstallResultFromJson(Map<String, dynamic> json) {
+  return _TradeInstallResult.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TradeInstallResult {
+  String get slug => throw _privateConstructorUsedError;
+  int get categoriesCreated => throw _privateConstructorUsedError;
+  int get itemsCreated => throw _privateConstructorUsedError;
+
+  /// Serializes this TradeInstallResult to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of TradeInstallResult
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $TradeInstallResultCopyWith<TradeInstallResult> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TradeInstallResultCopyWith<$Res> {
+  factory $TradeInstallResultCopyWith(
+    TradeInstallResult value,
+    $Res Function(TradeInstallResult) then,
+  ) = _$TradeInstallResultCopyWithImpl<$Res, TradeInstallResult>;
+  @useResult
+  $Res call({String slug, int categoriesCreated, int itemsCreated});
+}
+
+/// @nodoc
+class _$TradeInstallResultCopyWithImpl<$Res, $Val extends TradeInstallResult>
+    implements $TradeInstallResultCopyWith<$Res> {
+  _$TradeInstallResultCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of TradeInstallResult
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? slug = null,
+    Object? categoriesCreated = null,
+    Object? itemsCreated = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            slug: null == slug
+                ? _value.slug
+                : slug // ignore: cast_nullable_to_non_nullable
+                      as String,
+            categoriesCreated: null == categoriesCreated
+                ? _value.categoriesCreated
+                : categoriesCreated // ignore: cast_nullable_to_non_nullable
+                      as int,
+            itemsCreated: null == itemsCreated
+                ? _value.itemsCreated
+                : itemsCreated // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$TradeInstallResultImplCopyWith<$Res>
+    implements $TradeInstallResultCopyWith<$Res> {
+  factory _$$TradeInstallResultImplCopyWith(
+    _$TradeInstallResultImpl value,
+    $Res Function(_$TradeInstallResultImpl) then,
+  ) = __$$TradeInstallResultImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String slug, int categoriesCreated, int itemsCreated});
+}
+
+/// @nodoc
+class __$$TradeInstallResultImplCopyWithImpl<$Res>
+    extends _$TradeInstallResultCopyWithImpl<$Res, _$TradeInstallResultImpl>
+    implements _$$TradeInstallResultImplCopyWith<$Res> {
+  __$$TradeInstallResultImplCopyWithImpl(
+    _$TradeInstallResultImpl _value,
+    $Res Function(_$TradeInstallResultImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of TradeInstallResult
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? slug = null,
+    Object? categoriesCreated = null,
+    Object? itemsCreated = null,
+  }) {
+    return _then(
+      _$TradeInstallResultImpl(
+        slug: null == slug
+            ? _value.slug
+            : slug // ignore: cast_nullable_to_non_nullable
+                  as String,
+        categoriesCreated: null == categoriesCreated
+            ? _value.categoriesCreated
+            : categoriesCreated // ignore: cast_nullable_to_non_nullable
+                  as int,
+        itemsCreated: null == itemsCreated
+            ? _value.itemsCreated
+            : itemsCreated // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TradeInstallResultImpl implements _TradeInstallResult {
+  const _$TradeInstallResultImpl({
+    required this.slug,
+    required this.categoriesCreated,
+    required this.itemsCreated,
+  });
+
+  factory _$TradeInstallResultImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TradeInstallResultImplFromJson(json);
+
+  @override
+  final String slug;
+  @override
+  final int categoriesCreated;
+  @override
+  final int itemsCreated;
+
+  @override
+  String toString() {
+    return 'TradeInstallResult(slug: $slug, categoriesCreated: $categoriesCreated, itemsCreated: $itemsCreated)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TradeInstallResultImpl &&
+            (identical(other.slug, slug) || other.slug == slug) &&
+            (identical(other.categoriesCreated, categoriesCreated) ||
+                other.categoriesCreated == categoriesCreated) &&
+            (identical(other.itemsCreated, itemsCreated) ||
+                other.itemsCreated == itemsCreated));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, slug, categoriesCreated, itemsCreated);
+
+  /// Create a copy of TradeInstallResult
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TradeInstallResultImplCopyWith<_$TradeInstallResultImpl> get copyWith =>
+      __$$TradeInstallResultImplCopyWithImpl<_$TradeInstallResultImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TradeInstallResultImplToJson(this);
+  }
+}
+
+abstract class _TradeInstallResult implements TradeInstallResult {
+  const factory _TradeInstallResult({
+    required final String slug,
+    required final int categoriesCreated,
+    required final int itemsCreated,
+  }) = _$TradeInstallResultImpl;
+
+  factory _TradeInstallResult.fromJson(Map<String, dynamic> json) =
+      _$TradeInstallResultImpl.fromJson;
+
+  @override
+  String get slug;
+  @override
+  int get categoriesCreated;
+  @override
+  int get itemsCreated;
+
+  /// Create a copy of TradeInstallResult
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$TradeInstallResultImplCopyWith<_$TradeInstallResultImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 CatalogItem _$CatalogItemFromJson(Map<String, dynamic> json) {

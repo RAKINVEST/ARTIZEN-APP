@@ -174,3 +174,134 @@ def test_calculator_quote_totals_sum_lines() -> None:
     assert totals.total_ht == Decimal("250.00")
     assert totals.total_vat == Decimal("45.00")
     assert totals.total_ttc == Decimal("295.00")
+
+
+# --- Editing a quote (it stays modifiable indefinitely) ---
+
+
+async def _create_quote(client: AsyncClient, company_id: str, client_id: str, item_id: str,
+                        quantity: str = "2") -> dict:
+    response = await client.post(
+        "/api/quotes",
+        json={
+            "company_id": company_id,
+            "client_id": client_id,
+            "lines": [{"catalog_item_id": item_id, "quantity": quantity}],
+        },
+    )
+    return response.json()
+
+
+async def test_update_quote_replaces_lines_and_recomputes_totals(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    quote = await _create_quote(client, company_id, client_id, item_id, quantity="2")
+    assert quote["total_ttc"] == "240.00"
+
+    response = await client.put(
+        f"/api/quotes/{quote['id']}",
+        json={"lines": [{"catalog_item_id": item_id, "quantity": "5"}]},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == quote["id"]  # same quote, edited in place
+    assert len(body["lines"]) == 1  # old line replaced, not duplicated
+    assert body["total_ht"] == "500.00"
+    assert body["total_ttc"] == "600.00"
+
+
+async def test_update_quote_can_be_repeated(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    quote = await _create_quote(client, company_id, client_id, item_id)
+
+    for quantity, expected_ht in (("1", "100.00"), ("3", "300.00"), ("7", "700.00")):
+        response = await client.put(
+            f"/api/quotes/{quote['id']}",
+            json={"lines": [{"catalog_item_id": item_id, "quantity": quantity}]},
+        )
+        assert response.status_code == 200
+        assert response.json()["total_ht"] == expected_ht
+
+
+async def test_update_quote_can_change_the_client(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    quote = await _create_quote(client, company_id, client_id, item_id)
+    other = await client.post(
+        "/api/clients", json={"company_id": company_id, "last_name": "Autre Client"}
+    )
+    other_id = other.json()["id"]
+
+    response = await client.put(
+        f"/api/quotes/{quote['id']}",
+        json={"client_id": other_id, "lines": [{"catalog_item_id": item_id, "quantity": "1"}]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["client_id"] == other_id
+
+
+async def test_update_unknown_quote_returns_404(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="10.00", vat_rate="20.00"
+    )
+    response = await client.put(
+        "/api/quotes/00000000-0000-0000-0000-000000000000",
+        json={"lines": [{"catalog_item_id": item_id, "quantity": "1"}]},
+    )
+    assert response.status_code == 404
+
+
+async def test_update_quote_is_scoped_to_company(
+    client: AsyncClient,
+    second_client: AsyncClient,
+    company_id: str,
+    client_id: str,
+    category_id: str,
+) -> None:
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    quote = await _create_quote(client, company_id, client_id, item_id)
+
+    # Another company can neither see nor edit this quote.
+    response = await second_client.put(
+        f"/api/quotes/{quote['id']}",
+        json={"lines": [{"catalog_item_id": item_id, "quantity": "9"}]},
+    )
+    assert response.status_code == 404
+
+
+async def test_list_quotes_can_be_filtered_by_client(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    await _create_quote(client, company_id, client_id, item_id)
+
+    other = await client.post(
+        "/api/clients", json={"company_id": company_id, "last_name": "Client Sans Devis"}
+    )
+    other_id = other.json()["id"]
+
+    mine = await client.get(f"/api/quotes?client_id={client_id}")
+    assert mine.status_code == 200
+    assert len(mine.json()) == 1
+    assert all(q["client_id"] == client_id for q in mine.json())
+
+    empty = await client.get(f"/api/quotes?client_id={other_id}")
+    assert empty.json() == []

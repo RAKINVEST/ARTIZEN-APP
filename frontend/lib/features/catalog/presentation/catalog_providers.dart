@@ -24,7 +24,21 @@ class CategoriesNotifier extends AsyncNotifier<List<CatalogCategory>> {
     await ref.read(catalogRepositoryProvider).createCategory(input, companyId: companyId);
     await refresh();
   }
+
+  /// Installs a whole trade pack ("Quel est votre métier ?") and reloads both
+  /// categories and items, since the pack creates the tree *and* its articles.
+  Future<TradeInstallResult> installTrade(String slug) async {
+    final result = await ref.read(catalogRepositoryProvider).installTrade(slug);
+    await refresh();
+    await ref.read(itemsNotifierProvider.notifier).refresh();
+    return result;
+  }
 }
+
+/// The installable trade packs offered at first launch.
+final tradesProvider = FutureProvider<List<Trade>>((ref) {
+  return ref.watch(catalogRepositoryProvider).listTrades();
+});
 
 final categoriesNotifierProvider = AsyncNotifierProvider<CategoriesNotifier, List<CatalogCategory>>(
   CategoriesNotifier.new,
@@ -32,7 +46,6 @@ final categoriesNotifierProvider = AsyncNotifierProvider<CategoriesNotifier, Lis
 
 class ItemsNotifier extends AsyncNotifier<List<CatalogItem>> {
   List<CatalogItem> _all = [];
-  String _query = '';
   bool _activeOnly = false;
 
   @override
@@ -42,25 +55,12 @@ class ItemsNotifier extends AsyncNotifier<List<CatalogItem>> {
           companyId: companyId,
           activeOnly: _activeOnly,
         );
-    return _filtered();
+    return _all;
   }
 
-  List<CatalogItem> _filtered() {
-    if (_query.isEmpty) return _all;
-    final lowerQuery = _query.toLowerCase();
-    return _all.where((item) {
-      return item.designation.toLowerCase().contains(lowerQuery) ||
-          (item.code?.toLowerCase().contains(lowerQuery) ?? false);
-    }).toList();
-  }
-
-  /// Client-side only: the backend has no free-text search for catalog
-  /// items, and a single artisan's catalog is small enough that filtering
-  /// an already-fetched list is simpler than adding a server endpoint for it.
-  void search(String query) {
-    _query = query;
-    state = AsyncValue.data(_filtered());
-  }
+  // Free-text search + grouping now live in `CatalogScreen` (it needs the
+  // category names to search by category and to group the results), so this
+  // notifier just exposes the full fetched list.
 
   Future<void> setActiveOnly(bool activeOnly) async {
     _activeOnly = activeOnly;
@@ -75,7 +75,7 @@ class ItemsNotifier extends AsyncNotifier<List<CatalogItem>> {
             companyId: companyId,
             activeOnly: _activeOnly,
           );
-      return _filtered();
+      return _all;
     });
   }
 

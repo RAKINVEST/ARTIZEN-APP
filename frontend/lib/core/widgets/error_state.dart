@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../api/api_exception.dart';
 
 /// The "erreur" state, used identically on every screen. Renders
-/// [ApiException.displayMessage] when the error is one of ours (it always
-/// is, once it passed through [ErrorInterceptor]); falls back to a generic
-/// sentence for anything unexpected rather than leaking a stack trace.
+/// [ApiException.displayMessage], unwrapping the `DioException` the
+/// interceptor rejects with (see [asApiException]) so the *real* cause is
+/// shown instead of a generic sentence. Anything genuinely unexpected still
+/// degrades to a readable message rather than leaking a stack trace.
 class ErrorState extends StatelessWidget {
   const ErrorState({required this.error, this.onRetry, super.key});
 
@@ -15,9 +16,7 @@ class ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final message = error is ApiException
-        ? (error as ApiException).displayMessage
-        : 'Une erreur inattendue est survenue.';
+    final message = asApiException(error).displayMessage;
 
     return Center(
       child: Padding(

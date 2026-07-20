@@ -14,15 +14,20 @@ class QuoteRepository(BaseRepository[Quote]):
         super().__init__(Quote, session)
 
     async def list_by_company(
-        self, company_id: uuid.UUID, *, offset: int = 0, limit: int = 100
+        self,
+        company_id: uuid.UUID,
+        *,
+        client_id: uuid.UUID | None = None,
+        offset: int = 0,
+        limit: int = 100,
     ) -> list[Quote]:
-        result = await self.session.execute(
-            select(Quote)
-            .where(Quote.company_id == company_id)
-            .order_by(Quote.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-        )
+        """Newest first. ``client_id`` narrows the list to one client's
+        quotes — the app opens a client and shows their quote history."""
+        query = select(Quote).where(Quote.company_id == company_id)
+        if client_id is not None:
+            query = query.where(Quote.client_id == client_id)
+        query = query.order_by(Quote.created_at.desc()).offset(offset).limit(limit)
+        result = await self.session.execute(query)
         return list(result.scalars().all())
 
 

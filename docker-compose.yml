@@ -7,7 +7,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      # Host-side port is configurable (defaults to 5432) so it can avoid a
+      # clash with a native PostgreSQL already using 5432. The in-container
+      # port stays 5432, which is what the backend connects to over the
+      # compose network.
+      - "${DB_HOST_PORT:-5432}:5432"
     volumes:
       - artizen_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -31,7 +35,9 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      # Host-side port configurable (defaults to 8000) to avoid a clash with
+      # whatever else may already hold 8000 on the host.
+      - "${BACKEND_HOST_PORT:-8000}:8000"
     volumes:
       - ./backend:/app
       - artizen_storage_data:/data/storage

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/async_value_view.dart';
 import '../data/catalog_models.dart';
+import '../domain/labor_duration.dart';
+import '../domain/sale_unit.dart';
 import 'catalog_providers.dart';
 
 /// Used for both creation (`itemId == null`) and editing.
@@ -58,19 +59,34 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
   late final _designation = TextEditingController(text: widget.initial?.designation);
   late final _code = TextEditingController(text: widget.initial?.code);
   late final _description = TextEditingController(text: widget.initial?.description);
-  late final _unit = TextEditingController(text: widget.initial?.unit ?? 'unité');
+  late String _unitCode = widget.initial?.unit ?? kSaleUnits.first.code;
+
+  /// The standard choices, plus the item's own unit when it isn't one of
+  /// them (a custom value, or a legacy "ml") — editing an article must never
+  /// silently change how it's counted.
+  late final List<SaleUnit> _unitChoices = [
+    ...kSaleUnits,
+    if (widget.initial != null && !kSaleUnits.any((u) => u.code == widget.initial!.unit))
+      SaleUnit(widget.initial!.unit, saleUnitLabel(widget.initial!.unit)),
+  ];
+
   late final _unitPriceHt = TextEditingController(text: widget.initial?.unitPriceHt);
   late final _vatRate = TextEditingController(text: widget.initial?.vatRate ?? '20.00');
-  late final _duration = TextEditingController(
-    text: widget.initial?.estimatedDurationMinutes?.toString(),
-  );
+
+  // Labour time (point #6): stored as minutes on the backend, entered here
+  // as a value + a unit (min / h / j).
+  late final LaborDuration _initialDuration =
+      LaborDuration.fromMinutes(widget.initial?.estimatedDurationMinutes);
+  late final _duration = TextEditingController(text: _initialDuration.value);
+  late DurationUnit _durationUnit = _initialDuration.unit;
+
   late String _categoryId = widget.initial?.categoryId ?? widget.categories.first.id;
   late ItemType _itemType = widget.initial?.itemType ?? ItemType.service;
   bool _saving = false;
 
   @override
   void dispose() {
-    for (final controller in [_designation, _code, _description, _unit, _unitPriceHt, _vatRate, _duration]) {
+    for (final controller in [_designation, _code, _description, _unitPriceHt, _vatRate, _duration]) {
       controller.dispose();
     }
     super.dispose();
@@ -85,10 +101,10 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
       designation: _designation.text.trim(),
       description: _description.text.trim().isEmpty ? null : _description.text.trim(),
       itemType: _itemType,
-      unit: _unit.text.trim(),
-      unitPriceHt: _unitPriceHt.text.trim(),
-      vatRate: _vatRate.text.trim(),
-      estimatedDurationMinutes: _duration.text.trim().isEmpty ? null : int.tryParse(_duration.text.trim()),
+      unit: _unitCode,
+      unitPriceHt: _unitPriceHt.text.trim().replaceAll(',', '.'),
+      vatRate: _vatRate.text.trim().replaceAll(',', '.'),
+      estimatedDurationMinutes: LaborDuration.toMinutes(_duration.text, _durationUnit),
     );
     try {
       if (widget.itemId == null) {
@@ -110,20 +126,39 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Form(
       key: _formKey,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          DropdownButtonFormField<String>(
-            initialValue: _categoryId,
-            decoration: const InputDecoration(labelText: 'Catégorie *'),
-            items: widget.categories
-                .map((category) => DropdownMenuItem(value: category.id, child: Text(category.name)))
-                .toList(),
-            onChanged: (value) => setState(() => _categoryId = value!),
+          // Short reminder of what an "article" is (point #1).
+          Text(
+            'Un article est un produit ou une prestation utilisé dans vos devis.',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          // Category comes first (point #1), with a searchable selector so a
+          // long list stays usable, and an inline explanation of what a
+          // category is.
+          DropdownMenu<String>(
+            initialSelection: _categoryId,
+            expandedInsets: EdgeInsets.zero,
+            enableFilter: true,
+            requestFocusOnTap: true,
+            leadingIcon: const Icon(Icons.category_outlined),
+            label: const Text('Catégorie *'),
+            helperText: 'Regroupe des articles de même famille.',
+            menuHeight: 320,
+            dropdownMenuEntries: [
+              for (final category in widget.categories)
+                DropdownMenuEntry(value: category.id, label: category.name),
+            ],
+            onSelected: (value) {
+              if (value != null) setState(() => _categoryId = value);
+            },
+          ),
+          const SizedBox(height: 16),
           SegmentedButton<ItemType>(
             segments: const [
               ButtonSegment(value: ItemType.service, label: Text('Prestation'), icon: Icon(Icons.build_outlined)),
@@ -132,51 +167,63 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
             selected: {_itemType},
             onSelectionChanged: (selection) => setState(() => _itemType = selection.first),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           TextFormField(
             controller: _designation,
-            decoration: const InputDecoration(labelText: 'Désignation *'),
+            decoration: const InputDecoration(
+              labelText: 'Désignation *',
+              hintText: 'Pompe à chaleur Atlantic 8 kW',
+            ),
             validator: (value) => (value == null || value.trim().isEmpty) ? 'Requis' : null,
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _code,
-            decoration: const InputDecoration(labelText: 'Code (optionnel)'),
+            decoration: const InputDecoration(
+              labelText: 'Code (optionnel)',
+              hintText: 'Réf. interne, ex. PAC-ATL-8',
+            ),
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _description,
-            decoration: const InputDecoration(labelText: 'Description'),
+            decoration: const InputDecoration(
+              labelText: 'Description',
+              hintText: 'Fourniture et pose avec mise en service.',
+            ),
             maxLines: 2,
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _unit,
-                  decoration: const InputDecoration(labelText: 'Unité *'),
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Requis' : null,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _duration,
-                  decoration: const InputDecoration(labelText: 'Durée estimée (min)'),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                ),
-              ),
+          // "Comment se compte cet article ?" replaces the old free-text
+          // "Unité" field: the artisan states how they sell the thing, in
+          // plain French, instead of typing jargon like "ml".
+          DropdownButtonFormField<String>(
+            initialValue: _unitCode,
+            decoration: const InputDecoration(
+              labelText: 'Comment se compte cet article ? *',
+              helperText: 'Apparaîtra sur le devis : 3 m × 12,00 €',
+            ),
+            items: [
+              for (final unit in _unitChoices)
+                DropdownMenuItem(value: unit.code, child: Text(unit.label)),
             ],
+            onChanged: (value) {
+              if (value != null) setState(() => _unitCode = value);
+            },
           ),
+          const SizedBox(height: 12),
+          _durationField(),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: TextFormField(
                   controller: _unitPriceHt,
-                  decoration: const InputDecoration(labelText: 'Prix unitaire HT *', suffixText: '€'),
+                  decoration: const InputDecoration(
+                    labelText: 'Prix unitaire HT *',
+                    hintText: '1 500',
+                    suffixText: '€',
+                  ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   validator: _validateDecimal,
                 ),
@@ -201,6 +248,43 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Labour time as an estimate: a number plus a unit picker (min / h / j),
+  /// converted to minutes on save. "Durée estimée en minutes uniquement" was
+  /// the point-#6 complaint.
+  Widget _durationField() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: _duration,
+            decoration: const InputDecoration(
+              labelText: 'Durée estimée',
+              hintText: 'ex. 2',
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) return null; // optional
+              return LaborDuration.toMinutes(value, _durationUnit) == null ? 'Invalide' : null;
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+        DropdownButton<DurationUnit>(
+          value: _durationUnit,
+          onChanged: (unit) {
+            if (unit != null) setState(() => _durationUnit = unit);
+          },
+          items: const [
+            DropdownMenuItem(value: DurationUnit.minutes, child: Text('min')),
+            DropdownMenuItem(value: DurationUnit.hours, child: Text('h')),
+            DropdownMenuItem(value: DurationUnit.days, child: Text('j')),
+          ],
+        ),
+      ],
     );
   }
 

@@ -17,7 +17,7 @@ from fastapi import APIRouter, status
 
 from app.core.authorization import ensure_same_company
 from app.quotes.deps import QuoteServiceDep
-from app.quotes.schemas import QuoteCreate, QuoteRead
+from app.quotes.schemas import QuoteCreate, QuoteRead, QuoteUpdate
 from app.users.deps import CurrentUserDep
 
 router = APIRouter(prefix="/quotes", tags=["quotes"])
@@ -35,10 +35,29 @@ async def create_quote(
 async def list_quotes(
     service: QuoteServiceDep,
     current_user: CurrentUserDep,
+    client_id: uuid.UUID | None = None,
     offset: int = 0,
     limit: int = 100,
 ) -> list[QuoteRead]:
-    return await service.list(company_id=current_user.company_id, offset=offset, limit=limit)
+    """``client_id`` narrows the list to one client's quote history."""
+    return await service.list(
+        company_id=current_user.company_id,
+        client_id=client_id,
+        offset=offset,
+        limit=limit,
+    )
+
+
+@router.put("/{quote_id}", response_model=QuoteRead)
+async def update_quote(
+    service: QuoteServiceDep,
+    current_user: CurrentUserDep,
+    quote_id: uuid.UUID,
+    payload: QuoteUpdate,
+) -> QuoteRead:
+    """Replaces the quote's lines and recomputes its totals — a quote stays
+    editable for as long as the artisan needs."""
+    return await service.update(quote_id, payload, company_id=current_user.company_id)
 
 
 @router.get("/{quote_id}", response_model=QuoteRead)

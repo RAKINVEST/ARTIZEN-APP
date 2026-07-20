@@ -20,4 +20,12 @@ abstract class CatalogRepository {
   Future<CatalogItem> createItem(CatalogItemInput input, {required String companyId});
   Future<CatalogItem> updateItem(String id, CatalogItemInput input);
   Future<CatalogItem> deactivateItem(String id);
+
+  /// Installable trade packs ("Quel est votre métier ?"). Static server-side
+  /// data, so no company scoping on the read.
+  Future<List<Trade>> listTrades();
+
+  /// Installs a trade's whole category tree + articles for the current
+  /// company. Returns what was created.
+  Future<TradeInstallResult> installTrade(String slug);
 }

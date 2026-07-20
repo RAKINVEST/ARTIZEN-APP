@@ -16,11 +16,16 @@ class CatalogCategoryCreate(BaseModel):
     company_id: uuid.UUID | None = None
     name: str
     description: str | None = None
+    # NULL = a top-level family/métier; otherwise nests under another category.
+    parent_id: uuid.UUID | None = None
+    sort_order: int = 0
 
 
 class CatalogCategoryUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
+    parent_id: uuid.UUID | None = None
+    sort_order: int | None = None
 
 
 class CatalogCategoryRead(BaseModel):
@@ -30,8 +35,28 @@ class CatalogCategoryRead(BaseModel):
     company_id: uuid.UUID
     name: str
     description: str | None
+    parent_id: uuid.UUID | None
+    sort_order: int
     created_at: datetime
     updated_at: datetime
+
+
+class TradeSummary(BaseModel):
+    """One installable trade pack, as advertised by GET /catalog/trades."""
+
+    slug: str
+    name: str
+    description: str
+    category_count: int
+    item_count: int
+
+
+class TradeInstallResult(BaseModel):
+    """What POST /catalog/trades/{slug}/install created."""
+
+    slug: str
+    categories_created: int
+    items_created: int
 
 
 class CatalogItemCreate(BaseModel):

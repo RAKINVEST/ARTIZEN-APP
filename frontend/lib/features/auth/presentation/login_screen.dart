@@ -17,6 +17,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _loading = false;
+  bool _obscurePassword = true;
   String? _error;
 
   @override
@@ -39,7 +40,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
       if (mounted) context.go('/dashboard');
     } catch (error) {
-      setState(() => _error = error is ApiException ? error.displayMessage : 'Échec de la connexion.');
+      setState(() => _error = asApiException(error).displayMessage);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -75,8 +76,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _password,
-                    decoration: const InputDecoration(labelText: 'Mot de passe'),
-                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Mot de passe',
+                      // Typing a password blind on a phone is how a typo gets
+                      // baked in unnoticed — let the user check what they typed.
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined),
+                        tooltip: _obscurePassword ? 'Afficher' : 'Masquer',
+                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                    ),
+                    obscureText: _obscurePassword,
                     autofillHints: const [AutofillHints.password],
                     onFieldSubmitted: (_) => _submit(),
                     validator: (value) =>

@@ -47,10 +47,15 @@ class FakeClientsRepository implements ClientsRepository {
 }
 
 class FakeCatalogRepository implements CatalogRepository {
-  FakeCatalogRepository(this._categories, this._items);
+  FakeCatalogRepository(this._categories, this._items, [this._trades = const []]);
 
   final List<CatalogCategory> _categories;
   final List<CatalogItem> _items;
+  final List<Trade> _trades;
+
+  /// Set by [installTrade] so onboarding tests can assert which pack was
+  /// installed.
+  String? installedTradeSlug;
 
   @override
   Future<List<CatalogCategory>> listCategories({required String companyId}) async => _categories;
@@ -81,6 +86,15 @@ class FakeCatalogRepository implements CatalogRepository {
   @override
   Future<CatalogItem> deactivateItem(String id) async {
     throw UnimplementedError();
+  }
+
+  @override
+  Future<List<Trade>> listTrades() async => _trades;
+
+  @override
+  Future<TradeInstallResult> installTrade(String slug) async {
+    installedTradeSlug = slug;
+    return TradeInstallResult(slug: slug, categoriesCreated: 5, itemsCreated: 17);
   }
 }
 

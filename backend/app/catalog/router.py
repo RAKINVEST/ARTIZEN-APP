@@ -22,11 +22,34 @@ from app.catalog.schemas import (
     CatalogItemCreate,
     CatalogItemRead,
     CatalogItemUpdate,
+    TradeInstallResult,
+    TradeSummary,
 )
 from app.core.authorization import ensure_same_company
 from app.users.deps import CurrentUserDep
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
+
+
+# --- Trade packs (pre-installed catalogs per métier) ---
+
+
+@router.get("/trades", response_model=list[TradeSummary])
+async def list_trades(
+    service: CatalogServiceDep, current_user: CurrentUserDep
+) -> list[TradeSummary]:
+    return service.list_trades()
+
+
+@router.post(
+    "/trades/{slug}/install",
+    response_model=TradeInstallResult,
+    status_code=status.HTTP_201_CREATED,
+)
+async def install_trade(
+    service: CatalogServiceDep, current_user: CurrentUserDep, slug: str
+) -> TradeInstallResult:
+    return await service.install_trade(company_id=current_user.company_id, slug=slug)
 
 
 @router.post("/categories", response_model=CatalogCategoryRead, status_code=status.HTTP_201_CREATED)

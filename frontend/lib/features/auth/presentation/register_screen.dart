@@ -23,6 +23,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _fullName = TextEditingController();
   final _companyName = TextEditingController();
   bool _loading = false;
+  bool _obscurePassword = true;
   String? _error;
 
   @override
@@ -49,7 +50,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           );
       if (mounted) context.go('/dashboard');
     } catch (error) {
-      setState(() => _error = error is ApiException ? error.displayMessage : 'Échec de l\'inscription.');
+      // asApiException unwraps the DioException the interceptor rejects with,
+      // so the real cause is shown ("email déjà utilisé", "mot de passe trop
+      // court"…) instead of a catch-all "Échec de l'inscription".
+      setState(() => _error = asApiException(error).displayMessage);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -80,8 +84,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _password,
-                    decoration: const InputDecoration(labelText: 'Mot de passe *'),
-                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Mot de passe *',
+                      // Stated upfront rather than only after a failed submit.
+                      helperText: '8 caractères minimum',
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined),
+                        tooltip: _obscurePassword ? 'Afficher' : 'Masquer',
+                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                    ),
+                    obscureText: _obscurePassword,
                     autofillHints: const [AutofillHints.newPassword],
                     validator: (value) {
                       if (value == null || value.isEmpty) return 'Le mot de passe est requis';

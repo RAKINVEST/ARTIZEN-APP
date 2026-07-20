@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'api_exception.freezed.dart';
@@ -32,4 +33,25 @@ class ApiException with _$ApiException implements Exception {
         server: (statusCode, code, message) => message,
         unknown: (message) => message,
       );
+}
+
+/// Normalizes anything thrown by the API layer into an [ApiException].
+///
+/// Dio only lets an interceptor reject with a [DioException], so
+/// [ErrorInterceptor] carries the mapped [ApiException] in that exception's
+/// `error` field. Callers therefore receive a `DioException`, and a naive
+/// `error is ApiException` check is **always false** — which silently
+/// replaced every real message ("email déjà utilisé", "mot de passe trop
+/// court", …) with a generic fallback. Unwrapping here keeps Dio's shape out
+/// of the screens, which is what the interceptor intended all along.
+ApiException asApiException(Object? error) {
+  if (error is ApiException) return error;
+  if (error is DioException) {
+    final inner = error.error;
+    if (inner is ApiException) return inner;
+    return ApiException.unknown(error.message ?? 'Une erreur inattendue est survenue.');
+  }
+  return ApiException.unknown(
+    error?.toString() ?? 'Une erreur inattendue est survenue.',
+  );
 }
