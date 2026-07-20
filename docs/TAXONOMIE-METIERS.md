@@ -59,9 +59,9 @@
 **Activités** : `charpente` ✅ · `couverture` ✅ · `zinguerie` ✅ · `menuiserie-exterieure` ✅ ·
 `stores-pergolas` ✅ · `facade` ✅ · `isolation` ✅ · `isolation-exterieure` ✅ · `bardage` ✅ · `etancheite` ✅
 
-### 🟥 gros-oeuvre — Gros œuvre & travaux publics
-**Activités** : `maconnerie` · `terrassement` · `demolition` · `vrd` · `assainissement` ·
-`forage` · `enrobes`
+### 🟥 gros-oeuvre — Gros œuvre & travaux publics ✅ **TERMINÉ**
+**Activités** : `maconnerie` ✅ · `terrassement` ✅ · `demolition` ✅ · `vrd` ✅ · `assainissement` ✅ ·
+`forage` ✅ · `enrobes` ✅
 
 ### 🟪 specialises — Métiers spécialisés & services techniques
 **Activités** : `piscine` · `serrurerie-metallerie` · `automatismes-portails` · `vitrerie` ·
@@ -88,7 +88,7 @@ Le mécanisme complet est une fonctionnalité à part, à développer plus tard.
 
 ## Ordre de développement (lots)
 
-`fluides` ✅ → `electricite` ✅ → `finition` ✅ → `enveloppe` ✅ → `gros-oeuvre` → `specialises`.
+`fluides` ✅ → `electricite` ✅ → `finition` ✅ → `enveloppe` ✅ → `gros-oeuvre` ✅ → `specialises`.
 
 ## Règle de gel
 
