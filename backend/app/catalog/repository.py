@@ -8,6 +8,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.catalog.models import CatalogCategory, CatalogItem
 from app.repositories.base import BaseRepository
 
+#: Alphabetical order as a French artisan reads it. The database is created
+#: with the C collation, which sorts by byte value and therefore files every
+#: accented initial *after* Z: "Évacuation" landed below "Tuyauterie", and an
+#: electrician's "Éclairage" / "Électricité" folders would sit at the bottom
+#: of his catalog looking like a bug. ICU's fr-FR puts É with E, where the
+#: artisan expects it. Applied at the query, not the column, so no migration
+#: and no risk of an index rebuild.
+_FRENCH_COLLATION = "fr-FR-x-icu"
+
 
 class CatalogCategoryRepository(BaseRepository[CatalogCategory]):
     def __init__(self, session: AsyncSession) -> None:
@@ -19,7 +28,7 @@ class CatalogCategoryRepository(BaseRepository[CatalogCategory]):
         result = await self.session.execute(
             select(CatalogCategory)
             .where(CatalogCategory.company_id == company_id)
-            .order_by(CatalogCategory.name)
+            .order_by(CatalogCategory.name.collate(_FRENCH_COLLATION))
             .offset(offset)
             .limit(limit)
         )
@@ -50,6 +59,10 @@ class CatalogItemRepository(BaseRepository[CatalogItem]):
             stmt = stmt.where(
                 or_(CatalogItem.designation.ilike(pattern), CatalogItem.code.ilike(pattern))
             )
-        stmt = stmt.order_by(CatalogItem.designation).offset(offset).limit(limit)
+        stmt = (
+            stmt.order_by(CatalogItem.designation.collate(_FRENCH_COLLATION))
+            .offset(offset)
+            .limit(limit)
+        )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
