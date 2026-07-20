@@ -75,6 +75,15 @@ class Company(Base, UUIDMixin, TimestampMixin):
     insurance_contract: Mapped[str | None] = mapped_column(default=None)  # n° de contrat
     insurance_coverage: Mapped[str | None] = mapped_column(default=None)  # couverture géographique
     rge_number: Mapped[str | None] = mapped_column(default=None)  # mention/numéro RGE si applicable
+    # RESERVED — company certifications (RGE, QualiPV, QualiPAC, QualiBois,
+    # QualiSol, Éco Artisan, QUALIFELEC…). These are administrative *mentions*
+    # with no catalog impact — distinct from exercise qualifications (PG, IRVE,
+    # fluides, amiante) which reserve packs, see catalog/trades/taxonomy.py.
+    # `rge_number` is the V1 stopgap; the full model is planned, not built:
+    #   CompanyCertification(company_id, type, numero, organisme,
+    #                        date_obtention, date_expiration, statut)
+    # letting a company hold any number of certifications with validity — see
+    # docs/TAXONOMIE-METIERS.md. Do not build the mechanism yet.
     payment_terms: Mapped[str | None] = mapped_column(default=None)  # conditions et délais de paiement
 
     # "normal" (assujetti TVA) | "franchise" (franchise en base, art. 293 B du CGI).

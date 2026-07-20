@@ -24,6 +24,7 @@ from app.catalog.schemas import (
     CatalogCategoryUpdate,
     TaxonomyEntryRead,
     TaxonomyFamilyRead,
+    TaxonomyRead,
     CatalogImportResult,
     CatalogItemCreate,
     CatalogItemRead,
@@ -95,40 +96,43 @@ async def remove_qualification(
     await service.remove_qualification(current_user.company_id, slug)
 
 
-@router.get("/taxonomy", response_model=list[TaxonomyFamilyRead])
+@router.get("/taxonomy", response_model=TaxonomyRead)
 async def get_taxonomy(
     current_user: CurrentUserDep, status: str | None = Query(None)
-) -> list[TaxonomyFamilyRead]:
-    """The official Artizen trade taxonomy — families → activities →
-    qualifications, with each entry's status. The single reference the whole
-    app (search, filters, stats, marketplace, AI, API) keys on. Static data,
-    frozen slugs.
+) -> TaxonomyRead:
+    """The official Artizen trade taxonomy — the single reference the whole app
+    (search, filters, stats, marketplace, AI, API) keys on. Static, frozen slugs.
 
-    Optional ``?status=`` filters entries by life-cycle status
-    (``implemented`` / ``planned`` / ``deferred_v2`` / ``deprecated``) — e.g.
-    the app lists only ``implemented`` activities as available.
+    Two distinct sections: each family's **activities** and **exercise
+    qualifications** (rights to perform reserved work, they influence the
+    catalog), and the cross-cutting **company certifications** (RGE, QualiXX…,
+    administrative mentions with no catalog impact).
+
+    Optional ``?status=`` filters by life-cycle status (``implemented`` /
+    ``planned`` / ``deferred_v2`` / ``deprecated``) — e.g. only the
+    ``implemented`` activities available today.
     """
 
     def keep(entry: trades.TaxonomyEntry) -> bool:
         return status is None or entry.status.value == status
 
-    return [
-        TaxonomyFamilyRead(
-            slug=family.slug,
-            label=family.label,
-            activities=[
-                TaxonomyEntryRead(slug=e.slug, label=e.label, status=e.status.value)
-                for e in family.activities
-                if keep(e)
-            ],
-            qualifications=[
-                TaxonomyEntryRead(slug=e.slug, label=e.label, status=e.status.value)
-                for e in family.qualifications
-                if keep(e)
-            ],
-        )
-        for family in trades.FAMILIES
-    ]
+    def read(entry: trades.TaxonomyEntry) -> TaxonomyEntryRead:
+        return TaxonomyEntryRead(slug=entry.slug, label=entry.label, status=entry.status.value)
+
+    return TaxonomyRead(
+        families=[
+            TaxonomyFamilyRead(
+                slug=family.slug,
+                label=family.label,
+                activities=[read(e) for e in family.activities if keep(e)],
+                exercise_qualifications=[
+                    read(e) for e in family.exercise_qualifications if keep(e)
+                ],
+            )
+            for family in trades.FAMILIES
+        ],
+        company_certifications=[read(e) for e in trades.COMPANY_CERTIFICATIONS if keep(e)],
+    )
 
 
 @router.post("/categories", response_model=CatalogCategoryRead, status_code=status.HTTP_201_CREATED)

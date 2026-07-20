@@ -9,8 +9,12 @@ than not offering it yet. An activity appears the day its packs exist.
 from app.catalog.trades.chauffage import CHAUFFAGE
 from app.catalog.trades.climatisation import CLIMATISATION, FLUIDES_FRIGORIGENES
 from app.catalog.trades.commun import CHANTIER
+from app.catalog.trades.domotique import DOMOTIQUE
 from app.catalog.trades.electricite import ELECTRICITE_GENERALE, IRVE
+from app.catalog.trades.interphonie import INTERPHONIE
 from app.catalog.trades.photovoltaique import PHOTOVOLTAIQUE
+from app.catalog.trades.reseaux_vdi import RESEAUX_VDI
+from app.catalog.trades.securite import ALARME_INTRUSION, CONTROLE_ACCES, VIDEOSURVEILLANCE
 from app.catalog.trades.definitions import (
     Activity,
     CatalogPack,
@@ -25,12 +29,14 @@ from app.catalog.trades.definitions import (
 from app.catalog.trades.gaz import PG
 from app.catalog.trades.plomberie import PLOMBERIE
 from app.catalog.trades.taxonomy import (
+    COMPANY_CERTIFICATIONS,
     FAMILIES,
     Family,
     TaxonomyEntry,
     TradeStatus,
     all_activities as taxonomy_activities,
-    all_qualifications as taxonomy_qualifications,
+    all_company_certifications,
+    all_exercise_qualifications as taxonomy_exercise_qualifications,
     all_slugs,
     family_of,
 )
@@ -48,6 +54,12 @@ ACTIVITIES: dict[str, Activity] = {
         TRAITEMENT_EAU,
         ELECTRICITE_GENERALE,
         PHOTOVOLTAIQUE,
+        DOMOTIQUE,
+        RESEAUX_VDI,
+        ALARME_INTRUSION,
+        VIDEOSURVEILLANCE,
+        CONTROLE_ACCES,
+        INTERPHONIE,
     )
 }
 
@@ -111,6 +123,7 @@ def compose_catalog(
 __all__ = [
     "ACTIVITIES",
     "CHANTIER",
+    "COMPANY_CERTIFICATIONS",
     "FAMILIES",
     "QUALIFICATIONS",
     "Activity",
@@ -121,6 +134,7 @@ __all__ = [
     "TaxonomyEntry",
     "TradeStatus",
     "VersionNotes",
+    "all_company_certifications",
     "all_slugs",
     "compose_catalog",
     "family_of",
@@ -133,5 +147,5 @@ __all__ = [
     "prestation",
     "produit",
     "taxonomy_activities",
-    "taxonomy_qualifications",
+    "taxonomy_exercise_qualifications",
 ]

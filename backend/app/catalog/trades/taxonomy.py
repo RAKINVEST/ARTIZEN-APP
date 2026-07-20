@@ -1,23 +1,28 @@
 """The official Artizen trade taxonomy — the single reference for the whole app.
 
-Families → activities → qualifications, each with its implementation status.
-This is the backbone: catalogs, search, filters, statistics, the future
-marketplace, the AI and the public API all name trades by the **slugs** defined
-here. The slugs are **frozen** — chosen once, never renamed — because everything
-downstream keys on them.
+Families → activities → **exercise qualifications**, plus a cross-cutting list of
+**company certifications**. Everything downstream (catalogs, search, filters,
+statistics, marketplace, AI, public API) names these by their **slugs**, which
+are **frozen** — chosen once, never renamed.
 
-Distinct from the *registry* (``ACTIVITIES`` / ``QUALIFICATIONS`` in this
-package): the registry holds only the **implemented** activities, with their
-packs, ready to import today. The taxonomy is the full perimeter — implemented,
-planned, and deferred to V2. ``test_taxonomy.py`` keeps the two in sync: every
-entry marked implemented here has a real Activity/Qualification, and every
-registered activity/qualification appears here as implemented.
+Two distinct concepts, deliberately not mixed (this was a real design decision):
 
-Design note — **renewable energy is not a family**: a photovoltaïque install is
-electrical, a solaire-thermique / géothermie one is a heat source (fluides). The
-"green / aided" dimension is a *qualification* (RGE, QualiPAC, QualiPV,
-QualiBois, QualiSol), not a trade — which is exactly what the
-Activity/Qualification split is for (docs/DECISIONS.md, décision 7).
+- **Qualification d'exercice** — a *right to perform* reserved work (PG, IRVE,
+  fluides frigorigènes, certification amiante). It **influences the engine**: it
+  unlocks a reserved pack. Modelled as :class:`Qualification` with packs, held
+  in the ``QUALIFICATIONS`` registry, and attached to its trade **family**.
+
+- **Certification d'entreprise** — an administrative mention (RGE, QualiPV,
+  QualiPAC, QualiBois, QualiSol, Éco Artisan, QUALIFELEC). It changes **nothing**
+  in the catalog: it justifies an aid, shows a logo, appears on quotes. It is
+  **cross-cutting** (an artisan holds a set of them, whatever his trades), so it
+  lives in a single top-level list, not under a family. Reserved here as a
+  concept; the ``CompanyCertification`` mechanism (type, numéro, organisme,
+  dates, statut) is planned, not yet built — see docs/TAXONOMIE-METIERS.md.
+
+Renewable energy is not a family: a photovoltaïque install is electrical, a
+solaire-thermique / géothermie one is a heat source (fluides). The "green /
+aided" dimension is a company **certification** — exactly this second concept.
 """
 
 from dataclasses import dataclass
@@ -28,7 +33,7 @@ class TradeStatus(str, Enum):
     """Official life-cycle status of a taxonomy entry — the state the whole app
     reads (API filtering, back-office, tests, docs)."""
 
-    IMPLEMENTED = "implemented"  # activité + packs, importable aujourd'hui
+    IMPLEMENTED = "implemented"  # activité/qualif + packs, importable aujourd'hui
     PLANNED = "planned"          # au périmètre V1, contenu à développer
     DEFERRED = "deferred_v2"     # au périmètre mais repoussé en V2
     DEPRECATED = "deprecated"    # était disponible, en retrait — ne plus proposer
@@ -46,7 +51,8 @@ class Family:
     slug: str
     label: str
     activities: tuple[TaxonomyEntry, ...]
-    qualifications: tuple[TaxonomyEntry, ...] = ()
+    #: Rights to perform reserved work in this family — influence the catalog.
+    exercise_qualifications: tuple[TaxonomyEntry, ...] = ()
 
 
 _IMPL = TradeStatus.IMPLEMENTED
@@ -72,12 +78,9 @@ FAMILIES: tuple[Family, ...] = (
             _e("solaire-thermique", "Solaire thermique"),
             _e("geothermie", "Géothermie"),
         ),
-        qualifications=(
+        exercise_qualifications=(
             _e("pg", "Professionnel Gaz (PG)", _IMPL),
             _e("fluides-frigorigenes", "Fluides frigorigènes", _IMPL),
-            _e("qualipac", "QualiPAC"),
-            _e("qualibois", "QualiBois"),
-            _e("qualisol", "QualiSol"),
         ),
     ),
     Family(
@@ -85,18 +88,15 @@ FAMILIES: tuple[Family, ...] = (
         label="Électricité & courants faibles",
         activities=(
             _e("electricite-generale", "Électricité générale", _IMPL),
-            _e("domotique", "Domotique / Smart Home"),
+            _e("domotique", "Domotique / Smart Home", _IMPL),
             _e("photovoltaique", "Photovoltaïque", _IMPL),
-            _e("reseaux-vdi", "Réseaux VDI / fibre"),
-            _e("alarme-intrusion", "Alarme intrusion"),
-            _e("videosurveillance", "Vidéosurveillance"),
-            _e("controle-acces", "Contrôle d'accès"),
-            _e("interphonie", "Interphonie / Visiophonie"),
+            _e("reseaux-vdi", "Réseaux VDI / fibre", _IMPL),
+            _e("alarme-intrusion", "Alarme intrusion", _IMPL),
+            _e("videosurveillance", "Vidéosurveillance", _IMPL),
+            _e("controle-acces", "Contrôle d'accès", _IMPL),
+            _e("interphonie", "Interphonie / Visiophonie", _IMPL),
         ),
-        qualifications=(
-            _e("irve", "IRVE — bornes de recharge", _IMPL),
-            _e("qualipv", "QualiPV"),
-        ),
+        exercise_qualifications=(_e("irve", "IRVE — bornes de recharge", _IMPL),),
     ),
     Family(
         slug="finition",
@@ -127,7 +127,6 @@ FAMILIES: tuple[Family, ...] = (
             _e("bardage", "Bardage"),
             _e("etancheite", "Étanchéité"),
         ),
-        qualifications=(_e("rge", "RGE (Reconnu Garant de l'Environnement)"),),
     ),
     Family(
         slug="gros-oeuvre",
@@ -168,8 +167,22 @@ FAMILIES: tuple[Family, ...] = (
             _e("antenniste", "Antenniste", _V2),
             _e("home-staging", "Home staging", _V2),
         ),
-        qualifications=(_e("certification-amiante", "Certification amiante (SS4)"),),
+        exercise_qualifications=(_e("certification-amiante", "Certification amiante (SS4)"),),
     ),
+)
+
+
+#: Company certifications — administrative mentions, **no catalog impact**,
+#: cross-cutting (a company holds a set of them regardless of its trades). All
+#: PLANNED: the CompanyCertification mechanism is reserved, not yet built.
+COMPANY_CERTIFICATIONS: tuple[TaxonomyEntry, ...] = (
+    _e("rge", "RGE (Reconnu Garant de l'Environnement)"),
+    _e("eco-artisan", "RGE Éco Artisan"),
+    _e("qualipac", "QualiPAC"),
+    _e("qualipv", "QualiPV"),
+    _e("qualibois", "QualiBois"),
+    _e("qualisol", "QualiSol"),
+    _e("qualifelec", "QUALIFELEC"),
 )
 
 
@@ -177,24 +190,30 @@ def all_activities() -> list[TaxonomyEntry]:
     return [entry for family in FAMILIES for entry in family.activities]
 
 
-def all_qualifications() -> list[TaxonomyEntry]:
-    return [entry for family in FAMILIES for entry in family.qualifications]
+def all_exercise_qualifications() -> list[TaxonomyEntry]:
+    return [entry for family in FAMILIES for entry in family.exercise_qualifications]
+
+
+def all_company_certifications() -> list[TaxonomyEntry]:
+    return list(COMPANY_CERTIFICATIONS)
 
 
 def family_of(slug: str) -> Family | None:
-    """The family a given activity or qualification slug belongs to."""
+    """The family an activity or exercise qualification belongs to. Company
+    certifications are cross-cutting and belong to no family (returns None)."""
     for family in FAMILIES:
-        if any(e.slug == slug for e in (*family.activities, *family.qualifications)):
+        if any(e.slug == slug for e in (*family.activities, *family.exercise_qualifications)):
             return family
     return None
 
 
 def all_slugs() -> list[str]:
-    """Every slug in the taxonomy — families, activities and qualifications —
-    used to check global uniqueness (nothing downstream may be ambiguous)."""
+    """Every slug — families, activities, exercise qualifications and company
+    certifications — for the global-uniqueness check."""
     slugs: list[str] = []
     for family in FAMILIES:
         slugs.append(family.slug)
         slugs.extend(e.slug for e in family.activities)
-        slugs.extend(e.slug for e in family.qualifications)
+        slugs.extend(e.slug for e in family.exercise_qualifications)
+    slugs.extend(e.slug for e in COMPANY_CERTIFICATIONS)
     return slugs

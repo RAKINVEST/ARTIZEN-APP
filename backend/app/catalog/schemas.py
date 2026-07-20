@@ -51,13 +51,21 @@ class TaxonomyEntryRead(BaseModel):
 
 
 class TaxonomyFamilyRead(BaseModel):
-    """One family of the official taxonomy, with its activities and
-    qualifications — the single reference the whole app keys on."""
+    """One family: its activities and its exercise qualifications (rights to
+    perform reserved work — the ones that influence the catalog)."""
 
     slug: str
     label: str
     activities: list[TaxonomyEntryRead]
-    qualifications: list[TaxonomyEntryRead]
+    exercise_qualifications: list[TaxonomyEntryRead]
+
+
+class TaxonomyRead(BaseModel):
+    """The official taxonomy: the trade families, plus the cross-cutting company
+    certifications (administrative mentions, no catalog impact)."""
+
+    families: list[TaxonomyFamilyRead]
+    company_certifications: list[TaxonomyEntryRead]
 
 
 class CatalogCategoryOverview(BaseModel):

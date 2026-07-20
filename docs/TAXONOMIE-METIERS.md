@@ -14,8 +14,13 @@
 1. **Un métier = une ou plusieurs activités.** « Plombier-chauffagiste » = `plomberie` +
    `chauffage`. Le métier (ce que l'artisan *est*) n'est pas stocké ; les **activités**
    (unités de composition du catalogue) le sont (décision 7).
-2. **Les qualifications sont transverses** et réservent des packs ou portent une mention
-   légale (Gaz→`pg`, Froid→`fluides-frigorigenes`, aides→`rge`/`qualipac`/…).
+2. **Deux concepts distincts, jamais mélangés :**
+   - **Qualification d'exercice** = *droit de faire* des travaux réservés (`pg`, `irve`,
+     `fluides-frigorigenes`, `certification-amiante`). Elle **influence le moteur** : elle
+     débloque un pack. Rattachée à sa **famille**.
+   - **Certification d'entreprise** = mention administrative (`rge`, `qualipv`, `qualipac`,
+     `qualibois`, `qualisol`, `eco-artisan`, `qualifelec`). **Aucun impact catalogue** :
+     justifie une aide, apparaît sur les devis. **Transverse** (hors famille).
 3. **Les énergies renouvelables ne sont pas une famille.** Le photovoltaïque *est* de
    l'électricité ; le solaire thermique / la géothermie *sont* des sources de chaleur
    (fluides). La dimension « verte / aidée » est une **qualification** (RGE, QualiPAC,
@@ -31,12 +36,12 @@
 ### 🟦 fluides — Fluides & génie climatique
 **Activités** : `plomberie` ✅ · `chauffage` ✅ · `climatisation` ✅ · `ventilation` ✅ ·
 `traitement-eau` ✅ · `froid` · `solaire-thermique` · `geothermie`
-**Qualifications** : `pg` ✅ · `fluides-frigorigenes` ✅ · `qualipac` · `qualibois` · `qualisol`
+**Qualifications d'exercice** : `pg` ✅ · `fluides-frigorigenes` ✅
 
-### 🟨 electricite — Électricité & courants faibles
-**Activités** : `electricite-generale` ✅ · `domotique` · `photovoltaique` ✅ · `reseaux-vdi` ·
-`alarme-intrusion` · `videosurveillance` · `controle-acces` · `interphonie`
-**Qualifications** : `irve` ✅ · `qualipv` *(mention)*
+### 🟨 electricite — Électricité & courants faibles ✅ **TERMINÉ**
+**Activités** : `electricite-generale` ✅ · `domotique` ✅ · `photovoltaique` ✅ · `reseaux-vdi` ✅ ·
+`alarme-intrusion` ✅ · `videosurveillance` ✅ · `controle-acces` ✅ · `interphonie` ✅
+**Qualifications d'exercice** : `irve` ✅
 
 ### 🟩 finition — Finition intérieure (second œuvre)
 **Activités** : `platrerie` · `peinture` · `carrelage` · `revetements-sol` · `parquet` ·
@@ -45,7 +50,6 @@
 ### 🟧 enveloppe — Enveloppe du bâtiment
 **Activités** : `charpente` · `couverture` · `zinguerie` · `menuiserie-exterieure` ·
 `stores-pergolas` · `facade` · `isolation` · `isolation-exterieure` · `bardage` · `etancheite`
-**Qualifications** : `rge`
 
 ### 🟥 gros-oeuvre — Gros œuvre & travaux publics
 **Activités** : `maconnerie` · `terrassement` · `demolition` · `vrd` · `assainissement` ·
@@ -56,8 +60,23 @@
 `ferronnerie` · `paysagisme` · `cloture` · `arrosage` · `terrasse-bois` · `ascenseur` ·
 `ramonage` · `desamiantage` · `traitement-charpente` · `hygiene-nuisibles` · `nettoyage` ·
 `diagnostic`
-**Qualifications** : `certification-amiante`
+**Qualifications d'exercice** : `certification-amiante`
 **Reporté V2** : `cordiste` · `cuvelage` · `paratonnerre` · `antenniste` · `home-staging`
+
+## Certifications d'entreprise (transverses — aucun impact catalogue)
+
+`rge` · `eco-artisan` · `qualipac` · `qualipv` · `qualibois` · `qualisol` · `qualifelec`
+
+Mentions administratives portées par l'entreprise (aides, logo, devis), **hors famille**.
+Modèle conceptuel **réservé, non développé** (V1 : champ `rge_number` sur `Company`) :
+
+```
+CompanyCertification(company_id, type, numero, organisme,
+                     date_obtention, date_expiration, statut)
+```
+
+Une entreprise pourra en détenir autant qu'elle veut, avec validité — sans modifier le modèle.
+Le mécanisme complet est une fonctionnalité à part, à développer plus tard.
 
 ## Ordre de développement (lots)
 
