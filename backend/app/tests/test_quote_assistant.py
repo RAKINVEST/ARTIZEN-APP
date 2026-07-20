@@ -449,7 +449,6 @@ def test_scorer_never_goes_negative() -> None:
 
 
 async def test_match_validator_reports_rejection_reasons() -> None:
-    from app.catalog.repository import CatalogItemRepository
     from app.quote_assistant.match_validator import MatchValidator
     from app.quote_assistant.schemas import RawSuggestionItem
 

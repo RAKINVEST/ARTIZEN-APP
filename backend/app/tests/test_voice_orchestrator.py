@@ -15,7 +15,7 @@ import uuid
 import pytest
 
 from app.ai.exceptions import AIProviderUnavailableError
-from app.ai.factory import get_stt_provider, get_tts_provider
+from app.ai.factory import get_stt_provider
 from app.voice_quote import orchestrator as orchestrator_module
 from app.voice_quote.errors import classify
 from app.voice_quote.events import CollectingEventSink, EventType

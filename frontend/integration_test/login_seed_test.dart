@@ -25,7 +25,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       if (finder.evaluate().isNotEmpty) return;
     }
-    throw TestFailure('Timed out waiting for: ${finder.description}');
+    throw TestFailure('Timed out waiting for: ${finder.describeMatch(Plurality.many)}');
   }
 
   testWidgets('login persists the auth token for the recette', (tester) async {

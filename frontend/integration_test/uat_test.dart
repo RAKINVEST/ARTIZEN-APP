@@ -43,7 +43,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       if (finder.evaluate().isNotEmpty) return;
     }
-    throw TestFailure('Timed out waiting for: ${finder.description}');
+    throw TestFailure('Timed out waiting for: ${finder.describeMatch(Plurality.many)}');
   }
 
   // Tab labels double as screen titles ("Devis" is both a bottom-nav
