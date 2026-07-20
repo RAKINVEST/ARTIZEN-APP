@@ -17,9 +17,9 @@ class WizardStepView extends StatelessWidget {
       step: step,
       child: switch (step) {
         WizardStep.client => const _ClientStep(),
-        WizardStep.catalogue => const _CatalogueStep(),
+        WizardStep.dossier => const _DossierStep(),
         WizardStep.articles => const _ArticlesStep(),
-        WizardStep.ajuster => const _AjusterStep(),
+        WizardStep.personnaliser => const _PersonnaliserStep(),
         WizardStep.recap => const _RecapStep(),
         WizardStep.creer => const _CreerStep(),
         WizardStep.envoyer => const _EnvoyerStep(),
@@ -130,10 +130,10 @@ class _ClientStep extends StatelessWidget {
   }
 }
 
-// --- Étape 2 : Catalogue — quel dossier ? ----------------------------------
+// --- Étape 2 : Dossier — quel dossier du catalogue ? -----------------------
 
-class _CatalogueStep extends StatelessWidget {
-  const _CatalogueStep();
+class _DossierStep extends StatelessWidget {
+  const _DossierStep();
 
   @override
   Widget build(BuildContext context) {
@@ -222,10 +222,10 @@ class _ArticlesStep extends StatelessWidget {
   }
 }
 
-// --- Étape 4 : Ajuster — quantités, prix, lignes libres --------------------
+// --- Étape 4 : Personnaliser — quantités, prix, lignes libres --------------
 
-class _AjusterStep extends StatelessWidget {
-  const _AjusterStep();
+class _PersonnaliserStep extends StatelessWidget {
+  const _PersonnaliserStep();
 
   @override
   Widget build(BuildContext context) {

@@ -41,7 +41,10 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: QuoteWizardScreen()));
     await tester.pumpAndSettle();
 
-    // The progress bar exposes every step label; tap "Récap" (step 5).
+    // The progress bar scrolls horizontally; bring "Récap" (step 5) into view
+    // in the narrow test window before tapping it.
+    await tester.ensureVisible(find.text('Récap'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Récap'));
     await tester.pumpAndSettle();
 

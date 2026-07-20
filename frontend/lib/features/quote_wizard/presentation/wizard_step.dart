@@ -10,12 +10,12 @@ import 'package:flutter/material.dart';
 /// what we validate first; the API wiring comes step by step afterwards.
 enum WizardStep {
   client('Client', Icons.person_outline, 'Pour quel client faites-vous ce devis ?'),
-  catalogue('Catalogue', Icons.folder_outlined,
+  dossier('Dossier', Icons.folder_outlined,
       'Dans quel dossier de votre catalogue piochez-vous ?'),
   articles('Articles', Icons.checklist_outlined,
       'Quels articles et prestations mettez-vous au devis ?'),
-  ajuster('Ajuster', Icons.tune_outlined,
-      'Quantités, prix, lignes libres — ajustez ce qui doit l\'être.'),
+  personnaliser('Personnaliser', Icons.tune_outlined,
+      'Quantités, prix, lignes libres — personnalisez le devis.'),
   recap('Récap', Icons.receipt_long_outlined, 'Vérifiez les montants avant de créer.'),
   creer('Créer', Icons.description_outlined, 'Créez le devis officiel.'),
   envoyer('Envoyer', Icons.send_outlined, 'Envoyez le devis à votre client.');
