@@ -10,11 +10,19 @@ from app.catalog.trades.chauffage import CHAUFFAGE
 from app.catalog.trades.climatisation import CLIMATISATION, FLUIDES_FRIGORIGENES
 from app.catalog.trades.commun import CHANTIER
 from app.catalog.trades.agencement import AGENCEMENT
+from app.catalog.trades.bardage import BARDAGE
 from app.catalog.trades.carrelage import CARRELAGE
+from app.catalog.trades.charpente import CHARPENTE
+from app.catalog.trades.couverture import COUVERTURE
 from app.catalog.trades.cuisine import CUISINE
 from app.catalog.trades.domotique import DOMOTIQUE
 from app.catalog.trades.electricite import ELECTRICITE_GENERALE, IRVE
+from app.catalog.trades.etancheite import ETANCHEITE
+from app.catalog.trades.facade import FACADE
 from app.catalog.trades.interphonie import INTERPHONIE
+from app.catalog.trades.isolation import ISOLATION
+from app.catalog.trades.isolation_exterieure import ISOLATION_EXTERIEURE
+from app.catalog.trades.menuiserie_exterieure import MENUISERIE_EXTERIEURE
 from app.catalog.trades.menuiserie_interieure import MENUISERIE_INTERIEURE
 from app.catalog.trades.parquet import PARQUET
 from app.catalog.trades.peinture import PEINTURE
@@ -23,6 +31,8 @@ from app.catalog.trades.platrerie import PLATRERIE
 from app.catalog.trades.reseaux_vdi import RESEAUX_VDI
 from app.catalog.trades.revetements_sol import REVETEMENTS_SOL
 from app.catalog.trades.securite import ALARME_INTRUSION, CONTROLE_ACCES, VIDEOSURVEILLANCE
+from app.catalog.trades.stores_pergolas import STORES_PERGOLAS
+from app.catalog.trades.zinguerie import ZINGUERIE
 from app.catalog.trades.definitions import (
     Activity,
     CatalogPack,
@@ -76,6 +86,16 @@ ACTIVITIES: dict[str, Activity] = {
         MENUISERIE_INTERIEURE,
         CUISINE,
         AGENCEMENT,
+        CHARPENTE,
+        COUVERTURE,
+        ZINGUERIE,
+        MENUISERIE_EXTERIEURE,
+        STORES_PERGOLAS,
+        FACADE,
+        ISOLATION,
+        ISOLATION_EXTERIEURE,
+        BARDAGE,
+        ETANCHEITE,
     )
 }
 
