@@ -10,6 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Path-based URL strategy for the web (deep links like the reset-password
+  # email link) — see main.dart. Ships with the Flutter SDK.
+  flutter_web_plugins:
+    sdk: flutter
   cupertino_icons: ^1.0.8
 
   # State management

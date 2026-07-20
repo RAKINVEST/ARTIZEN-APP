@@ -17,6 +17,7 @@ import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/landing/presentation/landing_screen.dart';
 import '../../features/metiers/presentation/metiers_screen.dart';
 import '../../features/quote_assistant/presentation/quote_assistant_screen.dart';
+import '../../features/quote_wizard/presentation/quote_wizard_screen.dart';
 import '../../features/quotes/presentation/quote_detail_screen.dart';
 import '../../features/quotes/presentation/quote_form_screen.dart';
 import '../../features/quotes/presentation/quote_pdf_preview_screen.dart';
@@ -157,6 +158,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/metiers',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const MetiersScreen(),
+      ),
+      GoRoute(
+        path: '/assistant',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const QuoteWizardScreen(),
       ),
       GoRoute(
         path: '/company-profile',
