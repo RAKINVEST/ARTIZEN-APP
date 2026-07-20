@@ -9,11 +9,19 @@ than not offering it yet. An activity appears the day its packs exist.
 from app.catalog.trades.chauffage import CHAUFFAGE
 from app.catalog.trades.climatisation import CLIMATISATION, FLUIDES_FRIGORIGENES
 from app.catalog.trades.commun import CHANTIER
+from app.catalog.trades.agencement import AGENCEMENT
+from app.catalog.trades.carrelage import CARRELAGE
+from app.catalog.trades.cuisine import CUISINE
 from app.catalog.trades.domotique import DOMOTIQUE
 from app.catalog.trades.electricite import ELECTRICITE_GENERALE, IRVE
 from app.catalog.trades.interphonie import INTERPHONIE
+from app.catalog.trades.menuiserie_interieure import MENUISERIE_INTERIEURE
+from app.catalog.trades.parquet import PARQUET
+from app.catalog.trades.peinture import PEINTURE
 from app.catalog.trades.photovoltaique import PHOTOVOLTAIQUE
+from app.catalog.trades.platrerie import PLATRERIE
 from app.catalog.trades.reseaux_vdi import RESEAUX_VDI
+from app.catalog.trades.revetements_sol import REVETEMENTS_SOL
 from app.catalog.trades.securite import ALARME_INTRUSION, CONTROLE_ACCES, VIDEOSURVEILLANCE
 from app.catalog.trades.definitions import (
     Activity,
@@ -60,6 +68,14 @@ ACTIVITIES: dict[str, Activity] = {
         VIDEOSURVEILLANCE,
         CONTROLE_ACCES,
         INTERPHONIE,
+        PLATRERIE,
+        PEINTURE,
+        CARRELAGE,
+        REVETEMENTS_SOL,
+        PARQUET,
+        MENUISERIE_INTERIEURE,
+        CUISINE,
+        AGENCEMENT,
     )
 }
 

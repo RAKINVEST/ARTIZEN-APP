@@ -30,6 +30,14 @@
 5. **Statuts** (cycle de vie officiel, lu par l'API `?status=`, le back-office, les tests) :
    `implemented` (activité + packs, importable) · `planned` (au périmètre V1, à développer) ·
    `deferred_v2` (repoussé en V2) · `deprecated` (était disponible, en retrait).
+6. **Convention de structure du catalogue** (homogénéité inter-métiers). Chaque activité suit,
+   autant que pertinent, la même ossature de dossiers pour que l'expérience reste cohérente d'un
+   métier à l'autre et que les futures fonctionnalités s'appuient sur une organisation stable :
+   **matériel(s) du domaine → consommables → accessoires / finitions (si pertinent) →
+   Prestations (toujours)**. Le dossier **Prestations** (main-d'œuvre et poses) est **obligatoire**
+   et vérifié par test ([`test_trades_generic.py`](../backend/app/tests/test_trades_generic.py)).
+   Le pack **Chantier** partagé (déplacement, dépose, évacuation, essais) est ajouté
+   automatiquement à l'import de tout métier — il n'est pas déclaré par activité.
 
 ## Les 6 familles
 
@@ -43,9 +51,9 @@
 `alarme-intrusion` ✅ · `videosurveillance` ✅ · `controle-acces` ✅ · `interphonie` ✅
 **Qualifications d'exercice** : `irve` ✅
 
-### 🟩 finition — Finition intérieure (second œuvre)
-**Activités** : `platrerie` · `peinture` · `carrelage` · `revetements-sol` · `parquet` ·
-`menuiserie-interieure` · `cuisine` · `agencement`
+### 🟩 finition — Finition intérieure (second œuvre) ✅ **TERMINÉ**
+**Activités** : `platrerie` ✅ · `peinture` ✅ · `carrelage` ✅ · `revetements-sol` ✅ · `parquet` ✅ ·
+`menuiserie-interieure` ✅ · `cuisine` ✅ · `agencement` ✅
 
 ### 🟧 enveloppe — Enveloppe du bâtiment
 **Activités** : `charpente` · `couverture` · `zinguerie` · `menuiserie-exterieure` ·
@@ -80,7 +88,7 @@ Le mécanisme complet est une fonctionnalité à part, à développer plus tard.
 
 ## Ordre de développement (lots)
 
-`fluides` ✅ (fait) → `electricite` → `finition` → `enveloppe` → `gros-oeuvre` → `specialises`.
+`fluides` ✅ → `electricite` ✅ → `finition` ✅ → `enveloppe` → `gros-oeuvre` → `specialises`.
 
 ## Règle de gel
 
