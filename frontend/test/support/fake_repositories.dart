@@ -83,6 +83,21 @@ class FakeCatalogRepository implements CatalogRepository {
   Future<List<CatalogCategory>> listCategories({required String companyId}) async => _categories;
 
   @override
+  Future<List<CategoryOverview>> listCategoryOverviews() async => [
+        for (final category in _categories)
+          CategoryOverview(
+            id: category.id,
+            name: category.name,
+            itemCount: _items.where((item) => item.categoryId == category.id).length,
+            sampleDesignations: _items
+                .where((item) => item.categoryId == category.id)
+                .take(3)
+                .map((item) => item.designation)
+                .toList(),
+          ),
+      ];
+
+  @override
   Future<CatalogCategory> createCategory(
     CatalogCategoryInput input, {
     required String companyId,

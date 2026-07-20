@@ -21,8 +21,8 @@ class WizardStepView extends StatelessWidget {
   Widget build(BuildContext context) {
     return _StepScaffold(
       step: step,
-      // Client is wired to the real API; the others still show mock data.
-      mock: step != WizardStep.client,
+      // Client and Dossier are wired to the real API; the rest is still mock.
+      mock: step != WizardStep.client && step != WizardStep.dossier,
       child: switch (step) {
         WizardStep.client => const _ClientStep(),
         WizardStep.dossier => const _DossierStep(),
@@ -168,57 +168,66 @@ class _ClientStep extends ConsumerWidget {
   }
 }
 
-// --- Étape 2 : Dossier — quel dossier du catalogue ? -----------------------
+// --- Étape 2 : Dossier — quel dossier du catalogue ? (câblé) ---------------
 
-class _DossierStep extends StatelessWidget {
+class _DossierStep extends ConsumerWidget {
   const _DossierStep();
 
   @override
-  Widget build(BuildContext context) {
-    const folders = <(String, IconData, int)>[
-      ('Chauffe-eau', Icons.water_drop_outlined, 18),
-      ('Robinetterie', Icons.plumbing_outlined, 17),
-      ('Sanitaires', Icons.wc_outlined, 26),
-      ('Chauffage', Icons.local_fire_department_outlined, 19),
-      ('Évacuation', Icons.water_outlined, 21),
-      ('Prestations', Icons.handyman_outlined, 12),
-    ];
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      childAspectRatio: 2.4,
-      mainAxisSpacing: ArtizenSpacing.xs,
-      crossAxisSpacing: ArtizenSpacing.xs,
-      children: [
-        for (final (name, icon, count) in folders)
-          Card(
-            child: InkWell(
-              onTap: () {},
-              child: Padding(
-                padding: const EdgeInsets.all(ArtizenSpacing.sm),
-                child: Row(
-                  children: [
-                    Icon(icon, color: ArtizenColors.nightBlue),
-                    const SizedBox(width: ArtizenSpacing.xs),
-                    Expanded(
-                      child: Column(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final folders = ref.watch(foldersProvider);
+    final openId = ref.watch(selectedFolderProvider);
+
+    return folders.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(ArtizenSpacing.lg),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => ErrorState(
+        error: error,
+        onRetry: () => ref.invalidate(foldersProvider),
+      ),
+      data: (list) => list.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.all(ArtizenSpacing.md),
+              child: Text(
+                'Votre catalogue est vide. Activez un métier dans « Mes métiers » '
+                'pour le remplir.',
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final folder in list)
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.folder_outlined, color: ArtizenColors.nightBlue),
+                      title: Text(folder.name),
+                      subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(name, overflow: TextOverflow.ellipsis),
-                          Text('$count articles',
+                          Text('${folder.itemCount} article${folder.itemCount > 1 ? 's' : ''}'),
+                          if (folder.sampleDesignations.isNotEmpty)
+                            Text(
+                              '💬 ${folder.sampleDesignations.join(' • ')}…',
                               style: const TextStyle(
-                                  color: ArtizenColors.textSecondary, fontSize: 12)),
+                                  color: ArtizenColors.textSecondary, fontSize: 12),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                         ],
                       ),
+                      isThreeLine: folder.sampleDesignations.isNotEmpty,
+                      trailing: folder.id == openId
+                          ? const Icon(Icons.check_circle, color: ArtizenColors.success)
+                          : null,
+                      selected: folder.id == openId,
+                      // The one thing this step does: open a folder.
+                      onTap: () => ref.read(selectedFolderProvider.notifier).open(folder.id),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+              ],
             ),
-          ),
-      ],
     );
   }
 }

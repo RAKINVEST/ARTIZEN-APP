@@ -115,3 +115,25 @@ Map<String, dynamic> _$$CatalogItemInputImplToJson(
   'estimated_duration_minutes': instance.estimatedDurationMinutes,
   if (instance.active case final value?) 'active': value,
 };
+
+_$CategoryOverviewImpl _$$CategoryOverviewImplFromJson(
+  Map<String, dynamic> json,
+) => _$CategoryOverviewImpl(
+  id: json['id'] as String,
+  name: json['name'] as String,
+  itemCount: (json['item_count'] as num).toInt(),
+  sampleDesignations:
+      (json['sample_designations'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+);
+
+Map<String, dynamic> _$$CategoryOverviewImplToJson(
+  _$CategoryOverviewImpl instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'item_count': instance.itemCount,
+  'sample_designations': instance.sampleDesignations,
+};

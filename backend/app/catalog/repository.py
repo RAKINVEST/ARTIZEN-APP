@@ -77,6 +77,29 @@ class CatalogItemRepository(BaseRepository[CatalogItem]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def category_stats(
+        self, company_id: uuid.UUID, *, sample_size: int = 3
+    ) -> dict[uuid.UUID, tuple[int, list[str]]]:
+        """Per-category article count + a few example designations, in one pass.
+
+        Fetches ``(category_id, designation)`` for the whole company ordered by
+        designation (French), then folds it in Python — cheap for a catalog of
+        a few hundred items, and avoids a query per folder. The samples are the
+        first few alphabetically, which is what the artisan expects to see.
+        """
+        result = await self.session.execute(
+            select(CatalogItem.category_id, CatalogItem.designation)
+            .where(CatalogItem.company_id == company_id)
+            .order_by(CatalogItem.designation.collate(_FRENCH_COLLATION))
+        )
+        stats: dict[uuid.UUID, tuple[int, list[str]]] = {}
+        for category_id, designation in result.all():
+            count, samples = stats.get(category_id, (0, []))
+            if len(samples) < sample_size:
+                samples.append(designation)
+            stats[category_id] = (count + 1, samples)
+        return stats
+
     async def designations_in_category(self, category_id: uuid.UUID) -> set[str]:
         """What the artisan already has in this folder.
 

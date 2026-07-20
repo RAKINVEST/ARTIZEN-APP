@@ -11,6 +11,10 @@ import '../data/catalog_models.dart';
 /// server query makes the whole catalogue reachable.
 abstract class CatalogRepository {
   Future<List<CatalogCategory>> listCategories({required String companyId});
+
+  /// The company's folders with article count + sample designations, for the
+  /// assistant's "Dossier" picker. Company scoping comes from the JWT.
+  Future<List<CategoryOverview>> listCategoryOverviews();
   Future<CatalogCategory> createCategory(
     CatalogCategoryInput input, {
     required String companyId,

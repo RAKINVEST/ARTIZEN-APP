@@ -21,6 +21,7 @@ from app.catalog.repository import CatalogCategoryRepository, CatalogItemReposit
 from app.catalog.schemas import (
     ActivityRead,
     CatalogCategoryCreate,
+    CatalogCategoryOverview,
     CatalogCategoryUpdate,
     CatalogImportResult,
     CatalogItemCreate,
@@ -260,6 +261,24 @@ class CatalogService:
         if company_id is not None:
             return await self._categories.list_by_company(company_id, offset=offset, limit=limit)
         return await self._categories.list(offset=offset, limit=limit)
+
+    async def list_category_overviews(
+        self, company_id: uuid.UUID
+    ) -> list[CatalogCategoryOverview]:
+        """The company's folders with their article count and sample
+        designations — what the assistant's "Dossier" step shows. Empty folders
+        appear too (count 0), so the artisan sees the folder exists."""
+        categories = await self._categories.list_by_company(company_id, limit=1000)
+        stats = await self._items.category_stats(company_id)
+        return [
+            CatalogCategoryOverview(
+                id=category.id,
+                name=category.name,
+                item_count=(entry := stats.get(category.id, (0, [])))[0],
+                sample_designations=entry[1],
+            )
+            for category in categories
+        ]
 
     async def update_category(
         self, category_id: uuid.UUID, data: CatalogCategoryUpdate

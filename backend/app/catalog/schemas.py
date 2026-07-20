@@ -42,6 +42,17 @@ class CatalogCategoryRead(BaseModel):
     updated_at: datetime
 
 
+class CatalogCategoryOverview(BaseModel):
+    """A folder for the guided assistant's "Dossier" picker: its name, how many
+    articles it holds, and a few example designations — just enough for the
+    artisan to recognise the right folder without loading its whole list."""
+
+    id: uuid.UUID
+    name: str
+    item_count: int
+    sample_designations: list[str]
+
+
 class CatalogItemCreate(BaseModel):
     # Always overridden with the authenticated user's company_id (see
     # catalog/router.py) — optional here so callers don't need to send a

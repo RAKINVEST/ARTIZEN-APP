@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../catalog/data/catalog_models.dart';
+import '../../catalog/data/catalog_repository_impl.dart';
 import '../../quotes/data/quote_models.dart';
 import '../../quotes/data/quotes_repository_impl.dart';
 import '../data/quote_draft.dart';
@@ -19,11 +21,6 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
 
   void selectClient({required String id, required String label}) {
     state = state.copyWith(clientId: id, clientLabel: label);
-  }
-
-  /// Which catalog folder the artisan opened at the "Dossier" step.
-  void selectCategory(String categoryId) {
-    state = state.copyWith(selectedCategoryId: categoryId);
   }
 
   /// Add an article. If it's already in the draft, bump its quantity rather
@@ -90,6 +87,28 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
 final quoteDraftProvider =
     NotifierProvider<QuoteDraftNotifier, QuoteDraft>(QuoteDraftNotifier.new);
 
+/// The folder open at the "Dossier" step — pure navigation state, **outside**
+/// the draft on purpose (a folder guides browsing, it is not part of the
+/// quote). Structurally can't be persisted with the quote.
+class SelectedFolderNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  /// "Open this folder" — the one thing the Dossier step does.
+  void open(String folderId) => state = folderId;
+
+  void clear() => state = null;
+}
+
+final selectedFolderProvider =
+    NotifierProvider<SelectedFolderNotifier, String?>(SelectedFolderNotifier.new);
+
+/// The artisan's catalog folders — name, article count, sample designations —
+/// shown by the "Dossier" step so he can pick where to work.
+final foldersProvider = FutureProvider<List<CategoryOverview>>((ref) {
+  return ref.watch(catalogRepositoryProvider).listCategoryOverviews();
+});
+
 /// Whether the artisan may leave [step] — the single place step-completion is
 /// decided. The wizard's Précédent/Suivant/progress ask *this*, never the
 /// widgets ("does this screen contain something?"). Reactive: it recomputes
@@ -99,7 +118,8 @@ final stepCompleteProvider = Provider.family<bool, WizardStep>((ref, step) {
   final draft = ref.watch(quoteDraftProvider);
   return switch (step) {
     WizardStep.client => draft.hasClient,
-    WizardStep.dossier => draft.hasSelectedCategory,
+    // Navigation state, not the draft: "a folder is open".
+    WizardStep.dossier => ref.watch(selectedFolderProvider) != null,
     WizardStep.articles => draft.hasLines,
     WizardStep.personnaliser => draft.hasLines,
     WizardStep.recap => draft.hasValidCalculation,

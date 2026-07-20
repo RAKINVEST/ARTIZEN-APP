@@ -99,3 +99,19 @@ class CatalogItemInput with _$CatalogItemInput {
 
   factory CatalogItemInput.fromJson(Map<String, dynamic> json) => _$CatalogItemInputFromJson(json);
 }
+
+/// A folder for the guided assistant's "Dossier" step: its name, article count
+/// and a few example designations (`GET /catalog/categories/overview`) — enough
+/// to recognise the right folder without opening it.
+@freezed
+class CategoryOverview with _$CategoryOverview {
+  const factory CategoryOverview({
+    required String id,
+    required String name,
+    required int itemCount,
+    @Default(<String>[]) List<String> sampleDesignations,
+  }) = _CategoryOverview;
+
+  factory CategoryOverview.fromJson(Map<String, dynamic> json) =>
+      _$CategoryOverviewFromJson(json);
+}

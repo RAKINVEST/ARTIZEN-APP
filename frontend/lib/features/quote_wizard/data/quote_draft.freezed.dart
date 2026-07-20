@@ -272,12 +272,7 @@ abstract class _DraftLine implements DraftLine {
 /// @nodoc
 mixin _$QuoteDraft {
   String? get clientId => throw _privateConstructorUsedError;
-  String? get clientLabel =>
-      throw _privateConstructorUsedError; // Working context, not part of the final quote: which catalog folder the
-  // artisan is browsing at the "Dossier" step. Kept on the draft so a future
-  // resume reopens where he was, and so step-completion can be answered from
-  // the draft alone.
-  String? get selectedCategoryId => throw _privateConstructorUsedError;
+  String? get clientLabel => throw _privateConstructorUsedError;
   List<DraftLine> get lines => throw _privateConstructorUsedError;
   QuoteCalculation? get calculation => throw _privateConstructorUsedError;
 
@@ -298,7 +293,6 @@ abstract class $QuoteDraftCopyWith<$Res> {
   $Res call({
     String? clientId,
     String? clientLabel,
-    String? selectedCategoryId,
     List<DraftLine> lines,
     QuoteCalculation? calculation,
   });
@@ -323,7 +317,6 @@ class _$QuoteDraftCopyWithImpl<$Res, $Val extends QuoteDraft>
   $Res call({
     Object? clientId = freezed,
     Object? clientLabel = freezed,
-    Object? selectedCategoryId = freezed,
     Object? lines = null,
     Object? calculation = freezed,
   }) {
@@ -336,10 +329,6 @@ class _$QuoteDraftCopyWithImpl<$Res, $Val extends QuoteDraft>
             clientLabel: freezed == clientLabel
                 ? _value.clientLabel
                 : clientLabel // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            selectedCategoryId: freezed == selectedCategoryId
-                ? _value.selectedCategoryId
-                : selectedCategoryId // ignore: cast_nullable_to_non_nullable
                       as String?,
             lines: null == lines
                 ? _value.lines
@@ -381,7 +370,6 @@ abstract class _$$QuoteDraftImplCopyWith<$Res>
   $Res call({
     String? clientId,
     String? clientLabel,
-    String? selectedCategoryId,
     List<DraftLine> lines,
     QuoteCalculation? calculation,
   });
@@ -406,7 +394,6 @@ class __$$QuoteDraftImplCopyWithImpl<$Res>
   $Res call({
     Object? clientId = freezed,
     Object? clientLabel = freezed,
-    Object? selectedCategoryId = freezed,
     Object? lines = null,
     Object? calculation = freezed,
   }) {
@@ -419,10 +406,6 @@ class __$$QuoteDraftImplCopyWithImpl<$Res>
         clientLabel: freezed == clientLabel
             ? _value.clientLabel
             : clientLabel // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        selectedCategoryId: freezed == selectedCategoryId
-            ? _value.selectedCategoryId
-            : selectedCategoryId // ignore: cast_nullable_to_non_nullable
                   as String?,
         lines: null == lines
             ? _value._lines
@@ -443,7 +426,6 @@ class _$QuoteDraftImpl extends _QuoteDraft {
   const _$QuoteDraftImpl({
     this.clientId,
     this.clientLabel,
-    this.selectedCategoryId,
     final List<DraftLine> lines = const <DraftLine>[],
     this.calculation,
   }) : _lines = lines,
@@ -453,12 +435,6 @@ class _$QuoteDraftImpl extends _QuoteDraft {
   final String? clientId;
   @override
   final String? clientLabel;
-  // Working context, not part of the final quote: which catalog folder the
-  // artisan is browsing at the "Dossier" step. Kept on the draft so a future
-  // resume reopens where he was, and so step-completion can be answered from
-  // the draft alone.
-  @override
-  final String? selectedCategoryId;
   final List<DraftLine> _lines;
   @override
   @JsonKey()
@@ -473,7 +449,7 @@ class _$QuoteDraftImpl extends _QuoteDraft {
 
   @override
   String toString() {
-    return 'QuoteDraft(clientId: $clientId, clientLabel: $clientLabel, selectedCategoryId: $selectedCategoryId, lines: $lines, calculation: $calculation)';
+    return 'QuoteDraft(clientId: $clientId, clientLabel: $clientLabel, lines: $lines, calculation: $calculation)';
   }
 
   @override
@@ -485,8 +461,6 @@ class _$QuoteDraftImpl extends _QuoteDraft {
                 other.clientId == clientId) &&
             (identical(other.clientLabel, clientLabel) ||
                 other.clientLabel == clientLabel) &&
-            (identical(other.selectedCategoryId, selectedCategoryId) ||
-                other.selectedCategoryId == selectedCategoryId) &&
             const DeepCollectionEquality().equals(other._lines, _lines) &&
             (identical(other.calculation, calculation) ||
                 other.calculation == calculation));
@@ -497,7 +471,6 @@ class _$QuoteDraftImpl extends _QuoteDraft {
     runtimeType,
     clientId,
     clientLabel,
-    selectedCategoryId,
     const DeepCollectionEquality().hash(_lines),
     calculation,
   );
@@ -515,7 +488,6 @@ abstract class _QuoteDraft extends QuoteDraft {
   const factory _QuoteDraft({
     final String? clientId,
     final String? clientLabel,
-    final String? selectedCategoryId,
     final List<DraftLine> lines,
     final QuoteCalculation? calculation,
   }) = _$QuoteDraftImpl;
@@ -524,12 +496,7 @@ abstract class _QuoteDraft extends QuoteDraft {
   @override
   String? get clientId;
   @override
-  String? get clientLabel; // Working context, not part of the final quote: which catalog folder the
-  // artisan is browsing at the "Dossier" step. Kept on the draft so a future
-  // resume reopens where he was, and so step-completion can be answered from
-  // the draft alone.
-  @override
-  String? get selectedCategoryId;
+  String? get clientLabel;
   @override
   List<DraftLine> get lines;
   @override

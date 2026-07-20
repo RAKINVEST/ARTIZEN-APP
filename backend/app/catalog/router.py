@@ -18,6 +18,7 @@ from app.catalog.deps import CatalogServiceDep
 from app.catalog.schemas import (
     ActivityRead,
     CatalogCategoryCreate,
+    CatalogCategoryOverview,
     CatalogCategoryRead,
     CatalogCategoryUpdate,
     CatalogImportResult,
@@ -111,6 +112,16 @@ async def list_categories(
         company_id=current_user.company_id, offset=offset, limit=limit
     )
     return [CatalogCategoryRead.model_validate(category) for category in categories]
+
+
+@router.get("/categories/overview", response_model=list[CatalogCategoryOverview])
+async def list_category_overviews(
+    service: CatalogServiceDep, current_user: CurrentUserDep
+) -> list[CatalogCategoryOverview]:
+    """Folders with article count + sample designations — the assistant's
+    "Dossier" picker. Declared before ``/categories/{category_id}`` so the
+    literal "overview" is never parsed as a category id."""
+    return await service.list_category_overviews(current_user.company_id)
 
 
 @router.get("/categories/{category_id}", response_model=CatalogCategoryRead)

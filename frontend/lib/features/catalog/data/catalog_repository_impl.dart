@@ -25,6 +25,14 @@ class CatalogRepositoryImpl implements CatalogRepository {
   }
 
   @override
+  Future<List<CategoryOverview>> listCategoryOverviews() async {
+    final response = await _dio.get<List<dynamic>>('/catalog/categories/overview');
+    return response.data!
+        .map((json) => CategoryOverview.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
   Future<CatalogCategory> createCategory(
     CatalogCategoryInput input, {
     required String companyId,

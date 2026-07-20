@@ -38,19 +38,18 @@ class QuoteDraft with _$QuoteDraft {
   const factory QuoteDraft({
     String? clientId,
     String? clientLabel,
-    // Working context, not part of the final quote: which catalog folder the
-    // artisan is browsing at the "Dossier" step. Kept on the draft so a future
-    // resume reopens where he was, and so step-completion can be answered from
-    // the draft alone.
-    String? selectedCategoryId,
     @Default(<DraftLine>[]) List<DraftLine> lines,
     QuoteCalculation? calculation,
   }) = _QuoteDraft;
 
   const QuoteDraft._();
 
+  // The chosen folder is deliberately NOT here: a folder only guides
+  // navigation ("where do I work?"), the quote itself is its lines. Keeping it
+  // out of the draft makes it structurally impossible to persist it with the
+  // quote — it lives in `selectedFolderProvider` instead.
+
   bool get hasClient => clientId != null;
-  bool get hasSelectedCategory => selectedCategoryId != null;
   bool get hasLines => lines.isNotEmpty;
   bool get isEmpty => clientId == null && lines.isEmpty;
 

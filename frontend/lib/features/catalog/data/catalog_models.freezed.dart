@@ -1332,3 +1332,246 @@ abstract class _CatalogItemInput implements CatalogItemInput {
   _$$CatalogItemInputImplCopyWith<_$CatalogItemInputImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
+
+CategoryOverview _$CategoryOverviewFromJson(Map<String, dynamic> json) {
+  return _CategoryOverview.fromJson(json);
+}
+
+/// @nodoc
+mixin _$CategoryOverview {
+  String get id => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  int get itemCount => throw _privateConstructorUsedError;
+  List<String> get sampleDesignations => throw _privateConstructorUsedError;
+
+  /// Serializes this CategoryOverview to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of CategoryOverview
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $CategoryOverviewCopyWith<CategoryOverview> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $CategoryOverviewCopyWith<$Res> {
+  factory $CategoryOverviewCopyWith(
+    CategoryOverview value,
+    $Res Function(CategoryOverview) then,
+  ) = _$CategoryOverviewCopyWithImpl<$Res, CategoryOverview>;
+  @useResult
+  $Res call({
+    String id,
+    String name,
+    int itemCount,
+    List<String> sampleDesignations,
+  });
+}
+
+/// @nodoc
+class _$CategoryOverviewCopyWithImpl<$Res, $Val extends CategoryOverview>
+    implements $CategoryOverviewCopyWith<$Res> {
+  _$CategoryOverviewCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of CategoryOverview
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? itemCount = null,
+    Object? sampleDesignations = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            itemCount: null == itemCount
+                ? _value.itemCount
+                : itemCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            sampleDesignations: null == sampleDesignations
+                ? _value.sampleDesignations
+                : sampleDesignations // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$CategoryOverviewImplCopyWith<$Res>
+    implements $CategoryOverviewCopyWith<$Res> {
+  factory _$$CategoryOverviewImplCopyWith(
+    _$CategoryOverviewImpl value,
+    $Res Function(_$CategoryOverviewImpl) then,
+  ) = __$$CategoryOverviewImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String id,
+    String name,
+    int itemCount,
+    List<String> sampleDesignations,
+  });
+}
+
+/// @nodoc
+class __$$CategoryOverviewImplCopyWithImpl<$Res>
+    extends _$CategoryOverviewCopyWithImpl<$Res, _$CategoryOverviewImpl>
+    implements _$$CategoryOverviewImplCopyWith<$Res> {
+  __$$CategoryOverviewImplCopyWithImpl(
+    _$CategoryOverviewImpl _value,
+    $Res Function(_$CategoryOverviewImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of CategoryOverview
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? itemCount = null,
+    Object? sampleDesignations = null,
+  }) {
+    return _then(
+      _$CategoryOverviewImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        itemCount: null == itemCount
+            ? _value.itemCount
+            : itemCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        sampleDesignations: null == sampleDesignations
+            ? _value._sampleDesignations
+            : sampleDesignations // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$CategoryOverviewImpl implements _CategoryOverview {
+  const _$CategoryOverviewImpl({
+    required this.id,
+    required this.name,
+    required this.itemCount,
+    final List<String> sampleDesignations = const <String>[],
+  }) : _sampleDesignations = sampleDesignations;
+
+  factory _$CategoryOverviewImpl.fromJson(Map<String, dynamic> json) =>
+      _$$CategoryOverviewImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final int itemCount;
+  final List<String> _sampleDesignations;
+  @override
+  @JsonKey()
+  List<String> get sampleDesignations {
+    if (_sampleDesignations is EqualUnmodifiableListView)
+      return _sampleDesignations;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_sampleDesignations);
+  }
+
+  @override
+  String toString() {
+    return 'CategoryOverview(id: $id, name: $name, itemCount: $itemCount, sampleDesignations: $sampleDesignations)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$CategoryOverviewImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.itemCount, itemCount) ||
+                other.itemCount == itemCount) &&
+            const DeepCollectionEquality().equals(
+              other._sampleDesignations,
+              _sampleDesignations,
+            ));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    name,
+    itemCount,
+    const DeepCollectionEquality().hash(_sampleDesignations),
+  );
+
+  /// Create a copy of CategoryOverview
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$CategoryOverviewImplCopyWith<_$CategoryOverviewImpl> get copyWith =>
+      __$$CategoryOverviewImplCopyWithImpl<_$CategoryOverviewImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$CategoryOverviewImplToJson(this);
+  }
+}
+
+abstract class _CategoryOverview implements CategoryOverview {
+  const factory _CategoryOverview({
+    required final String id,
+    required final String name,
+    required final int itemCount,
+    final List<String> sampleDesignations,
+  }) = _$CategoryOverviewImpl;
+
+  factory _CategoryOverview.fromJson(Map<String, dynamic> json) =
+      _$CategoryOverviewImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get name;
+  @override
+  int get itemCount;
+  @override
+  List<String> get sampleDesignations;
+
+  /// Create a copy of CategoryOverview
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$CategoryOverviewImplCopyWith<_$CategoryOverviewImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}

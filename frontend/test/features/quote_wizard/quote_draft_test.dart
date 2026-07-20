@@ -94,9 +94,9 @@ void main() {
     draft.selectClient(id: 'cl1', label: 'Martin');
     expect(container.read(stepCompleteProvider(WizardStep.client)), isTrue);
 
-    // Dossier step needs a chosen folder.
+    // Dossier step needs an open folder — navigation state, outside the draft.
     expect(container.read(stepCompleteProvider(WizardStep.dossier)), isFalse);
-    draft.selectCategory('cat1');
+    container.read(selectedFolderProvider.notifier).open('cat1');
     expect(container.read(stepCompleteProvider(WizardStep.dossier)), isTrue);
 
     // Articles step needs at least one line.
