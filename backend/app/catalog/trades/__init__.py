@@ -10,34 +10,50 @@ from app.catalog.trades.chauffage import CHAUFFAGE
 from app.catalog.trades.climatisation import CLIMATISATION, FLUIDES_FRIGORIGENES
 from app.catalog.trades.commun import CHANTIER
 from app.catalog.trades.agencement import AGENCEMENT
+from app.catalog.trades.arrosage import ARROSAGE
+from app.catalog.trades.ascenseur import ASCENSEUR
 from app.catalog.trades.assainissement import ASSAINISSEMENT
+from app.catalog.trades.automatismes_portails import AUTOMATISMES_PORTAILS
 from app.catalog.trades.bardage import BARDAGE
 from app.catalog.trades.carrelage import CARRELAGE
 from app.catalog.trades.charpente import CHARPENTE
+from app.catalog.trades.cloture import CLOTURE
 from app.catalog.trades.couverture import COUVERTURE
 from app.catalog.trades.cuisine import CUISINE
 from app.catalog.trades.demolition import DEMOLITION
+from app.catalog.trades.desamiantage import CERTIFICATION_AMIANTE, DESAMIANTAGE
+from app.catalog.trades.diagnostic import DIAGNOSTIC
 from app.catalog.trades.domotique import DOMOTIQUE
 from app.catalog.trades.electricite import ELECTRICITE_GENERALE, IRVE
 from app.catalog.trades.enrobes import ENROBES
 from app.catalog.trades.etancheite import ETANCHEITE
 from app.catalog.trades.facade import FACADE
+from app.catalog.trades.ferronnerie import FERRONNERIE
 from app.catalog.trades.forage import FORAGE
+from app.catalog.trades.hygiene_nuisibles import HYGIENE_NUISIBLES
 from app.catalog.trades.interphonie import INTERPHONIE
 from app.catalog.trades.isolation import ISOLATION
 from app.catalog.trades.isolation_exterieure import ISOLATION_EXTERIEURE
 from app.catalog.trades.maconnerie import MACONNERIE
 from app.catalog.trades.menuiserie_exterieure import MENUISERIE_EXTERIEURE
 from app.catalog.trades.menuiserie_interieure import MENUISERIE_INTERIEURE
+from app.catalog.trades.nettoyage import NETTOYAGE
 from app.catalog.trades.parquet import PARQUET
+from app.catalog.trades.paysagisme import PAYSAGISME
 from app.catalog.trades.peinture import PEINTURE
 from app.catalog.trades.photovoltaique import PHOTOVOLTAIQUE
+from app.catalog.trades.piscine import PISCINE
 from app.catalog.trades.platrerie import PLATRERIE
+from app.catalog.trades.ramonage import RAMONAGE
 from app.catalog.trades.reseaux_vdi import RESEAUX_VDI
 from app.catalog.trades.revetements_sol import REVETEMENTS_SOL
 from app.catalog.trades.securite import ALARME_INTRUSION, CONTROLE_ACCES, VIDEOSURVEILLANCE
+from app.catalog.trades.serrurerie_metallerie import SERRURERIE_METALLERIE
 from app.catalog.trades.stores_pergolas import STORES_PERGOLAS
+from app.catalog.trades.terrasse_bois import TERRASSE_BOIS
 from app.catalog.trades.terrassement import TERRASSEMENT
+from app.catalog.trades.traitement_charpente import TRAITEMENT_CHARPENTE
+from app.catalog.trades.vitrerie import VITRERIE
 from app.catalog.trades.vrd import VRD
 from app.catalog.trades.zinguerie import ZINGUERIE
 from app.catalog.trades.definitions import (
@@ -110,6 +126,22 @@ ACTIVITIES: dict[str, Activity] = {
         ASSAINISSEMENT,
         FORAGE,
         ENROBES,
+        PISCINE,
+        SERRURERIE_METALLERIE,
+        AUTOMATISMES_PORTAILS,
+        VITRERIE,
+        FERRONNERIE,
+        PAYSAGISME,
+        CLOTURE,
+        ARROSAGE,
+        TERRASSE_BOIS,
+        ASCENSEUR,
+        RAMONAGE,
+        DESAMIANTAGE,
+        TRAITEMENT_CHARPENTE,
+        HYGIENE_NUISIBLES,
+        NETTOYAGE,
+        DIAGNOSTIC,
     )
 }
 
@@ -119,7 +151,7 @@ ACTIVITIES: dict[str, Activity] = {
 #: are handled as PDF mentions, not imports.
 QUALIFICATIONS: dict[str, Qualification] = {
     qualification.slug: qualification
-    for qualification in (PG, FLUIDES_FRIGORIGENES, IRVE)
+    for qualification in (PG, FLUIDES_FRIGORIGENES, IRVE, CERTIFICATION_AMIANTE)
 }
 
 

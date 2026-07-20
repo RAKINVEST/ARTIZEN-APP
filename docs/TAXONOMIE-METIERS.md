@@ -63,12 +63,12 @@
 **Activités** : `maconnerie` ✅ · `terrassement` ✅ · `demolition` ✅ · `vrd` ✅ · `assainissement` ✅ ·
 `forage` ✅ · `enrobes` ✅
 
-### 🟪 specialises — Métiers spécialisés & services techniques
-**Activités** : `piscine` · `serrurerie-metallerie` · `automatismes-portails` · `vitrerie` ·
-`ferronnerie` · `paysagisme` · `cloture` · `arrosage` · `terrasse-bois` · `ascenseur` ·
-`ramonage` · `desamiantage` · `traitement-charpente` · `hygiene-nuisibles` · `nettoyage` ·
-`diagnostic`
-**Qualifications d'exercice** : `certification-amiante`
+### 🟪 specialises — Métiers spécialisés & services techniques ✅ **TERMINÉ**
+**Activités** : `piscine` ✅ · `serrurerie-metallerie` ✅ · `automatismes-portails` ✅ · `vitrerie` ✅ ·
+`ferronnerie` ✅ · `paysagisme` ✅ · `cloture` ✅ · `arrosage` ✅ · `terrasse-bois` ✅ · `ascenseur` ✅ ·
+`ramonage` ✅ · `desamiantage` ✅ · `traitement-charpente` ✅ · `hygiene-nuisibles` ✅ · `nettoyage` ✅ ·
+`diagnostic` ✅
+**Qualifications d'exercice** : `certification-amiante` ✅ (SS4 — réserve un pack)
 **Reporté V2** : `cordiste` · `cuvelage` · `paratonnerre` · `antenniste` · `home-staging`
 
 ## Certifications d'entreprise (transverses — aucun impact catalogue)
@@ -88,7 +88,11 @@ Le mécanisme complet est une fonctionnalité à part, à développer plus tard.
 
 ## Ordre de développement (lots)
 
-`fluides` ✅ → `electricite` ✅ → `finition` ✅ → `enveloppe` ✅ → `gros-oeuvre` ✅ → `specialises`.
+`fluides` ✅ → `electricite` ✅ → `finition` ✅ → `enveloppe` ✅ → `gros-oeuvre` ✅ → `specialises` ✅.
+
+**Les 6 familles sont implémentées.** Seules restent hors périmètre V1 les 5 activités
+`deferred_v2` (`cordiste`, `cuvelage`, `paratonnerre`, `antenniste`, `home-staging`) et les
+certifications d'entreprise (mécanisme réservé). La couche est prête à être **gelée**.
 
 ## Règle de gel
 
