@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 ///
 /// "Accueil" from the first sketch is the entry point (the "Nouveau devis"
 /// button), not a step. A "Récapitulatif" is inserted before creation so the
-/// artisan checks the amounts before the quote becomes an official document.
+/// artisan checks the amounts before the quote becomes an official document,
+/// and a final "Terminé" step confirms the created quote (number + PDF).
 ///
-/// This is the shell: each step shows mock content. The order and identity are
-/// what we validate first; the API wiring comes step by step afterwards.
+/// Every step is wired to the backend: the assistant reads and creates through
+/// real endpoints and never computes an amount itself (décision 3).
 enum WizardStep {
   client('Client', Icons.person_outline, 'Pour quel client faites-vous ce devis ?'),
   dossier('Dossier', Icons.folder_outlined,
@@ -18,7 +19,7 @@ enum WizardStep {
       'Quantités, prix, lignes libres — personnalisez le devis.'),
   recap('Récap', Icons.receipt_long_outlined, 'Vérifiez les montants avant de créer.'),
   creer('Créer', Icons.description_outlined, 'Créez le devis officiel.'),
-  envoyer('Envoyer', Icons.send_outlined, 'Envoyez le devis à votre client.');
+  confirmation('Terminé', Icons.verified_outlined, 'Votre devis est créé.');
 
   const WizardStep(this.label, this.icon, this.question);
 

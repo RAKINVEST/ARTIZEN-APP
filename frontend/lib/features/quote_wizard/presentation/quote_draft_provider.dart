@@ -170,6 +170,22 @@ final articlePickerProvider =
   ArticlePickerNotifier.new,
 );
 
+/// The quote once it has been created — its number and totals come from the
+/// backend (`POST /quotes`). Set on the Créer step's success; it drives the
+/// wizard to its Confirmation step and is cleared only when the artisan
+/// finally leaves for the devis list. Non-null means "the work is saved":
+/// leaving no longer risks losing anything.
+final createdQuoteProvider = StateProvider<Quote?>((ref) => null);
+
+/// Clears everything the wizard held — draft, open folder, created quote — so
+/// the next "Nouveau devis" starts from a clean slate. Called only after a
+/// full, successful flow (or a confirmed abandon).
+void resetWizardDraft(WidgetRef ref) {
+  ref.read(quoteDraftProvider.notifier).reset();
+  ref.read(selectedFolderProvider.notifier).clear();
+  ref.read(createdQuoteProvider.notifier).state = null;
+}
+
 /// Whether the artisan may leave [step] — the single place step-completion is
 /// decided. The wizard's Précédent/Suivant/progress ask *this*, never the
 /// widgets ("does this screen contain something?"). Reactive: it recomputes
@@ -184,7 +200,9 @@ final stepCompleteProvider = Provider.family<bool, WizardStep>((ref, step) {
     WizardStep.articles => draft.hasLines,
     WizardStep.personnaliser => draft.hasLines,
     WizardStep.recap => draft.hasValidCalculation,
-    WizardStep.creer => draft.canCreate,
-    WizardStep.envoyer => true,
+    // Advancing off Créer means the quote has actually been created — the
+    // wizard auto-advances to Confirmation the moment it is.
+    WizardStep.creer => ref.watch(createdQuoteProvider) != null,
+    WizardStep.confirmation => true,
   };
 });

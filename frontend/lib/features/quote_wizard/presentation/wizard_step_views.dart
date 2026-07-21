@@ -10,13 +10,15 @@ import '../../catalog/data/catalog_models.dart';
 import '../../clients/data/client_model.dart';
 import '../../clients/presentation/clients_providers.dart';
 import '../../quotes/data/quote_calculation.dart';
+import '../../quotes/data/quote_models.dart';
+import '../../quotes/presentation/quotes_providers.dart';
 import '../data/quote_draft.dart';
 import 'quote_draft_provider.dart';
 import 'wizard_step.dart';
 
-/// Renders the body of a step. Shell version: mock content only, so we can
-/// validate the flow before wiring each step to its API. Every step keeps a
-/// single objective — the question at the top is the one decision to make.
+/// Renders the body of a step under its question. Every step keeps a single
+/// objective — the question at the top is the one decision to make — and every
+/// one is wired to the backend.
 class WizardStepView extends StatelessWidget {
   const WizardStepView({required this.step, super.key});
 
@@ -26,12 +28,6 @@ class WizardStepView extends StatelessWidget {
   Widget build(BuildContext context) {
     return _StepScaffold(
       step: step,
-      // Client → Récap are wired to the real API; Créer & Envoyer are mock.
-      mock: step != WizardStep.client &&
-          step != WizardStep.dossier &&
-          step != WizardStep.articles &&
-          step != WizardStep.personnaliser &&
-          step != WizardStep.recap,
       child: switch (step) {
         WizardStep.client => const _ClientStep(),
         WizardStep.dossier => const _DossierStep(),
@@ -39,18 +35,17 @@ class WizardStepView extends StatelessWidget {
         WizardStep.personnaliser => const _PersonnaliserStep(),
         WizardStep.recap => const _RecapStep(),
         WizardStep.creer => const _CreerStep(),
-        WizardStep.envoyer => const _EnvoyerStep(),
+        WizardStep.confirmation => const _ConfirmationStep(),
       },
     );
   }
 }
 
 class _StepScaffold extends StatelessWidget {
-  const _StepScaffold({required this.step, required this.child, this.mock = true});
+  const _StepScaffold({required this.step, required this.child});
 
   final WizardStep step;
   final Widget child;
-  final bool mock;
 
   @override
   Widget build(BuildContext context) {
@@ -75,33 +70,10 @@ class _StepScaffold extends StatelessWidget {
                 ),
               ],
             ),
-            if (mock) const _MockBadge(),
             const SizedBox(height: ArtizenSpacing.md),
             child,
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _MockBadge extends StatelessWidget {
-  const _MockBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: ArtizenSpacing.xs),
-      child: Row(
-        children: [
-          const Icon(Icons.science_outlined, size: 14, color: ArtizenColors.textSecondary),
-          const SizedBox(width: 6),
-          Text(
-            'Aperçu — données simulées',
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: ArtizenColors.textSecondary),
-          ),
-        ],
       ),
     );
   }
@@ -967,76 +939,192 @@ class _RecapRow extends StatelessWidget {
   }
 }
 
-// --- Étape 6 : Créer — le devis officiel -----------------------------------
+// --- Étape 6 : Créer — la cérémonie de création ----------------------------
 
-class _CreerStep extends StatelessWidget {
+class _CreerStep extends ConsumerStatefulWidget {
   const _CreerStep();
 
   @override
+  ConsumerState<_CreerStep> createState() => _CreerStepState();
+}
+
+class _CreerStepState extends ConsumerState<_CreerStep> {
+  bool _creating = false;
+  Object? _error;
+
+  Future<void> _create() async {
+    final draft = ref.read(quoteDraftProvider);
+    if (draft.clientId == null || draft.lines.isEmpty) return;
+    setState(() {
+      _creating = true;
+      _error = null;
+    });
+    try {
+      // The backend assigns the number, computes the totals and persists it —
+      // Flutter only hands over the client and the lines (décision 3 & 4).
+      final quote = await ref.read(quotesNotifierProvider.notifier).createQuote(
+            clientId: draft.clientId!,
+            lines: [
+              for (final line in draft.lines)
+                QuoteLineInput(
+                  catalogItemId: line.catalogItemId,
+                  quantity: line.quantity.toString(),
+                ),
+            ],
+          );
+      if (!mounted) return;
+      // Publishing it drives the wizard to its Confirmation step.
+      ref.read(createdQuoteProvider.notifier).state = quote;
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    } finally {
+      if (mounted) setState(() => _creating = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final createdQuote = ref.watch(createdQuoteProvider);
+    if (createdQuote != null) {
+      // Reached only by stepping back after creation — the quote is done.
+      return Card(
+        color: ArtizenColors.infoSurface,
+        child: ListTile(
+          leading: const Icon(Icons.verified_outlined, color: ArtizenColors.success),
+          title: Text('Devis ${createdQuote.quoteNumber} déjà créé'),
+          subtitle: const Text('Passez à l\'étape suivante pour la confirmation.'),
+        ),
+      );
+    }
+
+    final draft = ref.watch(quoteDraftProvider);
+    final calc = draft.calculation;
+    final hasError = _error != null;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Card(
-          child: ListTile(
-            leading: Icon(Icons.description_outlined, size: 40),
-            title: Text('Devis prêt à être créé'),
-            subtitle: Text('Un numéro officiel (DEV-2026-XXXX) lui sera attribué.'),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(ArtizenSpacing.md),
+            child: Column(
+              children: [
+                _CheckItem('Client', draft.clientLabel ?? '—'),
+                _CheckItem('Lignes',
+                    '${draft.lines.length} article${draft.lines.length > 1 ? 's' : ''}'),
+                _CheckItem('Total TTC', calc == null ? '…' : '${calc.totalTtc} €', strong: true),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: ArtizenSpacing.md),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(bottom: ArtizenSpacing.sm),
+            child: Text(
+              'La création a échoué. Vérifiez votre connexion, puis réessayez.',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
         FilledButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.check_circle_outline),
-          label: const Text('Créer le devis'),
+          onPressed: _creating ? null : _create,
+          icon: _creating
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2.2, color: ArtizenColors.onGold),
+                )
+              : const Icon(Icons.check_circle_outline),
+          label: Text(
+            _creating ? 'Création…' : (hasError ? 'Réessayer' : 'Créer le devis'),
+          ),
           style: FilledButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
             backgroundColor: ArtizenColors.gold,
             foregroundColor: ArtizenColors.onGold,
           ),
         ),
+        const SizedBox(height: ArtizenSpacing.xs),
+        const Text(
+          'Un numéro officiel (DEV-2026-…) lui sera attribué.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: ArtizenColors.textSecondary, fontSize: 12),
+        ),
       ],
     );
   }
 }
 
-// --- Étape 7 : Envoyer — au client -----------------------------------------
+// --- Étape 7 : Terminé — le devis existe -----------------------------------
 
-class _EnvoyerStep extends StatelessWidget {
-  const _EnvoyerStep();
+class _ConfirmationStep extends ConsumerWidget {
+  const _ConfirmationStep();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final quote = ref.watch(createdQuoteProvider);
+    if (quote == null) {
+      // Not created yet (shouldn't be reachable — the gate blocks it).
+      return const Padding(
+        padding: EdgeInsets.all(ArtizenSpacing.md),
+        child: Text("Revenez à l'étape précédente pour créer le devis."),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Card(
-          child: ListTile(
-            leading: Icon(Icons.picture_as_pdf_outlined),
-            title: Text('DEV-2026-0042.pdf'),
-            subtitle: Text('Devis joint automatiquement'),
-          ),
-        ),
-        const SizedBox(height: ArtizenSpacing.sm),
-        TextFormField(
-          initialValue: 'martin.dubois@email.fr',
-          decoration: const InputDecoration(
-            labelText: 'À',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: ArtizenSpacing.sm),
-        const TextField(
-          maxLines: 4,
-          decoration: InputDecoration(
-            labelText: 'Message',
-            border: OutlineInputBorder(),
+        Card(
+          color: ArtizenColors.infoSurface,
+          child: Padding(
+            padding: const EdgeInsets.all(ArtizenSpacing.md),
+            child: Column(
+              children: [
+                const Icon(Icons.check_circle, color: ArtizenColors.success, size: 48),
+                const SizedBox(height: ArtizenSpacing.sm),
+                Text(
+                  'Votre devis existe',
+                  style: Theme.of(context).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  quote.quoteNumber,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    color: ArtizenColors.nightBlue,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${quote.totalTtc} € TTC',
+                  style: const TextStyle(color: ArtizenColors.textSecondary),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: ArtizenSpacing.md),
+        OutlinedButton.icon(
+          onPressed: () => context.push('/quotes/${quote.id}/pdf'),
+          icon: const Icon(Icons.picture_as_pdf_outlined),
+          label: const Text('Ouvrir le PDF'),
+        ),
+        const SizedBox(height: ArtizenSpacing.sm),
         FilledButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.send),
-          label: const Text('Envoyer au client'),
+          // Full success: leave for the list first (where the new quote already
+          // appears), then clear the wizard — so a hiccup on the way out never
+          // wipes the draft before the artisan has actually left.
+          onPressed: () {
+            final draftNotifier = ref.read(quoteDraftProvider.notifier);
+            final folderNotifier = ref.read(selectedFolderProvider.notifier);
+            final createdNotifier = ref.read(createdQuoteProvider.notifier);
+            context.go('/quotes');
+            draftNotifier.reset();
+            folderNotifier.clear();
+            createdNotifier.state = null;
+          },
+          icon: const Icon(Icons.list_alt_outlined),
+          label: const Text('Voir mes devis'),
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
         ),
       ],

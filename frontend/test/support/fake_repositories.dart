@@ -157,13 +157,17 @@ class FakeCatalogRepository implements CatalogRepository {
 }
 
 class FakeQuotesRepository implements QuotesRepository {
-  FakeQuotesRepository(this._quotes, {this.readinessResult});
+  FakeQuotesRepository(this._quotes, {this.readinessResult, this.createResult});
 
   final List<Quote> _quotes;
 
   /// Defaults to "ready" so screens that don't care about readiness (e.g. the
   /// boot/widget test) aren't blocked; a test can inject a not-ready verdict.
   final QuoteReadiness? readinessResult;
+
+  /// When set, [create] adds and returns this quote instead of throwing — lets
+  /// the wizard's creation ceremony be exercised end to end.
+  final Quote? createResult;
 
   @override
   Future<List<Quote>> list({
@@ -188,7 +192,9 @@ class FakeQuotesRepository implements QuotesRepository {
     required String clientId,
     required List<QuoteLineInput> lines,
   }) async {
-    throw UnimplementedError();
+    if (createResult == null) throw UnimplementedError();
+    _quotes.insert(0, createResult!);
+    return createResult!;
   }
 
   @override

@@ -168,7 +168,7 @@ Détail : [`ARCHITECTURE.md`](ARCHITECTURE.md).
 ## 8. Wizard (assistant de devis) — état & contrat
 
 - **Structure feature-first** : `features/quote_wizard/{data,presentation}`.
-- **7 étapes** (`WizardStep`) : `client → dossier → articles → personnaliser → recap → creer → envoyer`.
+- **7 étapes** (`WizardStep`) : `client → dossier → articles → personnaliser → recap → creer → confirmation`.
 - **Gating** (`stepCompleteProvider`) : `client`=client choisi ; `dossier`=dossier ouvert ;
   `articles`=au moins une ligne ; `personnaliser`=lignes présentes ; `recap`=calcul valide ;
   `creer`=prêt à créer ; `envoyer`=libre. **Marche arrière toujours libre**, marche avant
@@ -195,8 +195,12 @@ Détail : [`ARCHITECTURE.md`](ARCHITECTURE.md).
   100 % backend ; prix personnalisés / lignes libres **exclus**, reportés en V1.1) ;
   étape **Récap de production** finalisée (P4.6 : page de **contrôle qualité** — checklist ✓
   client / nb lignes / HT / TVA / TTC + détail lisible de chaque ligne, montants backend ;
-  ventilation TVA par taux **exclue**, reportée en V1.1) ; **Créer & Envoyer** restent à câbler
-  (revue : [`08_WIZARD_READINESS.md`](release/08_WIZARD_READINESS.md)).
+  ventilation TVA par taux **exclue**, reportée en V1.1) ; **cérémonie de création** finalisée
+  (P4.7 : validation → `POST /quotes` → numéro `DEV-AAAA-NNNN` → **auto-avance** vers la
+  confirmation « Votre devis existe » → PDF (`/quotes/:id/pdf`) → **Voir mes devis** (`/quotes`)
+  → **reset du brouillon uniquement après réussite complète** ; gestion erreur + réessai ;
+  l'ancien step « Envoyer » est devenu **« Terminé »** — envoi e-mail / partage reportés V1.1).
+  **Le wizard est complet : les 7 étapes sont câblées au backend.**
   - **Ajout backend additif (P4.4)** : `GET /catalog/items` accepte `?category_id=` (filtre
     **serveur**, rétro-compatible) pour lister les articles d'un dossier — le filtrage reste
     côté backend (décision 3), rien n'est filtré dans Flutter.

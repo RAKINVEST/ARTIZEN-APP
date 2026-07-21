@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import 'quote_draft_provider.dart';
@@ -26,6 +27,16 @@ class QuoteWizardScreen extends ConsumerStatefulWidget {
 class _QuoteWizardScreenState extends ConsumerState<QuoteWizardScreen> {
   final PageController _controller = PageController();
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // A fresh session never inherits a "created quote" from a previous one —
+    // guarantees re-entering the wizard always starts clean at step 1.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(createdQuoteProvider.notifier).state = null;
+    });
+  }
 
   WizardStep get _step => WizardStep.values[_index];
 
@@ -71,6 +82,13 @@ class _QuoteWizardScreenState extends ConsumerState<QuoteWizardScreen> {
   /// On confirmation the draft is reset so the next "Nouveau devis" starts
   /// clean — leaving and starting fresh are the same gesture.
   Future<void> _attemptLeave(VoidCallback proceed) async {
+    // Once the quote is created the work is safe — leaving just tidies up, no
+    // question asked.
+    if (ref.read(createdQuoteProvider) != null) {
+      resetWizardDraft(ref);
+      proceed();
+      return;
+    }
     if (!_hasContent) {
       proceed();
       return;
@@ -96,10 +114,17 @@ class _QuoteWizardScreenState extends ConsumerState<QuoteWizardScreen> {
       ),
     );
     if (abandon == true) {
-      ref.read(quoteDraftProvider.notifier).reset();
-      ref.read(selectedFolderProvider.notifier).clear();
+      resetWizardDraft(ref);
       proceed();
     }
+  }
+
+  /// The clean way out once the quote exists: reset the wizard (only now, after
+  /// full success) and land on the devis list, where the new quote already
+  /// appears (`createQuote` reloaded it).
+  void _finishToList() {
+    resetWizardDraft(ref);
+    context.go('/quotes');
   }
 
   @override
@@ -115,11 +140,25 @@ class _QuoteWizardScreenState extends ConsumerState<QuoteWizardScreen> {
     final hasContent = ref.watch(
       quoteDraftProvider.select((d) => d.clientId != null || d.lines.isNotEmpty),
     );
+    // Once the quote is created the work is saved — the wizard may be left
+    // freely (and the abandon guard no longer applies).
+    final created = ref.watch(createdQuoteProvider) != null;
+
+    // The moment the quote is created, glide to the confirmation step — the
+    // artisan sees "it exists" without pressing anything. Deferred to after the
+    // frame so the page animation isn't started mid-notification.
+    ref.listen(createdQuoteProvider, (previous, next) {
+      if (previous == null && next != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _goTo(WizardStep.values.length - 1);
+        });
+      }
+    });
 
     return PopScope(
-      // A pristine draft pops immediately; one with work goes through the
-      // abandon dialog before the wizard is left (system back / gesture).
-      canPop: !hasContent,
+      // A pristine (or already-saved) draft pops immediately; one with unsaved
+      // work goes through the abandon dialog before the wizard is left.
+      canPop: !hasContent || created,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         _attemptLeave(() => Navigator.of(context).maybePop());
@@ -157,7 +196,7 @@ class _QuoteWizardScreenState extends ConsumerState<QuoteWizardScreen> {
                     canAdvance: canAdvance,
                     onPrevious: () => _goTo(_index - 1),
                     onNext: () => _goTo(_index + 1),
-                    onFinish: () => Navigator.of(context).maybePop(),
+                    onFinish: _finishToList,
                   ),
                 ],
               ),
