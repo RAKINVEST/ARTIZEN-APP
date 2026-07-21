@@ -26,11 +26,12 @@ class WizardStepView extends StatelessWidget {
   Widget build(BuildContext context) {
     return _StepScaffold(
       step: step,
-      // Client → Personnaliser are wired to the real API; Récap → Envoyer are mock.
+      // Client → Récap are wired to the real API; Créer & Envoyer are mock.
       mock: step != WizardStep.client &&
           step != WizardStep.dossier &&
           step != WizardStep.articles &&
-          step != WizardStep.personnaliser,
+          step != WizardStep.personnaliser &&
+          step != WizardStep.recap,
       child: switch (step) {
         WizardStep.client => const _ClientStep(),
         WizardStep.dossier => const _DossierStep(),
@@ -819,24 +820,125 @@ class _TotalsCard extends StatelessWidget {
 
 // --- Étape 5 : Récapitulatif — vérifier les montants -----------------------
 
-class _RecapStep extends StatelessWidget {
+class _RecapStep extends ConsumerStatefulWidget {
   const _RecapStep();
+
+  @override
+  ConsumerState<_RecapStep> createState() => _RecapStepState();
+}
+
+class _RecapStepState extends ConsumerState<_RecapStep> {
+  @override
+  void initState() {
+    super.initState();
+    // Safety net: guarantee there is a total to review. Personnaliser normally
+    // keeps the calculation fresh; this only fires if it hasn't run yet.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final draft = ref.read(quoteDraftProvider);
+      if (mounted && draft.lines.isNotEmpty && draft.calculation == null) {
+        ref.read(quoteDraftProvider.notifier).recalculate();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final draft = ref.watch(quoteDraftProvider);
+    if (draft.lines.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(ArtizenSpacing.md),
+        child: Text('Aucune ligne à récapituler.'),
+      );
+    }
+
+    final calc = draft.calculation;
+    final totalByItem = {
+      for (final line in calc?.lines ?? const <QuoteCalculationLine>[])
+        line.catalogItemId: line.totalHt,
+    };
+    final lineCount = draft.lines.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // The quality-control checklist: everything the artisan verifies before
+        // committing, ticked off at a glance. Amounts are the backend's.
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(ArtizenSpacing.md),
+            child: Column(
+              children: [
+                _CheckItem('Client', draft.clientLabel ?? '—'),
+                _CheckItem('Lignes', '$lineCount article${lineCount > 1 ? 's' : ''}'),
+                const Divider(),
+                _CheckItem('Total HT', calc == null ? '…' : '${calc.totalHt} €'),
+                _CheckItem('TVA', calc == null ? '…' : '${calc.totalVat} €'),
+                const Divider(),
+                _CheckItem('Total TTC', calc == null ? '…' : '${calc.totalTtc} €', strong: true),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: ArtizenSpacing.md),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: ArtizenSpacing.xs),
+          child: Text('Détail des lignes', style: TextStyle(fontWeight: FontWeight.w700)),
+        ),
+        const SizedBox(height: ArtizenSpacing.xs),
+        for (final line in draft.lines)
+          _RecapLineRow(line: line, totalHt: totalByItem[line.catalogItemId]),
+      ],
+    );
+  }
+}
+
+/// One ticked verification line — a green check, a label, and the value.
+class _CheckItem extends StatelessWidget {
+  const _CheckItem(this.label, this.value, {this.strong = false});
+
+  final String label;
+  final String value;
+  final bool strong;
+
+  @override
+  Widget build(BuildContext context) {
+    final valueStyle = strong
+        ? const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: ArtizenColors.nightBlue)
+        : const TextStyle();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle, color: ArtizenColors.success, size: 20),
+          const SizedBox(width: ArtizenSpacing.sm),
+          Expanded(child: Text(label)),
+          Text(value, style: valueStyle),
+        ],
+      ),
+    );
+  }
+}
+
+/// One quote line, read-only: what it is, how much of it, its unit price, and
+/// its backend-computed line total.
+class _RecapLineRow extends StatelessWidget {
+  const _RecapLineRow({required this.line, required this.totalHt});
+
+  final DraftLine line;
+  final String? totalHt;
+
+  String get _quantityLabel =>
+      line.quantity % 1 == 0 ? line.quantity.toInt().toString() : line.quantity.toString();
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(ArtizenSpacing.md),
-        child: Column(
-          children: const [
-            _RecapRow('Client', 'Martin Dubois'),
-            _RecapRow('Lignes', '3 articles'),
-            Divider(),
-            _RecapRow('Total HT', '674,00 €'),
-            _RecapRow('TVA (10 %)', '67,40 €'),
-            Divider(),
-            _RecapRow('Total TTC', '741,40 €', strong: true),
-          ],
+      child: ListTile(
+        title: Text(line.designation, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text('$_quantityLabel × ${line.unitPriceHt} € HT · ${line.unit}'),
+        trailing: Text(
+          totalHt == null ? '—' : '$totalHt € HT',
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
     );
