@@ -190,7 +190,10 @@ Détail : [`ARCHITECTURE.md`](ARCHITECTURE.md).
   ouvert conservé dans `selectedFolderProvider`) ; étape **Articles de production** finalisée
   (P4.4 : recherche serveur instantanée dans le dossier, ajout/retrait avec retour visuel
   immédiat « ✔ Ajouté (× N) », doublon = incrément de quantité, borne à une page ⇒ scalable) ;
-  **Personnaliser → Envoyer** restent à câbler (revue :
+  étape **Personnaliser de production** finalisée (P4.5 : quantités ±, suppression de ligne,
+  **recalcul live débouncé** via `POST /quotes/calculate`, récapitulatif HT/TVA/TTC — montants
+  100 % backend ; prix personnalisés / lignes libres **exclus**, reportés en V1.1) ;
+  **Récap → Envoyer** restent à câbler (revue :
   [`08_WIZARD_READINESS.md`](release/08_WIZARD_READINESS.md)).
   - **Ajout backend additif (P4.4)** : `GET /catalog/items` accepte `?category_id=` (filtre
     **serveur**, rétro-compatible) pour lister les articles d'un dossier — le filtrage reste

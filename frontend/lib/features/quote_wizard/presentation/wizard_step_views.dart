@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/debouncer.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../shared/widgets/debounced_search_field.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../clients/data/client_model.dart';
 import '../../clients/presentation/clients_providers.dart';
+import '../../quotes/data/quote_calculation.dart';
 import '../data/quote_draft.dart';
 import 'quote_draft_provider.dart';
 import 'wizard_step.dart';
@@ -24,10 +26,11 @@ class WizardStepView extends StatelessWidget {
   Widget build(BuildContext context) {
     return _StepScaffold(
       step: step,
-      // Client, Dossier and Articles are wired to the real API; the rest is mock.
+      // Client → Personnaliser are wired to the real API; Récap → Envoyer are mock.
       mock: step != WizardStep.client &&
           step != WizardStep.dossier &&
-          step != WizardStep.articles,
+          step != WizardStep.articles &&
+          step != WizardStep.personnaliser,
       child: switch (step) {
         WizardStep.client => const _ClientStep(),
         WizardStep.dossier => const _DossierStep(),
@@ -606,46 +609,210 @@ class _EmptyArticles extends StatelessWidget {
 
 // --- Étape 4 : Personnaliser — quantités, prix, lignes libres --------------
 
-class _PersonnaliserStep extends StatelessWidget {
+class _PersonnaliserStep extends ConsumerStatefulWidget {
   const _PersonnaliserStep();
 
   @override
+  ConsumerState<_PersonnaliserStep> createState() => _PersonnaliserStepState();
+}
+
+class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
+  // A short debounce so a burst of +/- taps triggers one server calculation,
+  // not one per tap.
+  final Debouncer _debouncer = Debouncer(const Duration(milliseconds: 400));
+  bool _recalculating = false;
+
+  void _scheduleRecalc() {
+    _debouncer.run(() async {
+      if (!mounted) return;
+      setState(() => _recalculating = true);
+      await ref.read(quoteDraftProvider.notifier).recalculate();
+      if (mounted) setState(() => _recalculating = false);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Price whatever is already on the draft when the step is first built.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && ref.read(quoteDraftProvider).lines.isNotEmpty) _scheduleRecalc();
+    });
+  }
+
+  @override
+  void dispose() {
+    _debouncer.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    const lines = <(String, int, String)>[
-      ('Chauffe-eau électrique 200 L', 1, '380,00 €'),
-      ('Groupe de sécurité', 1, '14,00 €'),
-      ('Pose d\'un chauffe-eau', 1, '280,00 €'),
-    ];
+    // Any change to the lines (a quantity, a removal, or articles added
+    // upstream) asks the backend to re-price. The backend is the only place a
+    // total is ever computed (décision 3); Flutter just shows its answer.
+    ref.listen(quoteDraftProvider.select((draft) => draft.lines), (_, _) => _scheduleRecalc());
+
+    final draft = ref.watch(quoteDraftProvider);
+    if (draft.lines.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(ArtizenSpacing.md),
+        child: Text("Ajoutez des articles à l'étape précédente pour les personnaliser."),
+      );
+    }
+
+    final totalByItem = {
+      for (final line in draft.calculation?.lines ?? const <QuoteCalculationLine>[])
+        line.catalogItemId: line.totalHt,
+    };
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final (name, qty, total) in lines)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(ArtizenSpacing.sm),
-              child: Row(
-                children: [
-                  Expanded(child: Text(name)),
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.remove_circle_outline)),
-                  Text('$qty'),
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.add_circle_outline)),
-                  const SizedBox(width: ArtizenSpacing.sm),
-                  Text(total, style: const TextStyle(fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
+        for (final line in draft.lines)
+          _EditableLine(
+            line: line,
+            // The line total is the backend's, matched by article — null (shown
+            // as "—") until the first calculation lands.
+            totalHt: totalByItem[line.catalogItemId],
+            onIncrement: () => ref
+                .read(quoteDraftProvider.notifier)
+                .setQuantity(line.catalogItemId, line.quantity + 1),
+            onDecrement: () => ref
+                .read(quoteDraftProvider.notifier)
+                .setQuantity(line.catalogItemId, line.quantity - 1),
+            onRemove: () => ref.read(quoteDraftProvider.notifier).removeLine(line.catalogItemId),
           ),
-        const SizedBox(height: ArtizenSpacing.xs),
-        Wrap(
-          spacing: ArtizenSpacing.xs,
+        const SizedBox(height: ArtizenSpacing.sm),
+        _TotalsCard(calculation: draft.calculation, recalculating: _recalculating),
+      ],
+    );
+  }
+}
+
+/// One draft line the artisan can adjust: change its quantity or drop it. The
+/// price shown is the catalog snapshot and the line total is the backend's —
+/// nothing is multiplied here.
+class _EditableLine extends StatelessWidget {
+  const _EditableLine({
+    required this.line,
+    required this.totalHt,
+    required this.onIncrement,
+    required this.onDecrement,
+    required this.onRemove,
+  });
+
+  final DraftLine line;
+  final String? totalHt;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+  final VoidCallback onRemove;
+
+  String get _quantityLabel =>
+      line.quantity % 1 == 0 ? line.quantity.toInt().toString() : line.quantity.toString();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: ArtizenSpacing.sm,
+          vertical: ArtizenSpacing.xs,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            OutlinedButton.icon(
-                onPressed: () {}, icon: const Icon(Icons.add), label: const Text('Ligne libre')),
-            OutlinedButton.icon(
-                onPressed: () {}, icon: const Icon(Icons.percent), label: const Text('Remise')),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(line.designation, style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Retirer la ligne',
+                  onPressed: onRemove,
+                ),
+              ],
+            ),
+            Text(
+              'PU ${line.unitPriceHt} € HT · ${line.unit}',
+              style: const TextStyle(color: ArtizenColors.textSecondary, fontSize: 12),
+            ),
+            const SizedBox(height: ArtizenSpacing.xs),
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  tooltip: 'Diminuer la quantité',
+                  onPressed: onDecrement,
+                ),
+                SizedBox(
+                  width: 36,
+                  child: Text(
+                    _quantityLabel,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  tooltip: 'Augmenter la quantité',
+                  onPressed: onIncrement,
+                ),
+                const Spacer(),
+                Text(
+                  totalHt == null ? '—' : '$totalHt € HT',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
           ],
         ),
-      ],
+      ),
+    );
+  }
+}
+
+/// The running totals — always the backend's figures, with a discreet
+/// "Recalcul…" while a fresh calculation is in flight.
+class _TotalsCard extends StatelessWidget {
+  const _TotalsCard({required this.calculation, required this.recalculating});
+
+  final QuoteCalculation? calculation;
+  final bool recalculating;
+
+  @override
+  Widget build(BuildContext context) {
+    final calc = calculation;
+    return Card(
+      color: ArtizenColors.infoSurface,
+      child: Padding(
+        padding: const EdgeInsets.all(ArtizenSpacing.md),
+        child: Column(
+          children: [
+            _RecapRow('Total HT', calc == null ? '—' : '${calc.totalHt} €'),
+            _RecapRow('TVA', calc == null ? '—' : '${calc.totalVat} €'),
+            const Divider(),
+            _RecapRow('Total TTC', calc == null ? '—' : '${calc.totalTtc} €', strong: true),
+            if (recalculating)
+              const Padding(
+                padding: EdgeInsets.only(top: ArtizenSpacing.xs),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SizedBox(
+                      height: 14,
+                      width: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    SizedBox(width: ArtizenSpacing.xs),
+                    Text('Recalcul…', style: TextStyle(color: ArtizenColors.textSecondary)),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

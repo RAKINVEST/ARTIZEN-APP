@@ -220,28 +220,36 @@ class FakeQuotesRepository implements QuotesRepository {
   Future<QuoteReadiness> readiness(String id) async =>
       readinessResult ?? const QuoteReadiness(ready: true);
 
-  /// Echoes the lines back with deterministic stub totals so a wizard test can
-  /// assert the draft stored the server's answer without needing real prices.
+  /// Deterministic quantity-aware stub: each line totals its quantity and the
+  /// grand total is their sum, so a wizard test can assert live recalculation
+  /// reacts to a quantity change — without needing real catalog prices. (Two
+  /// lines of quantity 1 still total "2", as before.)
   @override
   Future<QuoteCalculation> calculate({required List<QuoteLineInput> lines}) async {
+    num total = 0;
+    final calcLines = <QuoteCalculationLine>[];
+    for (final line in lines) {
+      final quantity = num.tryParse(line.quantity) ?? 0;
+      total += quantity;
+      calcLines.add(
+        QuoteCalculationLine(
+          catalogItemId: line.catalogItemId,
+          designation: 'Article ${line.catalogItemId}',
+          unit: 'unité',
+          quantity: line.quantity,
+          unitPriceHt: '1',
+          vatRate: '0',
+          totalHt: '$quantity',
+          totalVat: '0',
+          totalTtc: '$quantity',
+        ),
+      );
+    }
     return QuoteCalculation(
-      totalHt: '${lines.length}',
+      totalHt: '$total',
       totalVat: '0',
-      totalTtc: '${lines.length}',
-      lines: [
-        for (final line in lines)
-          QuoteCalculationLine(
-            catalogItemId: line.catalogItemId,
-            designation: 'Article ${line.catalogItemId}',
-            unit: 'unité',
-            quantity: line.quantity,
-            unitPriceHt: '0',
-            vatRate: '0',
-            totalHt: '0',
-            totalVat: '0',
-            totalTtc: '0',
-          ),
-      ],
+      totalTtc: '$total',
+      lines: calcLines,
     );
   }
 }
