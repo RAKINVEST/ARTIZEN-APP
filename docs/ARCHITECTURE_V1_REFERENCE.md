@@ -173,8 +173,18 @@ Détail : [`ARCHITECTURE.md`](ARCHITECTURE.md).
   `articles`=au moins une ligne ; `personnaliser`=lignes présentes ; `recap`=calcul valide ;
   `creer`=prêt à créer ; `envoyer`=libre. **Marche arrière toujours libre**, marche avant
   seulement à travers les étapes complètes.
-- **État de câblage** : étapes **Client** et **Dossier** câblées ; **Articles → Envoyer**
-  restent à câbler (revue dédiée : [`08_WIZARD_READINESS.md`](release/08_WIZARD_READINESS.md)).
+- **Navigation & sortie** : le wizard est poussé sur la route `/assistant`. Toute sortie
+  (retour système via `PopScope`, « Quitter », destination du menu latéral) passe par une
+  **garde de confirmation** dès que le brouillon a un client ou une ligne ; un abandon confirmé
+  **réinitialise** le brouillon, si bien que « quitter » et « repartir à neuf » sont le même
+  geste (décision 6 : ne jamais détruire le travail en cours sans le vouloir).
+- **Deux flux de création coexistent** en V1 : le wizard (`/assistant`) et l'ancien
+  `QuoteFormScreen` (`/quotes/new`, flux principal « Nouveau devis »). Tant que les étapes
+  3→7 du wizard sont en mock, `QuoteFormScreen` reste le flux principal ; le basculement du
+  point d'entrée « Nouveau devis » vers le wizard est prévu **en fin de P4** (P4.7), pas avant.
+- **État de câblage (P4)** : structure, navigation et **garde de sortie** faites (P4.1) ;
+  étapes **Client** et **Dossier** câblées ; **Articles → Envoyer** restent à câbler (revue :
+  [`08_WIZARD_READINESS.md`](release/08_WIZARD_READINESS.md)).
 - **Le wizard ne calcule ni ne persiste rien lui-même** : il lit les endpoints existants et
   délègue tout montant au backend.
 

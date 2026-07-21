@@ -59,6 +59,49 @@ class _QuoteWizardScreenState extends ConsumerState<QuoteWizardScreen> {
     );
   }
 
+  /// The draft is worth protecting the moment it has a client or a line.
+  bool get _hasContent {
+    final draft = ref.read(quoteDraftProvider);
+    return draft.clientId != null || draft.lines.isNotEmpty;
+  }
+
+  /// Guard every way out of the wizard. An empty draft leaves freely; a draft
+  /// with real work asks first, and only a confirmed abandon discards it
+  /// (décision 6 : ne jamais détruire le travail en cours sans le vouloir).
+  /// On confirmation the draft is reset so the next "Nouveau devis" starts
+  /// clean — leaving and starting fresh are the same gesture.
+  Future<void> _attemptLeave(VoidCallback proceed) async {
+    if (!_hasContent) {
+      proceed();
+      return;
+    }
+    final abandon = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Abandonner ce devis ?'),
+        content: const Text(
+          "Ce devis n'est pas encore créé. Si vous quittez maintenant, "
+          'le client et les lignes saisis seront perdus.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Continuer le devis'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Abandonner'),
+          ),
+        ],
+      ),
+    );
+    if (abandon == true) {
+      ref.read(quoteDraftProvider.notifier).reset();
+      ref.read(selectedFolderProvider.notifier).clear();
+      proceed();
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -69,13 +112,24 @@ class _QuoteWizardScreenState extends ConsumerState<QuoteWizardScreen> {
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 760;
     final canAdvance = ref.watch(stepCompleteProvider(_step));
+    final hasContent = ref.watch(
+      quoteDraftProvider.select((d) => d.clientId != null || d.lines.isNotEmpty),
+    );
 
-    return Scaffold(
+    return PopScope(
+      // A pristine draft pops immediately; one with work goes through the
+      // abandon dialog before the wizard is left (system back / gesture).
+      canPop: !hasContent,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _attemptLeave(() => Navigator.of(context).maybePop());
+      },
+      child: Scaffold(
       body: SafeArea(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            WizardLeftMenu(compact: !wide),
+            WizardLeftMenu(compact: !wide, onLeave: _attemptLeave),
             Expanded(
               child: Column(
                 children: [
@@ -110,6 +164,7 @@ class _QuoteWizardScreenState extends ConsumerState<QuoteWizardScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

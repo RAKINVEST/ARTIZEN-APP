@@ -7,12 +7,17 @@ import '../../../../core/theme/app_theme.dart';
 /// built in the centre — the vision's "boîte à outils" frame. Compact (icons
 /// only) on narrow screens so it never eats the workspace.
 ///
-/// Shell behaviour: tapping a destination leaves the assistant. The real
-/// version will confirm before discarding an in-progress quote — marked below.
+/// Tapping a destination or "Quitter" leaves the assistant — but always
+/// through [onLeave], which confirms before discarding an in-progress quote
+/// (décision 6). The menu never navigates away directly.
 class WizardLeftMenu extends StatelessWidget {
-  const WizardLeftMenu({required this.compact, super.key});
+  const WizardLeftMenu({required this.compact, required this.onLeave, super.key});
 
   final bool compact;
+
+  /// Runs [proceed] to actually leave — but only after the wizard has cleared
+  /// (or the artisan has confirmed abandoning) any in-progress draft.
+  final void Function(VoidCallback proceed) onLeave;
 
   static const _destinations = <_MenuDestination>[
     _MenuDestination('Accueil', Icons.home_outlined, '/dashboard'),
@@ -46,12 +51,13 @@ class WizardLeftMenu extends StatelessWidget {
           ),
           const SizedBox(height: ArtizenSpacing.md),
           for (final destination in _destinations)
-            _MenuItem(destination: destination, compact: compact),
+            _MenuItem(destination: destination, compact: compact, onLeave: onLeave),
           const Spacer(),
           const Divider(color: Colors.white24, height: 1),
           _MenuItem(
             destination: const _MenuDestination('Quitter', Icons.close, null),
             compact: compact,
+            onLeave: onLeave,
             onTap: () => context.pop(),
           ),
           const SizedBox(height: ArtizenSpacing.sm),
@@ -62,10 +68,16 @@ class WizardLeftMenu extends StatelessWidget {
 }
 
 class _MenuItem extends StatelessWidget {
-  const _MenuItem({required this.destination, required this.compact, this.onTap});
+  const _MenuItem({
+    required this.destination,
+    required this.compact,
+    required this.onLeave,
+    this.onTap,
+  });
 
   final _MenuDestination destination;
   final bool compact;
+  final void Function(VoidCallback proceed) onLeave;
   final VoidCallback? onTap;
 
   @override
@@ -80,8 +92,7 @@ class _MenuItem extends StatelessWidget {
     final tile = InkWell(
       onTap: !enabled
           ? null
-          // TODO(lot2): confirm before leaving once the quote holds real data.
-          : (onTap ?? () => context.go(destination.route!)),
+          : () => onLeave(onTap ?? () => context.go(destination.route!)),
       child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: compact ? 0 : ArtizenSpacing.sm,

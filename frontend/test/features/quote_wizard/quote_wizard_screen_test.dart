@@ -7,6 +7,7 @@ import 'package:artizen/shared/providers/current_company_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../support/fake_repositories.dart';
 
@@ -57,6 +58,49 @@ Future<void> _pump(
       child: const MaterialApp(home: QuoteWizardScreen()),
     ),
   );
+  await tester.pumpAndSettle();
+}
+
+/// Pumps the wizard *pushed onto a route*, so leaving it (Quitter / back) has
+/// somewhere to pop to — the home route shows an "Ouvrir" button.
+Future<void> _pumpRouted(
+  WidgetTester tester, {
+  List<Client> clients = const [],
+}) async {
+  final router = GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () => context.push('/assistant'),
+              child: const Text('Ouvrir'),
+            ),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/assistant',
+        builder: (context, state) => const QuoteWizardScreen(),
+      ),
+    ],
+  );
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        currentCompanyIdProvider.overrideWith((ref) async => 'co1'),
+        clientsRepositoryProvider.overrideWithValue(FakeClientsRepository([...clients])),
+        catalogRepositoryProvider.overrideWithValue(
+          FakeCatalogRepository(const <CatalogCategory>[], const <CatalogItem>[]),
+        ),
+      ],
+      child: MaterialApp.router(routerConfig: router),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Ouvrir'));
   await tester.pumpAndSettle();
 }
 
@@ -130,5 +174,45 @@ void main() {
       find.widgetWithText(OutlinedButton, 'Précédent'),
     );
     expect(previous.onPressed, isNull);
+  });
+
+  testWidgets('leaving an in-progress draft asks to confirm, and cancel stays',
+      (tester) async {
+    await _pumpRouted(tester, clients: [_client('c1', 'Dubois')]);
+    await tester.tap(find.text('Dubois')); // draft now holds a client
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Quitter'));
+    await tester.pumpAndSettle();
+    expect(find.text('Abandonner ce devis ?'), findsOneWidget);
+
+    await tester.tap(find.text('Continuer le devis'));
+    await tester.pumpAndSettle();
+    expect(find.text('Étape 1 / 7'), findsOneWidget); // still in the wizard
+    expect(find.text('Ouvrir'), findsNothing);
+  });
+
+  testWidgets('confirming abandon leaves the wizard', (tester) async {
+    await _pumpRouted(tester, clients: [_client('c1', 'Dubois')]);
+    await tester.tap(find.text('Dubois'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Quitter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Abandonner'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ouvrir'), findsOneWidget); // back on the home route
+    expect(find.text('Étape 1 / 7'), findsNothing);
+  });
+
+  testWidgets('leaving an empty draft does not prompt', (tester) async {
+    await _pumpRouted(tester); // no client chosen
+
+    await tester.tap(find.text('Quitter'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Abandonner ce devis ?'), findsNothing);
+    expect(find.text('Ouvrir'), findsOneWidget); // left immediately
   });
 }
