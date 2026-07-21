@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class ClientCreate(BaseModel):
@@ -16,7 +16,9 @@ class ClientCreate(BaseModel):
     company_name: str | None = None
     address: str | None = None
     phone: str | None = None
-    email: str | None = None
+    # Optional, but if given it must be a real address — it will be printed on
+    # the quote PDF and used to email the quote (V1.1). Empty = omit / send null.
+    email: EmailStr | None = None
     notes: str | None = None
 
 
@@ -26,7 +28,9 @@ class ClientUpdate(BaseModel):
     company_name: str | None = None
     address: str | None = None
     phone: str | None = None
-    email: str | None = None
+    # Optional, but if given it must be a real address — it will be printed on
+    # the quote PDF and used to email the quote (V1.1). Empty = omit / send null.
+    email: EmailStr | None = None
     notes: str | None = None
 
 

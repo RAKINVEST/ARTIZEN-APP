@@ -31,6 +31,19 @@ async def test_create_client(client: AsyncClient, company_id: str) -> None:
     assert body["company_name"] is None
 
 
+async def test_client_email_is_validated_only_when_provided(client: AsyncClient) -> None:
+    """Optional, but a provided email must be well-formed — it ends up on the
+    quote PDF and (V1.1) is used to email the quote."""
+    bad = await client.post("/api/clients", json={"last_name": "Nom", "email": "pas-un-email"})
+    assert bad.status_code == 422
+
+    good = await client.post("/api/clients", json={"last_name": "Nom", "email": "vrai@exemple.fr"})
+    assert good.status_code == 201
+
+    without = await client.post("/api/clients", json={"last_name": "Nom"})
+    assert without.status_code == 201  # email stays optional
+
+
 async def test_get_client(client: AsyncClient, company_id: str) -> None:
     create_response = await client.post(
         "/api/clients", json={"company_id": company_id, "last_name": "Martin"}

@@ -156,6 +156,14 @@ class _ClientFormState extends ConsumerState<_ClientForm> {
             icon: Icons.mail_outline,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
+            // Optional — but if filled, must look like a real address (caught
+            // here so the artisan sees it inline, before the backend's 422).
+            validator: (value) {
+              final email = value?.trim() ?? '';
+              if (email.isEmpty) return null;
+              final looksLikeEmail = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+              return looksLikeEmail ? null : 'Adresse email invalide';
+            },
           ),
           const SizedBox(height: ArtizenSpacing.sm),
           AppTextField(

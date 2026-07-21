@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/debouncer.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../shared/widgets/debounced_search_field.dart';
+import '../../branding/presentation/branding_providers.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../clients/data/client_model.dart';
 import '../../clients/presentation/clients_providers.dart';
@@ -1069,6 +1070,14 @@ class _ConfirmationStep extends ConsumerWidget {
         child: Text("Revenez à l'étape précédente pour créer le devis."),
       );
     }
+    // Gentle nudge (never a blocker) — a complete identity makes the PDF look
+    // professional. Shown only if something is missing; the profile is cached,
+    // so this costs nothing extra once loaded.
+    final profile = ref.watch(brandingProfileNotifierProvider).valueOrNull;
+    final identityIncomplete = profile != null &&
+        ((profile.company.addressLine ?? '').trim().isEmpty ||
+            (profile.company.siret ?? '').trim().isEmpty ||
+            (profile.brand.logoPath ?? '').trim().isEmpty);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1127,6 +1136,23 @@ class _ConfirmationStep extends ConsumerWidget {
           label: const Text('Voir mes devis'),
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
         ),
+        if (identityIncomplete) ...[
+          const SizedBox(height: ArtizenSpacing.md),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.tips_and_updates_outlined, color: ArtizenColors.gold),
+              title: const Text('Rendez vos devis encore plus pro'),
+              subtitle: const Text(
+                'Ajoutez votre logo, votre adresse et votre SIRET pour un PDF impeccable.',
+              ),
+              trailing: TextButton(
+                onPressed: () => context.push('/company-profile'),
+                child: const Text('Compléter'),
+              ),
+              isThreeLine: true,
+            ),
+          ),
+        ],
       ],
     );
   }

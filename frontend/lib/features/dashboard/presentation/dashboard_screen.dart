@@ -41,11 +41,11 @@ class DashboardScreen extends ConsumerWidget {
                 OnboardingChecklist(summary: data),
                 const SizedBox(height: 24),
               ],
-              // Lot 2 preview: the guided quote assistant (mock data for now).
+              // The guided quote wizard — the main way to create a quote.
               FilledButton.icon(
                 onPressed: () => context.push('/assistant'),
                 icon: const Icon(Icons.auto_awesome_outlined),
-                label: const Text('Nouveau devis guidé (aperçu)'),
+                label: const Text('Nouveau devis guidé'),
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
               ),
               const SizedBox(height: 24),

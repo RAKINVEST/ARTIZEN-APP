@@ -1,3 +1,5 @@
+import 'package:artizen/features/branding/data/branding_models.dart';
+import 'package:artizen/features/branding/data/branding_repository_impl.dart';
 import 'package:artizen/features/catalog/data/catalog_models.dart';
 import 'package:artizen/features/catalog/data/catalog_repository_impl.dart';
 import 'package:artizen/features/clients/data/client_model.dart';
@@ -63,6 +65,14 @@ Finder _addButtonFor(String designation) => find.descendant(
       matching: find.widgetWithText(FilledButton, 'Ajouter'),
     );
 
+/// A company whose identity is incomplete (no address / SIRET / logo) — makes
+/// the confirmation step show its "complete your identity" nudge.
+BrandingProfile _incompleteProfile() => const BrandingProfile(
+      company: Company(id: 'co1'),
+      brand: BrandProfile(id: 'b1'),
+      templates: [],
+    );
+
 List<Override> _overrides(QuotesRepository quotesRepo) => [
       currentCompanyIdProvider.overrideWith((ref) async => 'co1'),
       clientsRepositoryProvider.overrideWithValue(FakeClientsRepository([_client('c1', 'Dubois')])),
@@ -70,6 +80,7 @@ List<Override> _overrides(QuotesRepository quotesRepo) => [
         FakeCatalogRepository([_category('cat1', 'Sanitaires')], [_item('i1', 'cat1', 'WC suspendu')]),
       ),
       quotesRepositoryProvider.overrideWithValue(quotesRepo),
+      brandingRepositoryProvider.overrideWithValue(FakeBrandingRepository(_incompleteProfile())),
     ];
 
 /// Walks Client → Dossier → Articles → Personnaliser → Récap → Créer, assuming
@@ -204,6 +215,18 @@ void main() {
     await tester.tap(find.text('Ouvrir'));
     await tester.pumpAndSettle();
     expect(find.text('Client de ce devis'), findsNothing); // no client carried over
+  });
+
+  testWidgets('an incomplete company identity nudges the artisan (non-blocking)',
+      (tester) async {
+    await _pumpHome(tester, FakeQuotesRepository([], createResult: _quote('q1', 'DEV-2026-0007')));
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Créer le devis'));
+    await tester.pumpAndSettle();
+
+    // The nudge appears, but the primary actions are still there — never a block.
+    expect(find.text('Rendez vos devis encore plus pro'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Voir mes devis'), findsOneWidget);
   });
 
   testWidgets('Ouvrir le PDF opens the quote PDF', (tester) async {

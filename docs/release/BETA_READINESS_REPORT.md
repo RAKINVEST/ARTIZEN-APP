@@ -5,6 +5,15 @@
 > + audit du code des écrans que verra un bêta-testeur. **Aucun développement.**
 > Branche `develop/v3` · HEAD `e0b274a`.
 
+## Suivi (mise à jour 2026-07-21)
+
+Micro-lot pré-bêta livré — les points de première impression sont **corrigés** :
+- ✅ Libellé « Nouveau devis guidé **(aperçu)** » → « Nouveau devis guidé » (+ commentaire périmé retiré).
+- ✅ **Email client validé** (backend `EmailStr` + validateur inline « Adresse email invalide ») — conditionnel (vide accepté), non bloquant.
+- ✅ **Nudge identité** non bloquant sur l'écran de confirmation (« Rendez vos devis encore plus pro » → Paramètres), affiché seulement si logo/adresse/SIRET manquent.
+
+Reste ouvert (non bloquant) : messages `$error` bruts des écrans adjacents (fiche devis / copilote / ancien formulaire), polish landing — cf. §Recommandées.
+
 ## Méthodologie & périmètre
 
 | Axe demandé | Méthode | Verdict |
