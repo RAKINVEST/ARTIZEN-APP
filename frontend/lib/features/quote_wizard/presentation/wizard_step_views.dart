@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../shared/widgets/debounced_search_field.dart';
+import '../../catalog/data/catalog_models.dart';
 import '../../clients/data/client_model.dart';
 import '../../clients/presentation/clients_providers.dart';
 import 'quote_draft_provider.dart';
@@ -261,11 +262,24 @@ class _EmptyClients extends StatelessWidget {
 
 // --- Étape 2 : Dossier — quel dossier du catalogue ? (câblé) ---------------
 
-class _DossierStep extends ConsumerWidget {
+class _DossierStep extends ConsumerStatefulWidget {
   const _DossierStep();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DossierStep> createState() => _DossierStepState();
+}
+
+class _DossierStepState extends ConsumerState<_DossierStep> {
+  Future<void> _activateMetier() async {
+    // The catalog is empty — send the artisan to "Mes métiers", then refresh
+    // the folder list so a métier activated there shows up on return.
+    await context.push('/metiers');
+    if (!mounted) return;
+    ref.invalidate(foldersProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final folders = ref.watch(foldersProvider);
     final openId = ref.watch(selectedFolderProvider);
 
@@ -279,46 +293,123 @@ class _DossierStep extends ConsumerWidget {
         onRetry: () => ref.invalidate(foldersProvider),
       ),
       data: (list) => list.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(ArtizenSpacing.md),
-              child: Text(
-                'Votre catalogue est vide. Activez un métier dans « Mes métiers » '
-                'pour le remplir.',
-              ),
-            )
+          ? _EmptyCatalog(onActivate: _activateMetier)
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final folder in list)
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.folder_outlined, color: ArtizenColors.nightBlue),
-                      title: Text(folder.name),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${folder.itemCount} article${folder.itemCount > 1 ? 's' : ''}'),
-                          if (folder.sampleDesignations.isNotEmpty)
-                            Text(
-                              '💬 ${folder.sampleDesignations.join(' • ')}…',
-                              style: const TextStyle(
-                                  color: ArtizenColors.textSecondary, fontSize: 12),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                        ],
-                      ),
-                      isThreeLine: folder.sampleDesignations.isNotEmpty,
-                      trailing: folder.id == openId
-                          ? const Icon(Icons.check_circle, color: ArtizenColors.success)
-                          : null,
-                      selected: folder.id == openId,
-                      // The one thing this step does: open a folder.
-                      onTap: () => ref.read(selectedFolderProvider.notifier).open(folder.id),
-                    ),
+                  _FolderCard(
+                    folder: folder,
+                    open: folder.id == openId,
+                    // The one thing this step does: open a folder. Opening the
+                    // same one again is a harmless no-op — a double tap can't hurt.
+                    onTap: () => ref.read(selectedFolderProvider.notifier).open(folder.id),
                   ),
               ],
             ),
+    );
+  }
+}
+
+/// One catalog folder, made scannable: its name, how many articles it holds,
+/// and a representative preview of what is inside — so the artisan knows at a
+/// glance what he'll find before opening it. Everything shown comes straight
+/// from `GET /catalog/categories/overview`; nothing is inferred client-side.
+class _FolderCard extends StatelessWidget {
+  const _FolderCard({required this.folder, required this.open, required this.onTap});
+
+  final CategoryOverview folder;
+  final bool open;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = folder.itemCount;
+    final hasPreview = folder.sampleDesignations.isNotEmpty;
+    return Card(
+      color: open ? ArtizenColors.infoSurface : null,
+      child: ListTile(
+        leading: Icon(
+          Icons.folder_outlined,
+          color: open ? ArtizenColors.success : ArtizenColors.nightBlue,
+        ),
+        title: Text(folder.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$count article${count > 1 ? 's' : ''}'),
+            if (hasPreview)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  'Aperçu : ${folder.sampleDesignations.join(', ')}…',
+                  style: const TextStyle(color: ArtizenColors.textSecondary, fontSize: 12),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            if (open)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'Dossier ouvert',
+                  style: TextStyle(
+                    color: ArtizenColors.success,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        isThreeLine: hasPreview,
+        trailing: open
+            ? const Icon(
+                Icons.check_circle,
+                color: ArtizenColors.success,
+                semanticLabel: 'Dossier ouvert',
+              )
+            : null,
+        selected: open,
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+/// An actionable empty state: a catalog with no folder is a dead end unless it
+/// points the artisan at where folders come from — activating a métier.
+class _EmptyCatalog extends StatelessWidget {
+  const _EmptyCatalog({required this.onActivate});
+
+  final VoidCallback onActivate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Padding(
+          padding: EdgeInsets.all(ArtizenSpacing.md),
+          child: Row(
+            children: [
+              Icon(Icons.folder_off_outlined, color: ArtizenColors.textSecondary),
+              SizedBox(width: ArtizenSpacing.sm),
+              Expanded(
+                child: Text(
+                  "Votre catalogue est vide. Activez un métier pour le remplir "
+                  "de dossiers et d'articles.",
+                ),
+              ),
+            ],
+          ),
+        ),
+        OutlinedButton.icon(
+          onPressed: onActivate,
+          icon: const Icon(Icons.build_outlined),
+          label: const Text('Activer un métier'),
+        ),
+      ],
     );
   }
 }

@@ -185,8 +185,10 @@ Détail : [`ARCHITECTURE.md`](ARCHITECTURE.md).
 - **État de câblage (P4)** : structure, navigation et **garde de sortie** faites (P4.1) ;
   étape **Client de production** finalisée (P4.2 : recherche débounce, création inline +
   auto-sélection, changement/retrait du client, états chargement/erreur/vide distincts) ;
-  étape **Dossier** câblée ; **Articles → Envoyer** restent à câbler (revue :
-  [`08_WIZARD_READINESS.md`](release/08_WIZARD_READINESS.md)).
+  étape **Dossier de production** finalisée (P4.3 : lisibilité nom + nombre d'articles +
+  aperçu du contenu, catalogue vide actionnable → « Mes métiers », erreur/retry, dossier
+  ouvert conservé dans `selectedFolderProvider`) ; **Articles → Envoyer** restent à câbler
+  (revue : [`08_WIZARD_READINESS.md`](release/08_WIZARD_READINESS.md)).
 - **Le wizard ne calcule ni ne persiste rien lui-même** : il lit les endpoints existants et
   délègue tout montant au backend.
 
