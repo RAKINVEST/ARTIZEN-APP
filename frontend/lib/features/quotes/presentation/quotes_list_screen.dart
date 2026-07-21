@@ -29,7 +29,10 @@ class QuotesListScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/quotes/new'),
+        // "Nouveau devis" now opens the guided wizard (V1). The old
+        // QuoteFormScreen (/quotes/new) is deprecated — no visible link points
+        // to it anymore.
+        onPressed: () => context.push('/assistant'),
         child: const Icon(Icons.add),
       ),
       body: Column(

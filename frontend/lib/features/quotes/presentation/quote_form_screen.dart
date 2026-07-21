@@ -16,6 +16,12 @@ import '../../clients/presentation/clients_providers.dart';
 import '../data/quote_models.dart';
 import 'quotes_providers.dart';
 
+/// **DÉPRÉCIÉ (V1).** Remplacé comme flux principal par le wizard guidé
+/// (`features/quote_wizard`, route `/assistant`). Conservé et encore atteint
+/// **uniquement** par le copilote IA (`quote_assistant_screen`), qui pré-remplit
+/// `quoteDraftLinesProvider` avant de pousser cet écran ; à retirer en V1.1 une
+/// fois le pont IA → wizard construit. Ne plus câbler de nouveau lien ici.
+///
 /// Builds a quote: pick a client, add (catalog item, quantity) lines, then
 /// submit. No amount is shown or computed while drafting — see
 /// `QuoteDraftLine` — the totals only appear once the backend has computed

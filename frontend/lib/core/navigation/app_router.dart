@@ -134,6 +134,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => ItemFormScreen(itemId: state.pathParameters['id']),
       ),
+      // DÉPRÉCIÉ (V1) : l'ancien formulaire de devis. Le flux principal est
+      // désormais le wizard (`/assistant`). La route est conservée — encore
+      // atteinte par le copilote IA (quote_assistant_screen), qui pré-remplit
+      // `quoteDraftLinesProvider` — à retirer en V1.1 une fois le pont
+      // IA → wizard construit. Aucun autre lien visible ne pointe ici.
       GoRoute(
         path: '/quotes/new',
         parentNavigatorKey: _rootNavigatorKey,

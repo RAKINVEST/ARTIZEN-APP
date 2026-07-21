@@ -91,7 +91,8 @@ class OnboardingChecklist extends ConsumerWidget {
         label: 'Créer mon premier devis',
         icon: Icons.description_outlined,
         done: summary.hasQuote,
-        onTap: () => pushThenRefresh('/quotes/new'),
+        // The guided wizard (V1) is now the way to create a quote.
+        onTap: () => pushThenRefresh('/assistant'),
       ),
     ];
   }
