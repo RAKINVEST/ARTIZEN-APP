@@ -187,8 +187,14 @@ Détail : [`ARCHITECTURE.md`](ARCHITECTURE.md).
   auto-sélection, changement/retrait du client, états chargement/erreur/vide distincts) ;
   étape **Dossier de production** finalisée (P4.3 : lisibilité nom + nombre d'articles +
   aperçu du contenu, catalogue vide actionnable → « Mes métiers », erreur/retry, dossier
-  ouvert conservé dans `selectedFolderProvider`) ; **Articles → Envoyer** restent à câbler
-  (revue : [`08_WIZARD_READINESS.md`](release/08_WIZARD_READINESS.md)).
+  ouvert conservé dans `selectedFolderProvider`) ; étape **Articles de production** finalisée
+  (P4.4 : recherche serveur instantanée dans le dossier, ajout/retrait avec retour visuel
+  immédiat « ✔ Ajouté (× N) », doublon = incrément de quantité, borne à une page ⇒ scalable) ;
+  **Personnaliser → Envoyer** restent à câbler (revue :
+  [`08_WIZARD_READINESS.md`](release/08_WIZARD_READINESS.md)).
+  - **Ajout backend additif (P4.4)** : `GET /catalog/items` accepte `?category_id=` (filtre
+    **serveur**, rétro-compatible) pour lister les articles d'un dossier — le filtrage reste
+    côté backend (décision 3), rien n'est filtré dans Flutter.
 - **Le wizard ne calcule ni ne persiste rien lui-même** : il lit les endpoints existants et
   délègue tout montant au backend.
 

@@ -213,14 +213,18 @@ async def list_items(
     current_user: CurrentUserDep,
     q: str | None = None,
     active_only: bool = False,
+    category_id: uuid.UUID | None = None,
     offset: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
 ) -> list[CatalogItemRead]:
     """``q`` searches items by designation or code (ILIKE) — server-side, so a
-    catalogue of any size is searchable, not just the first page."""
+    catalogue of any size is searchable, not just the first page.
+    ``category_id`` scopes the list to one folder (the quote wizard picks
+    articles from the folder the artisan opened)."""
     items = await service.list_items(
         company_id=current_user.company_id,
         active_only=active_only,
+        category_id=category_id,
         query=q,
         offset=offset,
         limit=limit,

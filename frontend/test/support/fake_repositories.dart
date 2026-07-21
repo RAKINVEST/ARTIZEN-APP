@@ -116,11 +116,15 @@ class FakeCatalogRepository implements CatalogRepository {
   Future<List<CatalogItem>> listItems({
     required String companyId,
     bool activeOnly = false,
+    String? categoryId,
     String? query,
     int? offset,
     int? limit,
   }) async {
     var rows = activeOnly ? _items.where((item) => item.active).toList() : _items;
+    if (categoryId != null) {
+      rows = rows.where((item) => item.categoryId == categoryId).toList();
+    }
     if (query != null && query.isNotEmpty) {
       final lower = query.toLowerCase();
       rows = rows.where((item) {

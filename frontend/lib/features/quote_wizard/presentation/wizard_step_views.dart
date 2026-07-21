@@ -8,6 +8,7 @@ import '../../../shared/widgets/debounced_search_field.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../clients/data/client_model.dart';
 import '../../clients/presentation/clients_providers.dart';
+import '../data/quote_draft.dart';
 import 'quote_draft_provider.dart';
 import 'wizard_step.dart';
 
@@ -23,8 +24,10 @@ class WizardStepView extends StatelessWidget {
   Widget build(BuildContext context) {
     return _StepScaffold(
       step: step,
-      // Client and Dossier are wired to the real API; the rest is still mock.
-      mock: step != WizardStep.client && step != WizardStep.dossier,
+      // Client, Dossier and Articles are wired to the real API; the rest is mock.
+      mock: step != WizardStep.client &&
+          step != WizardStep.dossier &&
+          step != WizardStep.articles,
       child: switch (step) {
         WizardStep.client => const _ClientStep(),
         WizardStep.dossier => const _DossierStep(),
@@ -416,37 +419,187 @@ class _EmptyCatalog extends StatelessWidget {
 
 // --- Étape 3 : Articles — quoi ? -------------------------------------------
 
-class _ArticlesStep extends StatelessWidget {
+class _ArticlesStep extends ConsumerStatefulWidget {
   const _ArticlesStep();
 
   @override
-  Widget build(BuildContext context) {
-    const articles = <(String, String, bool)>[
-      ('Chauffe-eau électrique 200 L', '380,00 € HT', true),
-      ('Groupe de sécurité', '14,00 € HT', true),
-      ('Vase d\'expansion 8 L', '38,00 € HT', false),
-      ('Pose d\'un chauffe-eau', '280,00 € HT', true),
-      ('Déplacement zone 1', '35,00 € HT', false),
-    ];
-    return Column(
-      children: [
-        for (final (name, price, checked) in articles)
-          Card(
-            child: CheckboxListTile(
-              value: checked,
-              onChanged: (_) {},
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Text(name),
-              subtitle: Text(price),
-            ),
+  ConsumerState<_ArticlesStep> createState() => _ArticlesStepState();
+}
+
+class _ArticlesStepState extends ConsumerState<_ArticlesStep> {
+  /// Mirrors the search field so the empty state tells "empty folder" from
+  /// "nothing matches this search".
+  String _query = '';
+
+  /// Snapshot the catalog article onto the draft line (décision 5): its
+  /// designation, unit and price travel with the line. No amount is computed
+  /// here — totals come from the backend at the Récap step.
+  void _add(CatalogItem item) {
+    ref.read(quoteDraftProvider.notifier).addArticle(
+          DraftLine(
+            catalogItemId: item.id,
+            designation: item.designation,
+            unit: item.unit,
+            quantity: 1,
+            unitPriceHt: item.unitPriceHt,
+            vatRate: item.vatRate,
           ),
-        const SizedBox(height: ArtizenSpacing.xs),
-        OutlinedButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.add),
-          label: const Text('Ajouter un article'),
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final openFolder = ref.watch(selectedFolderProvider);
+    if (openFolder == null) {
+      // Reaching this step means a folder is open (gating), but stay safe.
+      return const Padding(
+        padding: EdgeInsets.all(ArtizenSpacing.md),
+        child: Text('Ouvrez d\'abord un dossier à l\'étape précédente.'),
+      );
+    }
+
+    final results = ref.watch(articlePickerProvider);
+    final quantityByItem = ref.watch(
+      quoteDraftProvider.select(
+        (draft) => {for (final line in draft.lines) line.catalogItemId: line.quantity},
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DebouncedSearchField(
+          hintText: 'Rechercher un article dans ce dossier',
+          isLoading: results.isLoading,
+          onChanged: (query) {
+            setState(() => _query = query.trim());
+            ref.read(articlePickerProvider.notifier).search(query);
+          },
+        ),
+        const SizedBox(height: ArtizenSpacing.sm),
+        results.when(
+          skipLoadingOnReload: true,
+          skipLoadingOnRefresh: true,
+          loading: () => const Padding(
+            padding: EdgeInsets.all(ArtizenSpacing.lg),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (error, _) => ErrorState(
+            error: error,
+            onRetry: () => ref.invalidate(articlePickerProvider),
+          ),
+          data: (items) => items.isEmpty
+              ? _EmptyArticles(query: _query)
+              : Column(
+                  children: [
+                    for (final item in items)
+                      _ArticleRow(
+                        item: item,
+                        quantity: quantityByItem[item.id],
+                        onAdd: () => _add(item),
+                        onRemoveOne: () => ref
+                            .read(quoteDraftProvider.notifier)
+                            .setQuantity(item.id, (quantityByItem[item.id] ?? 1) - 1),
+                      ),
+                  ],
+                ),
         ),
       ],
+    );
+  }
+}
+
+/// One catalog article, and the one action this step is about: add it to the
+/// quote. Added lines show a clear "✔ Ajouté" with their quantity, and quick
+/// +/− controls — so the artisan always knows what is already on the devis.
+/// The price shown is the catalog's (a snapshot); no total is computed here.
+class _ArticleRow extends StatelessWidget {
+  const _ArticleRow({
+    required this.item,
+    required this.quantity,
+    required this.onAdd,
+    required this.onRemoveOne,
+  });
+
+  final CatalogItem item;
+
+  /// Its quantity on the draft, or null if not added yet.
+  final num? quantity;
+  final VoidCallback onAdd;
+  final VoidCallback onRemoveOne;
+
+  @override
+  Widget build(BuildContext context) {
+    final added = quantity != null;
+    return Card(
+      color: added ? ArtizenColors.infoSurface : null,
+      child: ListTile(
+        title: Text(item.designation, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${item.unitPriceHt} € HT · ${item.unit}'),
+            if (added)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  '✔ Ajouté au devis (× $quantity)',
+                  style: const TextStyle(
+                    color: ArtizenColors.success,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        isThreeLine: added,
+        trailing: added
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline),
+                    tooltip: 'Retirer une unité',
+                    onPressed: onRemoveOne,
+                  ),
+                  IconButton.filledTonal(
+                    icon: const Icon(Icons.add),
+                    tooltip: 'Ajouter une unité',
+                    onPressed: onAdd,
+                  ),
+                ],
+              )
+            : FilledButton.tonalIcon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add),
+                label: const Text('Ajouter'),
+              ),
+      ),
+    );
+  }
+}
+
+/// Tells an empty folder apart from a search that matched nothing.
+class _EmptyArticles extends StatelessWidget {
+  const _EmptyArticles({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = query.isEmpty
+        ? 'Ce dossier ne contient aucun article.'
+        : 'Aucun article ne correspond à « $query » dans ce dossier.';
+    return Padding(
+      padding: const EdgeInsets.all(ArtizenSpacing.md),
+      child: Row(
+        children: [
+          const Icon(Icons.search_off_outlined, color: ArtizenColors.textSecondary),
+          const SizedBox(width: ArtizenSpacing.sm),
+          Expanded(child: Text(message)),
+        ],
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/providers/current_company_provider.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../catalog/data/catalog_repository_impl.dart';
 import '../../quotes/data/quote_models.dart';
@@ -115,6 +116,59 @@ final selectedFolderProvider =
 final foldersProvider = FutureProvider<List<CategoryOverview>>((ref) {
   return ref.watch(catalogRepositoryProvider).listCategoryOverviews();
 });
+
+/// The active articles of the folder currently open ([selectedFolderProvider]),
+/// server-searched and bounded — the source of the "Articles" step. It
+/// re-fetches when the open folder changes, and (like the client picker) keeps
+/// the current rows visible while a new search resolves, so typing never blanks
+/// the list. Filtering and search are the backend's job (décision 3): a folder
+/// of any size stays one bounded, searchable page — paging can be added later
+/// without touching how this is used.
+class ArticlePickerNotifier extends AutoDisposeAsyncNotifier<List<CatalogItem>> {
+  /// Comfortably above a real folder's size; a bigger folder relies on search.
+  static const int _limit = 100;
+
+  String _query = '';
+  int _requestId = 0;
+
+  Future<List<CatalogItem>> _fetch(String? query) async {
+    final categoryId = ref.read(selectedFolderProvider);
+    if (categoryId == null) return const [];
+    final companyId = await ref.read(currentCompanyIdProvider.future);
+    return ref.read(catalogRepositoryProvider).listItems(
+          companyId: companyId,
+          categoryId: categoryId,
+          activeOnly: true,
+          query: query == null || query.isEmpty ? null : query,
+          limit: _limit,
+        );
+  }
+
+  @override
+  Future<List<CatalogItem>> build() async {
+    // Re-fetch whenever the open folder changes.
+    ref.watch(selectedFolderProvider);
+    return _fetch(_query);
+  }
+
+  /// Debounced upstream by the search field; ignores out-of-order responses so
+  /// a slow early query can't overwrite a fast later one.
+  Future<void> search(String rawQuery) async {
+    final trimmed = rawQuery.trim();
+    if (trimmed == _query) return;
+    _query = trimmed;
+    final requestId = ++_requestId;
+    state = const AsyncValue<List<CatalogItem>>.loading().copyWithPrevious(state);
+    final next = await AsyncValue.guard(() => _fetch(trimmed));
+    if (requestId != _requestId) return;
+    state = next;
+  }
+}
+
+final articlePickerProvider =
+    AutoDisposeAsyncNotifierProvider<ArticlePickerNotifier, List<CatalogItem>>(
+  ArticlePickerNotifier.new,
+);
 
 /// Whether the artisan may leave [step] — the single place step-completion is
 /// decided. The wizard's Précédent/Suivant/progress ask *this*, never the

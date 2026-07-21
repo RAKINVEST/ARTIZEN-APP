@@ -48,6 +48,7 @@ class CatalogRepositoryImpl implements CatalogRepository {
   Future<List<CatalogItem>> listItems({
     required String companyId,
     bool activeOnly = false,
+    String? categoryId,
     String? query,
     int? offset,
     int? limit,
@@ -57,6 +58,7 @@ class CatalogRepositoryImpl implements CatalogRepository {
       queryParameters: {
         'company_id': companyId,
         'active_only': activeOnly,
+        'category_id': ?categoryId,
         if (query != null && query.isNotEmpty) 'q': query,
         'offset': ?offset,
         'limit': ?limit,

@@ -117,6 +117,45 @@ async def test_list_items_by_company(client: AsyncClient, company_id: str, categ
     assert all(item["company_id"] == company_id for item in body)
 
 
+async def test_list_items_can_be_scoped_to_a_category(
+    client: AsyncClient, company_id: str
+) -> None:
+    """The quote wizard lists one folder's articles: ``?category_id=`` filters
+    server-side so a catalogue of any size stays a single bounded page."""
+    cat_a = (
+        await client.post(
+            "/api/catalog/categories", json={"company_id": company_id, "name": "Sanitaires"}
+        )
+    ).json()["id"]
+    cat_b = (
+        await client.post(
+            "/api/catalog/categories", json={"company_id": company_id, "name": "Chauffage"}
+        )
+    ).json()["id"]
+
+    def _item(category_id: str, designation: str) -> dict:
+        return {
+            "company_id": company_id,
+            "category_id": category_id,
+            "designation": designation,
+            "item_type": "product",
+            "unit": "unite",
+            "unit_price_ht": "20.00",
+            "vat_rate": "20.00",
+        }
+
+    item_a = (await client.post("/api/catalog/items", json=_item(cat_a, "WC suspendu"))).json()["id"]
+    await client.post("/api/catalog/items", json=_item(cat_b, "Radiateur"))
+
+    response = await client.get("/api/catalog/items", params={"category_id": cat_a})
+
+    assert response.status_code == 200
+    body = response.json()
+    ids = [item["id"] for item in body]
+    assert item_a in ids  # the folder's own article is listed
+    assert all(item["category_id"] == cat_a for item in body)  # and nothing else
+
+
 async def test_get_item_from_another_company_returns_not_found(
     client: AsyncClient, second_client: AsyncClient, company_id: str, category_id: str
 ) -> None:

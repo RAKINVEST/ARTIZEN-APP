@@ -54,6 +54,7 @@ class CatalogItemRepository(BaseRepository[CatalogItem]):
         company_id: uuid.UUID,
         *,
         active_only: bool = False,
+        category_id: uuid.UUID | None = None,
         search: str | None = None,
         offset: int = 0,
         limit: int = 100,
@@ -61,6 +62,11 @@ class CatalogItemRepository(BaseRepository[CatalogItem]):
         stmt = select(CatalogItem).where(CatalogItem.company_id == company_id)
         if active_only:
             stmt = stmt.where(CatalogItem.active.is_(True))
+        if category_id is not None:
+            # Scopes the list to one folder — the quote wizard picks articles
+            # from the folder the artisan opened. Filtered server-side so a
+            # catalogue of any size stays a single bounded, searchable page.
+            stmt = stmt.where(CatalogItem.category_id == category_id)
         if search:
             # Server-side search on designation + code so a big catalog is
             # actually usable — without it the app filtered only the first 100

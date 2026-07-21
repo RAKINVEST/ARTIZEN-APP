@@ -25,6 +25,7 @@ abstract class CatalogRepository {
   Future<List<CatalogItem>> listItems({
     required String companyId,
     bool activeOnly = false,
+    String? categoryId,
     String? query,
     int? offset,
     int? limit,

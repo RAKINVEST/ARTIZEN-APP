@@ -339,13 +339,19 @@ class CatalogService:
         *,
         company_id: uuid.UUID | None = None,
         active_only: bool = False,
+        category_id: uuid.UUID | None = None,
         query: str | None = None,
         offset: int = 0,
         limit: int = 100,
     ) -> list[CatalogItem]:
         if company_id is not None:
             return await self._items.list_by_company(
-                company_id, active_only=active_only, search=query, offset=offset, limit=limit
+                company_id,
+                active_only=active_only,
+                category_id=category_id,
+                search=query,
+                offset=offset,
+                limit=limit,
             )
         return await self._items.list(offset=offset, limit=limit)
 
