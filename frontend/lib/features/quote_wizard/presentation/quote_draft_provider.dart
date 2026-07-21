@@ -23,6 +23,13 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
     state = state.copyWith(clientId: id, clientLabel: label);
   }
 
+  /// Forget the chosen client. The Client step reports incomplete again, so
+  /// the wizard gates "Suivant" until another client is picked. Only the
+  /// client is cleared — any lines already added stay put.
+  void clearClient() {
+    state = state.copyWith(clientId: null, clientLabel: null);
+  }
+
   /// Add an article. If it's already in the draft, bump its quantity rather
   /// than duplicate the line — ticking it twice means "more of it", not a
   /// second line.

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../shared/widgets/debounced_search_field.dart';
+import '../../clients/data/client_model.dart';
 import '../../clients/presentation/clients_providers.dart';
 import 'quote_draft_provider.dart';
 import 'wizard_step.dart';
@@ -100,36 +101,73 @@ class _MockBadge extends StatelessWidget {
 
 // --- Étape 1 : Client — pour qui ? (câblé sur l'API) -----------------------
 
-class _ClientStep extends ConsumerWidget {
+class _ClientStep extends ConsumerStatefulWidget {
   const _ClientStep();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ClientStep> createState() => _ClientStepState();
+}
+
+class _ClientStepState extends ConsumerState<_ClientStep> {
+  /// Mirrors the field's text so the empty state can tell "no clients at all"
+  /// from "nothing matches this search". Updated in step with the query that
+  /// actually reaches the server (the field debounces before calling back).
+  String _query = '';
+
+  Future<void> _createClient() async {
+    // The form returns the client it created (or null if cancelled). A new
+    // client is selected straight away — the artisan came here to use it.
+    final created = await context.push<Client?>('/clients/new');
+    if (!mounted) return;
+    if (created != null) {
+      ref.read(quoteDraftProvider.notifier).selectClient(
+            id: created.id,
+            label: created.displayName,
+          );
+    }
+    // Refresh the picker so a just-created client also appears in the list.
+    ref.invalidate(clientSearchProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final results = ref.watch(clientSearchProvider);
-    final selectedId = ref.watch(quoteDraftProvider.select((draft) => draft.clientId));
+    final draft = ref.watch(quoteDraftProvider);
+    final selectedId = draft.clientId;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (selectedId != null)
+          _SelectedClientBanner(
+            label: draft.clientLabel ?? 'Client',
+            onClear: () => ref.read(quoteDraftProvider.notifier).clearClient(),
+          ),
         DebouncedSearchField(
           hintText: 'Rechercher un client',
-          onChanged: (query) => ref.read(clientSearchProvider.notifier).search(query),
+          // Discrete trailing spinner while a search refreshes; the rows below
+          // stay put instead of flashing a full-screen loader.
+          isLoading: results.isLoading,
+          onChanged: (query) {
+            setState(() => _query = query.trim());
+            ref.read(clientSearchProvider.notifier).search(query);
+          },
         ),
         const SizedBox(height: ArtizenSpacing.sm),
         results.when(
+          // Keep the current rows visible while a new search resolves.
+          skipLoadingOnReload: true,
+          skipLoadingOnRefresh: true,
           loading: () => const Padding(
             padding: EdgeInsets.all(ArtizenSpacing.lg),
             child: Center(child: CircularProgressIndicator()),
           ),
           error: (error, _) => ErrorState(
             error: error,
-            onRetry: () => ref.read(clientSearchProvider.notifier).search(''),
+            onRetry: () => ref.invalidate(clientSearchProvider),
           ),
           data: (clients) => clients.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.all(ArtizenSpacing.md),
-                  child: Text('Aucun client trouvé. Créez-en un ci-dessous.'),
-                )
+              ? _EmptyClients(query: _query)
               : Column(
                   children: [
                     for (final client in clients)
@@ -139,11 +177,16 @@ class _ClientStep extends ConsumerWidget {
                           title: Text(client.displayName),
                           subtitle: client.email == null ? null : Text(client.email!),
                           trailing: client.id == selectedId
-                              ? const Icon(Icons.check_circle, color: ArtizenColors.success)
+                              ? const Icon(
+                                  Icons.check_circle,
+                                  color: ArtizenColors.success,
+                                  semanticLabel: 'Client sélectionné',
+                                )
                               : null,
                           selected: client.id == selectedId,
-                          // The one thing this step does: tell the draft who
-                          // the quote is for. Nothing else.
+                          // The one thing this step does: tell the draft who the
+                          // quote is for. Selecting again is a harmless no-op, so
+                          // a double tap can't hurt.
                           onTap: () => ref.read(quoteDraftProvider.notifier).selectClient(
                                 id: client.id,
                                 label: client.displayName,
@@ -155,15 +198,63 @@ class _ClientStep extends ConsumerWidget {
         ),
         const SizedBox(height: ArtizenSpacing.sm),
         OutlinedButton.icon(
-          onPressed: () async {
-            await context.push('/clients/new');
-            // A just-created client should appear in the list.
-            ref.invalidate(clientSearchProvider);
-          },
+          onPressed: _createClient,
           icon: const Icon(Icons.person_add_outlined),
           label: const Text('Nouveau client'),
         ),
       ],
+    );
+  }
+}
+
+/// The chosen client, shown above the search so it is unmistakable who the
+/// quote is for — with a one-tap way to remove the selection and pick again.
+class _SelectedClientBanner extends StatelessWidget {
+  const _SelectedClientBanner({required this.label, required this.onClear});
+
+  final String label;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: ArtizenColors.infoSurface,
+      child: ListTile(
+        leading: const Icon(Icons.check_circle, color: ArtizenColors.success),
+        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: const Text('Client de ce devis'),
+        trailing: TextButton.icon(
+          onPressed: onClear,
+          icon: const Icon(Icons.close),
+          label: const Text('Retirer'),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tells "no clients yet" apart from "the search matched nothing", so the
+/// artisan reads the right next step instead of a generic dead end.
+class _EmptyClients extends StatelessWidget {
+  const _EmptyClients({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = query.isEmpty
+        ? "Vous n'avez pas encore de client. Créez-en un ci-dessous."
+        : 'Aucun client ne correspond à « $query ». Vérifiez l\'orthographe, '
+            'ou créez ce client.';
+    return Padding(
+      padding: const EdgeInsets.all(ArtizenSpacing.md),
+      child: Row(
+        children: [
+          const Icon(Icons.person_search_outlined, color: ArtizenColors.textSecondary),
+          const SizedBox(width: ArtizenSpacing.sm),
+          Expanded(child: Text(message)),
+        ],
+      ),
     );
   }
 }

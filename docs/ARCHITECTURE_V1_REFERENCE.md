@@ -183,7 +183,9 @@ Détail : [`ARCHITECTURE.md`](ARCHITECTURE.md).
   3→7 du wizard sont en mock, `QuoteFormScreen` reste le flux principal ; le basculement du
   point d'entrée « Nouveau devis » vers le wizard est prévu **en fin de P4** (P4.7), pas avant.
 - **État de câblage (P4)** : structure, navigation et **garde de sortie** faites (P4.1) ;
-  étapes **Client** et **Dossier** câblées ; **Articles → Envoyer** restent à câbler (revue :
+  étape **Client de production** finalisée (P4.2 : recherche débounce, création inline +
+  auto-sélection, changement/retrait du client, états chargement/erreur/vide distincts) ;
+  étape **Dossier** câblée ; **Articles → Envoyer** restent à câbler (revue :
   [`08_WIZARD_READINESS.md`](release/08_WIZARD_READINESS.md)).
 - **Le wizard ne calcule ni ne persiste rien lui-même** : il lit les endpoints existants et
   délègue tout montant au backend.

@@ -27,10 +27,14 @@ class ClientsNotifier extends SearchablePagedListNotifier<Client> {
         );
   }
 
-  Future<void> createClient(ClientInput input) async {
+  /// Returns the created client so callers can act on it (e.g. the quote
+  /// wizard auto-selects a just-created client). The backend assigns the id;
+  /// Flutter only carries the row back.
+  Future<Client> createClient(ClientInput input) async {
     final companyId = await ref.read(currentCompanyIdProvider.future);
-    await ref.read(clientsRepositoryProvider).create(input, companyId: companyId);
+    final created = await ref.read(clientsRepositoryProvider).create(input, companyId: companyId);
     await reload();
+    return created;
   }
 
   Future<void> updateClient(String id, ClientInput input) async {

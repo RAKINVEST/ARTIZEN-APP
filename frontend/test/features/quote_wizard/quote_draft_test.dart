@@ -113,4 +113,19 @@ void main() {
     draft.reset();
     expect(container.read(quoteDraftProvider).isEmpty, isTrue);
   });
+
+  test('clearClient forgets the client but keeps the lines', () {
+    final container = makeContainer();
+    final draft = container.read(quoteDraftProvider.notifier);
+    draft.selectClient(id: 'cl1', label: 'Martin');
+    draft.addArticle(_line('a'));
+
+    draft.clearClient();
+
+    final state = container.read(quoteDraftProvider);
+    expect(state.hasClient, isFalse);
+    expect(state.clientLabel, isNull);
+    expect(state.lines, hasLength(1)); // lines untouched
+    expect(container.read(stepCompleteProvider(WizardStep.client)), isFalse);
+  });
 }

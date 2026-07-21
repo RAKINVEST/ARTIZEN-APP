@@ -35,9 +35,14 @@ List<T> _paginate<T>(List<T> rows, int? offset, int? limit) {
 }
 
 class FakeClientsRepository implements ClientsRepository {
-  FakeClientsRepository(this._clients);
+  FakeClientsRepository(this._clients, {this.createResult});
 
   final List<Client> _clients;
+
+  /// When set, [create] adds and returns this client instead of throwing —
+  /// lets a test exercise the real inline-creation flow (form → save →
+  /// auto-select) end to end.
+  final Client? createResult;
 
   @override
   Future<List<Client>> list({
@@ -59,7 +64,9 @@ class FakeClientsRepository implements ClientsRepository {
 
   @override
   Future<Client> create(ClientInput input, {required String companyId}) async {
-    throw UnimplementedError();
+    if (createResult == null) throw UnimplementedError();
+    _clients.add(createResult!);
+    return createResult!;
   }
 
   @override

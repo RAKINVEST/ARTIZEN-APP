@@ -80,11 +80,14 @@ class _ClientFormState extends ConsumerState<_ClientForm> {
     );
     try {
       if (widget.clientId == null) {
-        await ref.read(clientsNotifierProvider.notifier).createClient(input);
+        // Return the created client so a caller mid-flow (the quote wizard)
+        // can select it without a second round-trip. Other callers ignore it.
+        final created = await ref.read(clientsNotifierProvider.notifier).createClient(input);
+        if (mounted) context.pop(created);
       } else {
         await ref.read(clientsNotifierProvider.notifier).updateClient(widget.clientId!, input);
+        if (mounted) context.pop();
       }
-      if (mounted) context.pop();
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
