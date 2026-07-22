@@ -37,61 +37,73 @@ void main() {
   });
 
   group('list', () {
-    test('forwards status/client_id/offset/limit as the server filters', () async {
+    test(
+      'forwards status/client_id/offset/limit as the server filters',
+      () async {
+        when(
+          () => dio.get<List<dynamic>>(
+            '/quotes',
+            queryParameters: {
+              'company_id': 'co1',
+              'status': ['sent'],
+              'client_id': 'cl1',
+              'offset': 0,
+              'limit': 30,
+            },
+          ),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/quotes'),
+            statusCode: 200,
+            data: [_quoteJson(status: 'sent')],
+          ),
+        );
+
+        final quotes = await repository.list(
+          companyId: 'co1',
+          statuses: [QuoteStatus.sent],
+          clientId: 'cl1',
+          offset: 0,
+          limit: 30,
+        );
+
+        expect(quotes, hasLength(1));
+        // The enum wire value, never the French label — "Envoyé" would 422.
+        verify(
+          () => dio.get<List<dynamic>>(
+            '/quotes',
+            queryParameters: {
+              'company_id': 'co1',
+              'status': ['sent'],
+              'client_id': 'cl1',
+              'offset': 0,
+              'limit': 30,
+            },
+          ),
+        ).called(1);
+      },
+    );
+
+    test('sends only company_id when no filter or paging is given', () async {
       when(
         () => dio.get<List<dynamic>>(
           '/quotes',
-          queryParameters: {
-            'company_id': 'co1',
-            'status': 'sent',
-            'client_id': 'cl1',
-            'offset': 0,
-            'limit': 30,
-          },
+          queryParameters: {'company_id': 'co1'},
         ),
       ).thenAnswer(
         (_) async => Response(
           requestOptions: RequestOptions(path: '/quotes'),
-          statusCode: 200,
-          data: [_quoteJson(status: 'sent')],
+          data: <dynamic>[],
         ),
-      );
-
-      final quotes = await repository.list(
-        companyId: 'co1',
-        status: QuoteStatus.sent,
-        clientId: 'cl1',
-        offset: 0,
-        limit: 30,
-      );
-
-      expect(quotes, hasLength(1));
-      // The enum wire value, never the French label — "Envoyé" would 422.
-      verify(
-        () => dio.get<List<dynamic>>(
-          '/quotes',
-          queryParameters: {
-            'company_id': 'co1',
-            'status': 'sent',
-            'client_id': 'cl1',
-            'offset': 0,
-            'limit': 30,
-          },
-        ),
-      ).called(1);
-    });
-
-    test('sends only company_id when no filter or paging is given', () async {
-      when(
-        () => dio.get<List<dynamic>>('/quotes', queryParameters: {'company_id': 'co1'}),
-      ).thenAnswer(
-        (_) async => Response(requestOptions: RequestOptions(path: '/quotes'), data: <dynamic>[]),
       );
 
       await repository.list(companyId: 'co1');
 
       verify(
-        () => dio.get<List<dynamic>>('/quotes', queryParameters: {'company_id': 'co1'}),
+        () => dio.get<List<dynamic>>(
+          '/quotes',
+          queryParameters: {'company_id': 'co1'},
+        ),
       ).called(1);
     });
   });
@@ -99,7 +111,10 @@ void main() {
   group('changeStatus', () {
     test('sends the backend wire value, not the French label', () {
       when(
-        () => dio.put<Map<String, dynamic>>('/quotes/q1/status', data: {'status': 'sent'}),
+        () => dio.put<Map<String, dynamic>>(
+          '/quotes/q1/status',
+          data: {'status': 'sent'},
+        ),
       ).thenAnswer(
         (_) async => Response(
           requestOptions: RequestOptions(path: '/quotes/q1/status'),
@@ -111,13 +126,19 @@ void main() {
       expect(repository.changeStatus('q1', QuoteStatus.sent), completes);
       // "Envoyé" would be a 422 — the backend enum is 'sent'.
       verify(
-        () => dio.put<Map<String, dynamic>>('/quotes/q1/status', data: {'status': 'sent'}),
+        () => dio.put<Map<String, dynamic>>(
+          '/quotes/q1/status',
+          data: {'status': 'sent'},
+        ),
       ).called(1);
     });
 
     test('returns the quote with its new status', () async {
       when(
-        () => dio.put<Map<String, dynamic>>('/quotes/q1/status', data: {'status': 'accepted'}),
+        () => dio.put<Map<String, dynamic>>(
+          '/quotes/q1/status',
+          data: {'status': 'accepted'},
+        ),
       ).thenAnswer(
         (_) async => Response(
           requestOptions: RequestOptions(path: '/quotes/q1/status'),
@@ -138,9 +159,12 @@ void main() {
       // hand back a mangled string. This is the whole reason the method
       // exists rather than a plain get().
       final captured = <Options>[];
-      when(() => dio.get<List<int>>('/quotes/q1/pdf', options: any(named: 'options'))).thenAnswer((
-        invocation,
-      ) async {
+      when(
+        () => dio.get<List<int>>(
+          '/quotes/q1/pdf',
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((invocation) async {
         captured.add(invocation.namedArguments[#options] as Options);
         return Response(
           requestOptions: RequestOptions(path: '/quotes/q1/pdf'),
@@ -159,7 +183,9 @@ void main() {
 
   group('duplicate', () {
     test('POSTs to /duplicate and returns the new draft', () async {
-      when(() => dio.post<Map<String, dynamic>>('/quotes/q1/duplicate')).thenAnswer(
+      when(
+        () => dio.post<Map<String, dynamic>>('/quotes/q1/duplicate'),
+      ).thenAnswer(
         (_) async => Response(
           requestOptions: RequestOptions(path: '/quotes/q1/duplicate'),
           statusCode: 201,
@@ -171,20 +197,29 @@ void main() {
       final copy = await repository.duplicate('q1');
 
       expect(copy.status, QuoteStatus.draft);
-      verify(() => dio.post<Map<String, dynamic>>('/quotes/q1/duplicate')).called(1);
+      verify(
+        () => dio.post<Map<String, dynamic>>('/quotes/q1/duplicate'),
+      ).called(1);
     });
   });
 
   group('readiness', () {
     test('GETs /quotes/{id}/readiness and parses the verdict', () async {
-      when(() => dio.get<Map<String, dynamic>>('/quotes/q1/readiness')).thenAnswer(
+      when(
+        () => dio.get<Map<String, dynamic>>('/quotes/q1/readiness'),
+      ).thenAnswer(
         (_) async => Response(
           requestOptions: RequestOptions(path: '/quotes/q1/readiness'),
           statusCode: 200,
           data: {
             'ready': false,
             'issues': [
-              {'code': 'no_lines', 'label': 'Le devis ne contient aucune ligne', 'target': 'quote', 'field': null},
+              {
+                'code': 'no_lines',
+                'label': 'Le devis ne contient aucune ligne',
+                'target': 'quote',
+                'field': null,
+              },
             ],
           },
         ),
@@ -194,15 +229,19 @@ void main() {
 
       expect(readiness.ready, isFalse);
       expect(readiness.issues.single.target, ReadinessTarget.quote);
-      verify(() => dio.get<Map<String, dynamic>>('/quotes/q1/readiness')).called(1);
+      verify(
+        () => dio.get<Map<String, dynamic>>('/quotes/q1/readiness'),
+      ).called(1);
     });
   });
 
   group('delete', () {
     test('calls DELETE /quotes/{id}', () async {
       when(() => dio.delete<void>('/quotes/q1')).thenAnswer(
-        (_) async =>
-            Response(requestOptions: RequestOptions(path: '/quotes/q1'), statusCode: 204),
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/quotes/q1'),
+          statusCode: 204,
+        ),
       );
 
       await repository.delete('q1');

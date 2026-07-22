@@ -28,6 +28,8 @@ from app.catalog.schemas import (
     CatalogItemUpdate,
     CatalogPackSummary,
     QualificationRead,
+    TradeCategoryRead,
+    TradeGroupRead,
 )
 from app.core.authorization import ensure_same_company
 from app.core.exceptions import ConflictError, NotFoundError
@@ -280,6 +282,59 @@ class CatalogService:
             for category in categories
         ]
 
+    async def list_catalog_by_trade(self, company_id: uuid.UUID) -> list[TradeGroupRead]:
+        """The catalogue grouped by the artisan's trades: each imported trade
+        (and qualification) with the folders it brings, so a flat list of a
+        hundred-plus folders reads as a handful of trades to open.
+
+        A folder shared by several trades (Prestations, Chantier…) appears under
+        each of them — that is the merge behaviour of décision 2, surfaced. A
+        folder that belongs to no imported trade (a folder the artisan created
+        himself, the common Chantier pack) lands in a trailing "Autres" group so
+        nothing is ever hidden.
+        """
+        company = await self._company(company_id)
+        overviews = await self.list_category_overviews(company_id)
+        by_name = {overview.name: overview for overview in overviews}
+
+        sources = []
+        for slug in company.activities:
+            activity = trades.get_activity(slug)
+            if activity is not None:
+                sources.append(activity)
+        for slug in company.qualifications:
+            qualification = trades.get_qualification(slug)
+            if qualification is not None:
+                sources.append(qualification)
+        sources.sort(key=lambda source: source.label)
+
+        matched: set[str] = set()
+        groups: list[TradeGroupRead] = []
+        for source in sources:
+            seen: set[uuid.UUID] = set()
+            categories: list[TradeCategoryRead] = []
+            for pack in source.packs:
+                overview = by_name.get(pack.name)
+                if overview is not None and overview.id not in seen:
+                    seen.add(overview.id)
+                    matched.add(overview.name)
+                    categories.append(
+                        TradeCategoryRead(
+                            id=overview.id, name=overview.name, item_count=overview.item_count
+                        )
+                    )
+            if categories:
+                groups.append(TradeGroupRead(label=source.label, categories=categories))
+
+        others = [
+            TradeCategoryRead(id=o.id, name=o.name, item_count=o.item_count)
+            for o in overviews
+            if o.name not in matched
+        ]
+        if others:
+            groups.append(TradeGroupRead(label="Autres", categories=others))
+        return groups
+
     async def update_category(
         self, category_id: uuid.UUID, data: CatalogCategoryUpdate
     ) -> CatalogCategory:
@@ -339,6 +394,7 @@ class CatalogService:
         *,
         company_id: uuid.UUID | None = None,
         active_only: bool = False,
+        favorite_only: bool = False,
         category_id: uuid.UUID | None = None,
         query: str | None = None,
         offset: int = 0,
@@ -348,6 +404,7 @@ class CatalogService:
             return await self._items.list_by_company(
                 company_id,
                 active_only=active_only,
+                favorite_only=favorite_only,
                 category_id=category_id,
                 search=query,
                 offset=offset,

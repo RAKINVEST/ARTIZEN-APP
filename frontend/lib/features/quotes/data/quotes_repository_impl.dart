@@ -18,7 +18,7 @@ class QuotesRepositoryImpl implements QuotesRepository {
   @override
   Future<List<Quote>> list({
     required String companyId,
-    QuoteStatus? status,
+    List<QuoteStatus>? statuses,
     String? clientId,
     int? offset,
     int? limit,
@@ -27,14 +27,19 @@ class QuotesRepositoryImpl implements QuotesRepository {
       '/quotes',
       queryParameters: {
         'company_id': companyId,
-        // The wire value, not the French label — same enum as the backend.
-        if (status != null) 'status': status.name,
+        // The wire values, not the French labels — same enum as the backend.
+        // A list becomes repeated `?status=` params (Dio's default), which the
+        // backend reads as "status IN (...)": one call for draft + sent.
+        if (statuses != null && statuses.isNotEmpty)
+          'status': [for (final status in statuses) status.name],
         'client_id': ?clientId,
         'offset': ?offset,
         'limit': ?limit,
       },
     );
-    return response.data!.map((json) => Quote.fromJson(json as Map<String, dynamic>)).toList();
+    return response.data!
+        .map((json) => Quote.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   @override
@@ -81,13 +86,17 @@ class QuotesRepositoryImpl implements QuotesRepository {
 
   @override
   Future<Quote> duplicate(String id) async {
-    final response = await _dio.post<Map<String, dynamic>>('/quotes/$id/duplicate');
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/quotes/$id/duplicate',
+    );
     return Quote.fromJson(response.data!);
   }
 
   @override
   Future<QuoteReadiness> readiness(String id) async {
-    final response = await _dio.get<Map<String, dynamic>>('/quotes/$id/readiness');
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/quotes/$id/readiness',
+    );
     return QuoteReadiness.fromJson(response.data!);
   }
 
@@ -109,7 +118,9 @@ class QuotesRepositoryImpl implements QuotesRepository {
   }
 
   @override
-  Future<QuoteCalculation> calculate({required List<QuoteLineInput> lines}) async {
+  Future<QuoteCalculation> calculate({
+    required List<QuoteLineInput> lines,
+  }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/quotes/calculate',
       data: {'lines': lines.map((line) => line.toJson()).toList()},

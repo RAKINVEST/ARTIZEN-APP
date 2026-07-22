@@ -56,6 +56,9 @@ class CatalogItem with _$CatalogItem {
     required String vatRate,
     int? estimatedDurationMinutes,
     required bool active,
+    // In "Ma caisse à outils" — the artisan's starred articles. Defaulted so
+    // older payloads/fixtures without the field still parse.
+    @Default(false) bool isFavorite,
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _CatalogItem;
@@ -114,4 +117,29 @@ class CategoryOverview with _$CategoryOverview {
 
   factory CategoryOverview.fromJson(Map<String, dynamic> json) =>
       _$CategoryOverviewFromJson(json);
+}
+
+/// A folder as it appears under a trade in the "by trade" catalogue view
+/// (`GET /catalog/by-trade`) — mirrors `TradeCategoryRead`.
+@freezed
+class TradeCategory with _$TradeCategory {
+  const factory TradeCategory({
+    required String id,
+    required String name,
+    required int itemCount,
+  }) = _TradeCategory;
+
+  factory TradeCategory.fromJson(Map<String, dynamic> json) => _$TradeCategoryFromJson(json);
+}
+
+/// A trade (or "Autres") and the folders it groups — mirrors `TradeGroupRead`.
+/// Lets the catalogue be browsed trade by trade instead of as one flat list.
+@freezed
+class TradeGroup with _$TradeGroup {
+  const factory TradeGroup({
+    required String label,
+    @Default(<TradeCategory>[]) List<TradeCategory> categories,
+  }) = _TradeGroup;
+
+  factory TradeGroup.fromJson(Map<String, dynamic> json) => _$TradeGroupFromJson(json);
 }

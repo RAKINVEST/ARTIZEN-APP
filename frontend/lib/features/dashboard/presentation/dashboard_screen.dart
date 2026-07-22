@@ -5,9 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../shared/providers/current_company_provider.dart';
+import '../../quotes/presentation/quotes_providers.dart';
 import '../../quotes/presentation/widgets/quote_status_chip.dart';
 import 'dashboard_providers.dart';
-import 'widgets/onboarding_checklist.dart';
+import 'widgets/quick_access_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -20,14 +21,35 @@ class DashboardScreen extends ConsumerWidget {
     ref.invalidate(dashboardSummaryProvider);
   }
 
+  /// Open the devis list already filtered to [filter] (and titled to match):
+  /// tapping "En attente" lands on the pending devis, "Devis" on all of them.
+  /// Pushed over the dashboard (not a tab switch) so its back arrow returns
+  /// here directly, rather than walking the sequential section arrows.
+  ///
+  /// The filter only lives for this drill-down: once the artisan pops back
+  /// (`push` completes), it's reset to "Tous" so the Devis *tab* in the bottom
+  /// bar always opens on every devis — never stuck on the last card's filter.
+  Future<void> _openQuotes(
+    BuildContext context,
+    WidgetRef ref,
+    QuotesFilter filter,
+  ) async {
+    ref.read(quotesFilterProvider.notifier).state = filter;
+    await context.push('/quotes-view');
+    if (context.mounted) {
+      ref.read(quotesFilterProvider.notifier).state = QuotesFilter.all;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(dashboardSummaryProvider);
-    // The manual "Masquer" escape hatch; the checklist also hides itself once
-    // every step is done.
-    final onboardingDismissed = ref.watch(onboardingDismissedProvider);
 
     return Scaffold(
+      // No history arrows here on purpose: the dashboard is the home / starting
+      // point, so "back" and "forward" have nothing useful to do. The arrows
+      // live on the other sections (Clients, Catalogue, Devis, Paramètres),
+      // which is where returning to the dashboard actually matters.
       appBar: AppBar(title: const Text('Tableau de bord')),
       body: AsyncValueView(
         value: summary,
@@ -37,17 +59,7 @@ class DashboardScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              if (!data.onboardingComplete && !onboardingDismissed) ...[
-                OnboardingChecklist(summary: data),
-                const SizedBox(height: 24),
-              ],
-              // The guided quote wizard — the main way to create a quote.
-              FilledButton.icon(
-                onPressed: () => context.push('/assistant'),
-                icon: const Icon(Icons.auto_awesome_outlined),
-                label: const Text('Nouveau devis guidé'),
-                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-              ),
+              const QuickAccessCard(),
               const SizedBox(height: 24),
               Row(
                 children: [
@@ -71,14 +83,57 @@ class DashboardScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              _StatCard(
-                icon: Icons.description_outlined,
-                label: 'Devis',
-                value: data.quoteCount.display,
-                onTap: () => context.go('/quotes'),
+              // Devis, then a breakdown by outcome right next to it. Each tile
+              // opens the devis list already filtered to itself: all devis, then
+              // en attente (draft + sent), validés (accepted), refusés. Order:
+              // total, then pending, then the two resolved outcomes.
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatCard(
+                      icon: Icons.description_outlined,
+                      label: 'Devis',
+                      value: data.quoteCount.display,
+                      onTap: () => _openQuotes(context, ref, QuotesFilter.all),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      icon: Icons.schedule_outlined,
+                      label: 'En attente',
+                      value: '${data.pendingCount}',
+                      onTap: () =>
+                          _openQuotes(context, ref, QuotesFilter.pending),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      icon: Icons.check_circle_outline,
+                      label: 'Devis validés',
+                      value: '${data.acceptedCount}',
+                      onTap: () =>
+                          _openQuotes(context, ref, QuotesFilter.accepted),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      icon: Icons.cancel_outlined,
+                      label: 'Devis refusés',
+                      value: '${data.refusedCount}',
+                      onTap: () =>
+                          _openQuotes(context, ref, QuotesFilter.refused),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
-              Text('Derniers devis', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Derniers devis',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               if (data.recentQuotes.isEmpty)
                 const Padding(
@@ -98,7 +153,10 @@ class DashboardScreen extends ConsumerWidget {
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       subtitle: Text(CurrencyFormatter.format(quote.totalTtc)),
-                      trailing: QuoteStatusChip(status: quote.status, compact: true),
+                      trailing: QuoteStatusChip(
+                        status: quote.status,
+                        compact: true,
+                      ),
                       onTap: () => context.push('/quotes/${quote.id}'),
                     ),
                   ),

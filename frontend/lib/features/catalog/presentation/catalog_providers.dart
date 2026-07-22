@@ -29,6 +29,9 @@ class CategoriesNotifier extends AsyncNotifier<List<CatalogCategory>> {
     final companyId = await ref.read(currentCompanyIdProvider.future);
     await ref.read(catalogRepositoryProvider).createCategory(input, companyId: companyId);
     await refresh();
+    // A brand-new folder belongs to no trade yet, so the by-trade view must
+    // refresh to show it under "Autres".
+    ref.invalidate(catalogByTradeProvider);
   }
 }
 
@@ -79,6 +82,13 @@ class ItemsNotifier extends SearchablePagedListNotifier<CatalogItem> {
     await ref.read(catalogRepositoryProvider).reactivateItem(id);
     await reload();
   }
+
+  Future<void> setFavorite(String id, {required bool favorite}) async {
+    await ref.read(catalogRepositoryProvider).setFavorite(id, favorite: favorite);
+    await reload();
+    // Keep "Ma caisse à outils" in sync with the star just toggled here.
+    ref.invalidate(favoriteItemsProvider);
+  }
 }
 
 final itemsNotifierProvider = AsyncNotifierProvider<ItemsNotifier, PagedList<CatalogItem>>(
@@ -92,6 +102,74 @@ final itemByIdProvider = Provider.family<CatalogItem?, String>((ref, id) {
     if (item.id == id) return item;
   }
   return null;
+});
+
+/// The articles in the artisan's "caisse à outils" — his starred favourites.
+/// A plain list (a toolbox is a curated handful, not a paged catalogue) and
+/// autoDispose, so it re-fetches fresh each time the screen opens.
+class FavoriteItemsNotifier extends AutoDisposeAsyncNotifier<List<CatalogItem>> {
+  Future<List<CatalogItem>> _fetch() async {
+    final companyId = await ref.read(currentCompanyIdProvider.future);
+    return ref.read(catalogRepositoryProvider).listItems(
+          companyId: companyId,
+          favoriteOnly: true,
+          limit: 200,
+        );
+  }
+
+  @override
+  Future<List<CatalogItem>> build() => _fetch();
+
+  Future<void> refresh() async {
+    state = const AsyncValue<List<CatalogItem>>.loading().copyWithPrevious(state);
+    state = await AsyncValue.guard(_fetch);
+  }
+
+  /// Take an article out of the toolbox from the toolbox screen itself.
+  Future<void> removeFromToolbox(String id) async {
+    await ref.read(catalogRepositoryProvider).setFavorite(id, favorite: false);
+    await refresh();
+    // The catalogue's own list must reflect the un-starring too.
+    ref.invalidate(itemsNotifierProvider);
+  }
+}
+
+final favoriteItemsProvider =
+    AutoDisposeAsyncNotifierProvider<FavoriteItemsNotifier, List<CatalogItem>>(
+  FavoriteItemsNotifier.new,
+);
+
+/// The catalogue grouped by the artisan's trades (métiers) — the source of the
+/// "Catégories" tab. Kept alive with the tab; refreshes when a folder is added
+/// (and it re-fetches on its own after a métier import invalidates it).
+class CatalogByTradeNotifier extends AsyncNotifier<List<TradeGroup>> {
+  @override
+  Future<List<TradeGroup>> build() {
+    return ref.watch(catalogRepositoryProvider).listCatalogByTrade();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue<List<TradeGroup>>.loading().copyWithPrevious(state);
+    state = await AsyncValue.guard(
+      () => ref.read(catalogRepositoryProvider).listCatalogByTrade(),
+    );
+  }
+}
+
+final catalogByTradeProvider =
+    AsyncNotifierProvider<CatalogByTradeNotifier, List<TradeGroup>>(CatalogByTradeNotifier.new);
+
+/// The articles of one folder — the drill-down when the artisan opens a folder
+/// from the by-trade view. A real folder is small, so a single bounded page;
+/// server-scoped by category.
+final categoryItemsProvider =
+    FutureProvider.autoDispose.family<List<CatalogItem>, String>((ref, categoryId) async {
+  final companyId = await ref.watch(currentCompanyIdProvider.future);
+  return ref.watch(catalogRepositoryProvider).listItems(
+        companyId: companyId,
+        categoryId: categoryId,
+        limit: 200,
+      );
 });
 
 /// Server-searched, active-only item picker used by the quote form and the

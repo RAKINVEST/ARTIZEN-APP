@@ -23,6 +23,15 @@ Map<String, dynamic> _itemJson({required bool active}) => {
   'updated_at': '2026-01-01T10:00:00',
 };
 
+Map<String, dynamic> _categoryJson(String id) => {
+  'id': id,
+  'company_id': 'co1',
+  'name': 'Dossier $id',
+  'description': null,
+  'created_at': '2026-01-01T10:00:00',
+  'updated_at': '2026-01-01T10:00:00',
+};
+
 void main() {
   late MockDio dio;
   late CatalogRepositoryImpl repository;
@@ -40,6 +49,7 @@ void main() {
           queryParameters: {
             'company_id': 'co1',
             'active_only': true,
+            'favorite_only': false,
             'q': 'carrelage',
             'offset': 0,
             'limit': 30,
@@ -68,6 +78,7 @@ void main() {
           queryParameters: {
             'company_id': 'co1',
             'active_only': true,
+            'favorite_only': false,
             'q': 'carrelage',
             'offset': 0,
             'limit': 30,
@@ -80,7 +91,7 @@ void main() {
       when(
         () => dio.get<List<dynamic>>(
           '/catalog/items',
-          queryParameters: {'company_id': 'co1', 'active_only': false},
+          queryParameters: {'company_id': 'co1', 'active_only': false, 'favorite_only': false},
         ),
       ).thenAnswer(
         (_) async => Response(
@@ -95,9 +106,160 @@ void main() {
       verify(
         () => dio.get<List<dynamic>>(
           '/catalog/items',
-          queryParameters: {'company_id': 'co1', 'active_only': false},
+          queryParameters: {'company_id': 'co1', 'active_only': false, 'favorite_only': false},
         ),
       ).called(1);
+    });
+  });
+
+  group('favorites', () {
+    test('listItems forwards favorite_only for "Ma caisse à outils"', () async {
+      when(
+        () => dio.get<List<dynamic>>(
+          '/catalog/items',
+          queryParameters: {'company_id': 'co1', 'active_only': false, 'favorite_only': true},
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/catalog/items'),
+          statusCode: 200,
+          data: [_itemJson(active: true)],
+        ),
+      );
+
+      final items = await repository.listItems(companyId: 'co1', favoriteOnly: true);
+
+      expect(items, hasLength(1));
+      verify(
+        () => dio.get<List<dynamic>>(
+          '/catalog/items',
+          queryParameters: {'company_id': 'co1', 'active_only': false, 'favorite_only': true},
+        ),
+      ).called(1);
+    });
+
+    test('setFavorite sends only {"is_favorite": ...}, leaving the rest untouched', () async {
+      // Same bare-body reasoning as reactivateItem: the backend applies
+      // exclude_unset, so this touches only the toolbox flag.
+      when(
+        () => dio.put<Map<String, dynamic>>('/catalog/items/i1', data: {'is_favorite': true}),
+      ).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/catalog/items/i1'),
+          statusCode: 200,
+          data: _itemJson(active: true),
+        ),
+      );
+
+      await repository.setFavorite('i1', favorite: true);
+
+      verify(
+        () => dio.put<Map<String, dynamic>>('/catalog/items/i1', data: {'is_favorite': true}),
+      ).called(1);
+    });
+  });
+
+  group('listCategories', () {
+    test('pages through every category until a short page ends the walk', () async {
+      // A company that imported many trades has more folders than one page.
+      // The picker must still receive all of them, so the repo pages through.
+      final page1 = [for (var i = 0; i < 200; i++) _categoryJson('c$i')];
+      final page2 = [for (var i = 200; i < 230; i++) _categoryJson('c$i')];
+
+      when(
+        () => dio.get<List<dynamic>>(
+          '/catalog/categories',
+          queryParameters: {'company_id': 'co1', 'offset': 0, 'limit': 200},
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/catalog/categories'),
+          statusCode: 200,
+          data: page1,
+        ),
+      );
+      when(
+        () => dio.get<List<dynamic>>(
+          '/catalog/categories',
+          queryParameters: {'company_id': 'co1', 'offset': 200, 'limit': 200},
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/catalog/categories'),
+          statusCode: 200,
+          data: page2,
+        ),
+      );
+
+      final categories = await repository.listCategories(companyId: 'co1');
+
+      expect(categories, hasLength(230));
+      // The second page was actually fetched — a single call would have
+      // silently dropped everything past the 200th folder.
+      verify(
+        () => dio.get<List<dynamic>>(
+          '/catalog/categories',
+          queryParameters: {'company_id': 'co1', 'offset': 200, 'limit': 200},
+        ),
+      ).called(1);
+    });
+
+    test('a single short page ends after one request', () async {
+      when(
+        () => dio.get<List<dynamic>>(
+          '/catalog/categories',
+          queryParameters: {'company_id': 'co1', 'offset': 0, 'limit': 200},
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/catalog/categories'),
+          statusCode: 200,
+          data: [_categoryJson('c1'), _categoryJson('c2')],
+        ),
+      );
+
+      final categories = await repository.listCategories(companyId: 'co1');
+
+      expect(categories, hasLength(2));
+      verifyNever(
+        () => dio.get<List<dynamic>>(
+          '/catalog/categories',
+          queryParameters: {'company_id': 'co1', 'offset': 200, 'limit': 200},
+        ),
+      );
+    });
+  });
+
+  group('listCatalogByTrade', () {
+    test('parses the trade groups and their folders', () async {
+      when(() => dio.get<List<dynamic>>('/catalog/by-trade')).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/catalog/by-trade'),
+          statusCode: 200,
+          data: [
+            {
+              'label': 'Plomberie',
+              'categories': [
+                {'id': 'c1', 'name': 'Sanitaires', 'item_count': 3},
+              ],
+            },
+            {
+              'label': 'Autres',
+              'categories': [
+                {'id': 'c2', 'name': 'Divers', 'item_count': 1},
+              ],
+            },
+          ],
+        ),
+      );
+
+      final groups = await repository.listCatalogByTrade();
+
+      expect(groups, hasLength(2));
+      expect(groups.first.label, 'Plomberie');
+      expect(groups.first.categories.single.name, 'Sanitaires');
+      expect(groups.first.categories.single.itemCount, 3);
+      expect(groups.last.label, 'Autres');
     });
   });
 

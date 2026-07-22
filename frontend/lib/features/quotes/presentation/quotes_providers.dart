@@ -11,11 +11,49 @@ import '../data/quote_models.dart';
 import '../data/quote_readiness.dart';
 import '../data/quotes_repository_impl.dart';
 
-/// The status chip selected on the devis list (`null` = "Tous"). Watched by
-/// [QuotesNotifier.watchDependencies] so picking a chip re-runs the fetch
-/// with `?status=` — kept as a separate provider (rather than notifier
-/// state) so the chip bar can watch the selection reactively.
-final quotesStatusFilterProvider = StateProvider<QuoteStatus?>((ref) => null);
+/// The view selected on the devis list — the same buckets as the dashboard's
+/// cards. "En attente" folds **draft + sent** (a quote awaiting an outcome),
+/// so this is a thin semantic layer over [QuoteStatus] rather than a raw
+/// status: it also names the screen ([title]) and its chips ([chipLabel]).
+enum QuotesFilter {
+  all,
+  pending,
+  accepted,
+  refused;
+
+  /// The AppBar title for this view.
+  String get title => switch (this) {
+    QuotesFilter.all => 'Devis',
+    QuotesFilter.pending => 'Devis en attente',
+    QuotesFilter.accepted => 'Devis validés',
+    QuotesFilter.refused => 'Devis refusés',
+  };
+
+  /// The (shorter) chip label.
+  String get chipLabel => switch (this) {
+    QuotesFilter.all => 'Tous',
+    QuotesFilter.pending => 'En attente',
+    QuotesFilter.accepted => 'Validés',
+    QuotesFilter.refused => 'Refusés',
+  };
+
+  /// The statuses this view fetches server-side (empty = every status). "En
+  /// attente" = draft + sent, matched by a repeated `?status=` (backend `IN`).
+  List<QuoteStatus> get statuses => switch (this) {
+    QuotesFilter.all => const [],
+    QuotesFilter.pending => const [QuoteStatus.draft, QuoteStatus.sent],
+    QuotesFilter.accepted => const [QuoteStatus.accepted],
+    QuotesFilter.refused => const [QuoteStatus.refused],
+  };
+}
+
+/// The active view on the devis list. Watched by [QuotesNotifier] so picking a
+/// chip — or landing from a dashboard card — re-runs the fetch, and by the
+/// screen so the AppBar title follows the view. A plain provider (not notifier
+/// state) so both can watch it reactively.
+final quotesFilterProvider = StateProvider<QuotesFilter>(
+  (ref) => QuotesFilter.all,
+);
 
 /// The client filter selected on the devis list (`null` = all clients).
 final quotesClientFilterProvider = StateProvider<String?>((ref) => null);
@@ -25,23 +63,29 @@ final quotesClientFilterProvider = StateProvider<String?>((ref) => null);
 /// `skipLoadingOnReload` in `PagedListView`, the current rows stay on screen
 /// under a discrete indicator instead of flashing a full-page spinner.
 class QuotesNotifier extends PagedListNotifier<Quote> {
-  QuoteStatus? _status;
+  QuotesFilter _filter = QuotesFilter.all;
   String? _clientId;
 
   @override
   Future<String> watchDependencies() {
     // Read filters synchronously (before the first await) so build tracks
     // both providers and re-runs whenever either changes.
-    _status = ref.watch(quotesStatusFilterProvider);
+    _filter = ref.watch(quotesFilterProvider);
     _clientId = ref.watch(quotesClientFilterProvider);
     return ref.watch(currentCompanyIdProvider.future);
   }
 
   @override
-  Future<List<Quote>> fetchPage(String companyId, {required int offset, required int limit}) {
-    return ref.read(quotesRepositoryProvider).list(
+  Future<List<Quote>> fetchPage(
+    String companyId, {
+    required int offset,
+    required int limit,
+  }) {
+    return ref
+        .read(quotesRepositoryProvider)
+        .list(
           companyId: companyId,
-          status: _status,
+          statuses: _filter.statuses,
           clientId: _clientId,
           offset: offset,
           limit: limit,
@@ -55,11 +99,9 @@ class QuotesNotifier extends PagedListNotifier<Quote> {
     required List<QuoteLineInput> lines,
   }) async {
     final companyId = await ref.read(currentCompanyIdProvider.future);
-    final quote = await ref.read(quotesRepositoryProvider).create(
-          companyId: companyId,
-          clientId: clientId,
-          lines: lines,
-        );
+    final quote = await ref
+        .read(quotesRepositoryProvider)
+        .create(companyId: companyId, clientId: clientId, lines: lines);
     await reload();
     return quote;
   }
@@ -70,7 +112,9 @@ class QuotesNotifier extends PagedListNotifier<Quote> {
   /// `quoteByIdProvider`, and refreshing only the list would leave the
   /// artisan looking at the status they just changed away from.
   Future<Quote> changeStatus(String id, QuoteStatus status) async {
-    final quote = await ref.read(quotesRepositoryProvider).changeStatus(id, status);
+    final quote = await ref
+        .read(quotesRepositoryProvider)
+        .changeStatus(id, status);
     ref.invalidate(quoteByIdProvider(id));
     await reload();
     return quote;
@@ -90,9 +134,8 @@ class QuotesNotifier extends PagedListNotifier<Quote> {
   }
 }
 
-final quotesNotifierProvider = AsyncNotifierProvider<QuotesNotifier, PagedList<Quote>>(
-  QuotesNotifier.new,
-);
+final quotesNotifierProvider =
+    AsyncNotifierProvider<QuotesNotifier, PagedList<Quote>>(QuotesNotifier.new);
 
 final quoteByIdProvider = FutureProvider.family<Quote, String>((ref, id) {
   return ref.watch(quotesRepositoryProvider).get(id);
@@ -102,9 +145,10 @@ final quoteByIdProvider = FutureProvider.family<Quote, String>((ref, id) {
 /// compléter" badge and the readiness gate. `autoDispose` so it re-checks each
 /// time a detail screen is opened; the gate also refreshes it when an emit is
 /// attempted, so fixing an issue elsewhere is reflected on return.
-final quoteReadinessProvider = FutureProvider.autoDispose.family<QuoteReadiness, String>((ref, id) {
-  return ref.watch(quotesRepositoryProvider).readiness(id);
-});
+final quoteReadinessProvider = FutureProvider.autoDispose
+    .family<QuoteReadiness, String>((ref, id) {
+      return ref.watch(quotesRepositoryProvider).readiness(id);
+    });
 
 /// The rendered PDF bytes of a quote, for the in-app preview. Same endpoint
 /// (and therefore the exact same document) the "Télécharger" action sends —
@@ -148,9 +192,10 @@ class QuoteDraftNotifier extends Notifier<List<QuoteDraftLine>> {
   void clear() => state = [];
 }
 
-final quoteDraftLinesProvider = NotifierProvider<QuoteDraftNotifier, List<QuoteDraftLine>>(
-  QuoteDraftNotifier.new,
-);
+final quoteDraftLinesProvider =
+    NotifierProvider<QuoteDraftNotifier, List<QuoteDraftLine>>(
+      QuoteDraftNotifier.new,
+    );
 
 /// The client selected for the quote currently being drafted.
 final quoteDraftClientProvider = StateProvider<Client?>((ref) => null);

@@ -21,7 +21,8 @@ class QuoteLine with _$QuoteLine {
     required String totalTtc,
   }) = _QuoteLine;
 
-  factory QuoteLine.fromJson(Map<String, dynamic> json) => _$QuoteLineFromJson(json);
+  factory QuoteLine.fromJson(Map<String, dynamic> json) =>
+      _$QuoteLineFromJson(json);
 }
 
 /// Mirrors the backend's `QuoteStatus`. The commercial life of a quote.
@@ -40,20 +41,20 @@ enum QuoteStatus {
   /// What the artisan reads. The wire values stay English to match the
   /// backend; only the label is translated.
   String get label => switch (this) {
-        QuoteStatus.draft => 'Brouillon',
-        QuoteStatus.sent => 'Envoyé',
-        QuoteStatus.accepted => 'Accepté',
-        QuoteStatus.refused => 'Refusé',
-      };
+    QuoteStatus.draft => 'Brouillon',
+    QuoteStatus.sent => 'Envoyé',
+    QuoteStatus.accepted => 'Accepté',
+    QuoteStatus.refused => 'Refusé',
+  };
 
   /// Mirrors the backend's `QUOTE_TRANSITIONS`. Duplicated on purpose:
   /// the app must not offer a button the server will refuse. The backend
   /// stays the authority — this only decides what to *show*.
   List<QuoteStatus> get nextStates => switch (this) {
-        QuoteStatus.draft => const [QuoteStatus.sent],
-        QuoteStatus.sent => const [QuoteStatus.accepted, QuoteStatus.refused],
-        QuoteStatus.accepted || QuoteStatus.refused => const [],
-      };
+    QuoteStatus.draft => const [QuoteStatus.sent],
+    QuoteStatus.sent => const [QuoteStatus.accepted, QuoteStatus.refused],
+    QuoteStatus.accepted || QuoteStatus.refused => const [],
+  };
 
   bool get isEditable => this == QuoteStatus.draft;
 }
@@ -65,6 +66,7 @@ class Quote with _$Quote {
     required String id,
     required String companyId,
     required String clientId,
+
     /// "DEV-2026-0001" — what the artisan and their customer actually use.
     /// `id` is a UUID nobody reads out loud.
     required String quoteNumber,
@@ -90,5 +92,6 @@ class QuoteLineInput with _$QuoteLineInput {
     required String quantity,
   }) = _QuoteLineInput;
 
-  factory QuoteLineInput.fromJson(Map<String, dynamic> json) => _$QuoteLineInputFromJson(json);
+  factory QuoteLineInput.fromJson(Map<String, dynamic> json) =>
+      _$QuoteLineInputFromJson(json);
 }

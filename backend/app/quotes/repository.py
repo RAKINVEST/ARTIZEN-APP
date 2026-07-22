@@ -77,17 +77,19 @@ class QuoteRepository(BaseRepository[Quote]):
         self,
         company_id: uuid.UUID,
         *,
-        status: QuoteStatus | None = None,
+        statuses: list[QuoteStatus] | None = None,
         client_id: uuid.UUID | None = None,
         offset: int = 0,
         limit: int = 100,
     ) -> list[Quote]:
         stmt = select(Quote).where(Quote.company_id == company_id)
         # Filters so the quotes list is triageable at a glance — "my pending
-        # quotes", "this client's quotes" — instead of scrolling everything
-        # (audit M8). Both are indexed columns.
-        if status is not None:
-            stmt = stmt.where(Quote.status == status)
+        # quotes" (draft + sent), "this client's quotes" — instead of scrolling
+        # everything (audit M8). Both are indexed columns; a set of statuses
+        # (``IN``) lets the dashboard's "En attente" fold draft and sent into one
+        # view without a client-side pass over a truncated page.
+        if statuses:
+            stmt = stmt.where(Quote.status.in_(statuses))
         if client_id is not None:
             stmt = stmt.where(Quote.client_id == client_id)
         stmt = stmt.order_by(Quote.created_at.desc()).offset(offset).limit(limit)

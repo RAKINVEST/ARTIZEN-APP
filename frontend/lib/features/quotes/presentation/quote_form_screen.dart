@@ -43,7 +43,8 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
   Widget build(BuildContext context) {
     final selectedClient = ref.watch(quoteDraftClientProvider);
     final draftLines = ref.watch(quoteDraftLinesProvider);
-    final canSubmit = selectedClient != null && draftLines.isNotEmpty && !_saving;
+    final canSubmit =
+        selectedClient != null && draftLines.isNotEmpty && !_saving;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nouveau devis')),
@@ -55,7 +56,9 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
           Card(
             child: ListTile(
               leading: const Icon(Icons.person_outline),
-              title: Text(selectedClient?.displayName ?? 'Sélectionner un client'),
+              title: Text(
+                selectedClient?.displayName ?? 'Sélectionner un client',
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: _saving ? null : () => _pickClient(context),
             ),
@@ -64,7 +67,10 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Lignes du devis', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Lignes du devis',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               TextButton.icon(
                 onPressed: _saving ? null : () => _addLine(context),
                 icon: const Icon(Icons.add),
@@ -75,7 +81,9 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
           if (draftLines.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text('Aucune ligne. Ajoutez au moins un article du catalogue.'),
+              child: Text(
+                'Aucune ligne. Ajoutez au moins un article du catalogue.',
+              ),
             )
           else
             for (var i = 0; i < draftLines.length; i++)
@@ -91,7 +99,9 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                     icon: const Icon(Icons.close),
                     onPressed: _saving
                         ? null
-                        : () => ref.read(quoteDraftLinesProvider.notifier).removeLineAt(i),
+                        : () => ref
+                              .read(quoteDraftLinesProvider.notifier)
+                              .removeLineAt(i),
                   ),
                 ),
               ),
@@ -100,7 +110,9 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
             label: 'Créer le devis',
             icon: Icons.check_circle_outline,
             loading: _saving,
-            onPressed: canSubmit ? () => _submit(selectedClient, draftLines) : null,
+            onPressed: canSubmit
+                ? () => _submit(selectedClient, draftLines)
+                : null,
           ),
         ],
       ),
@@ -125,7 +137,9 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
       builder: (context) => const _ItemPickerSheet(),
     );
     if (line != null) {
-      ref.read(quoteDraftLinesProvider.notifier).addLine(line.item, line.quantity);
+      ref
+          .read(quoteDraftLinesProvider.notifier)
+          .addLine(line.item, line.quantity);
     }
   }
 
@@ -133,12 +147,19 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
     if (_saving) return;
     setState(() => _saving = true);
     try {
-      final quote = await ref.read(quotesNotifierProvider.notifier).createQuote(
+      final quote = await ref
+          .read(quotesNotifierProvider.notifier)
+          .createQuote(
             clientId: client.id,
             // Quantities are already comma-normalized at the picker (see
             // `_ItemPickerSheet`), so the payload is backend-ready here.
             lines: lines
-                .map((line) => QuoteLineInput(catalogItemId: line.item.id, quantity: line.quantity))
+                .map(
+                  (line) => QuoteLineInput(
+                    catalogItemId: line.item.id,
+                    quantity: line.quantity,
+                  ),
+                )
                 .toList(),
           );
       ref.read(quoteDraftLinesProvider.notifier).clear();
@@ -178,7 +199,10 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
         child: Column(
           children: [
             const SizedBox(height: 8),
-            Text('Choisir un client', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Choisir un client',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             DebouncedSearchField(
               hintText: 'Rechercher un client (nom, société…)',
               isLoading: clients.isLoading,
@@ -190,7 +214,8 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                 skipLoadingOnRefresh: true,
                 data: (items) => items.isEmpty
                     ? const EmptyState(
-                        message: 'Aucun client ne correspond.\nAffinez votre recherche '
+                        message:
+                            'Aucun client ne correspond.\nAffinez votre recherche '
                             'ou créez le client depuis l\'onglet Clients.',
                         icon: Icons.person_search_outlined,
                       )
@@ -221,7 +246,10 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
   }
 
   Widget? _clientSubtitle(Client client) {
-    final parts = [client.phone, client.email].whereType<String>().where((s) => s.isNotEmpty);
+    final parts = [
+      client.phone,
+      client.email,
+    ].whereType<String>().where((s) => s.isNotEmpty);
     return parts.isEmpty ? null : Text(parts.join(' · '));
   }
 }
@@ -246,7 +274,10 @@ class _ItemPickerSheetState extends ConsumerState<_ItemPickerSheet> {
   /// after the artisan had composed every line, and without saying which
   /// one was wrong.
   void _addSelectedItem() {
-    final error = DecimalInput.validate(_quantityController.text, exclusiveMin: true);
+    final error = DecimalInput.validate(
+      _quantityController.text,
+      exclusiveMin: true,
+    );
     if (error != null) {
       setState(() => _quantityError = error);
       return;
@@ -280,7 +311,10 @@ class _ItemPickerSheetState extends ConsumerState<_ItemPickerSheet> {
           child: Column(
             children: [
               const SizedBox(height: 8),
-              Text('Choisir un article', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Choisir un article',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               DebouncedSearchField(
                 hintText: 'Rechercher un article (désignation, code)',
                 isLoading: items.isLoading,
@@ -292,7 +326,8 @@ class _ItemPickerSheetState extends ConsumerState<_ItemPickerSheet> {
                   skipLoadingOnRefresh: true,
                   data: (list) => list.isEmpty
                       ? const EmptyState(
-                          message: 'Aucun article actif ne correspond.\nAffinez votre '
+                          message:
+                              'Aucun article actif ne correspond.\nAffinez votre '
                               'recherche ou ajoutez l\'article au catalogue.',
                           icon: Icons.search_off,
                         )
@@ -334,9 +369,13 @@ class _ItemPickerSheetState extends ConsumerState<_ItemPickerSheet> {
                           labelText: 'Quantité',
                           errorText: _quantityError,
                         ),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         onChanged: (_) {
-                          if (_quantityError != null) setState(() => _quantityError = null);
+                          if (_quantityError != null) {
+                            setState(() => _quantityError = null);
+                          }
                         },
                       ),
                     ),

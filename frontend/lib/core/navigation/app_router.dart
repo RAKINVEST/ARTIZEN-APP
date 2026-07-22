@@ -10,7 +10,9 @@ import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/branding/presentation/branding_sample_preview_screen.dart';
 import '../../features/branding/presentation/company_profile_screen.dart';
 import '../../features/catalog/presentation/catalog_screen.dart';
+import '../../features/catalog/presentation/category_items_screen.dart';
 import '../../features/catalog/presentation/item_form_screen.dart';
+import '../../features/catalog/presentation/toolbox_screen.dart';
 import '../../features/clients/presentation/client_form_screen.dart';
 import '../../features/clients/presentation/clients_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
@@ -33,7 +35,13 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 /// `/reset-password` and `/forgot-password` belong here so a logged-out user
 /// following the reset-email link isn't bounced to `/login` before they can
 /// set a new password.
-const _publicRoutes = {'/', '/login', '/register', '/forgot-password', '/reset-password'};
+const _publicRoutes = {
+  '/',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+};
 
 /// Routes a signed-in user is sent away from (they've already authenticated).
 /// `/` and the auth screens send an authenticated user to their dashboard; the
@@ -74,14 +82,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = await ref.read(authNotifierProvider.future);
       final location = state.matchedLocation;
       if (!isLoggedIn && !_publicRoutes.contains(location)) return '/login';
-      if (isLoggedIn && _signedInRedirectRoutes.contains(location)) return '/dashboard';
+      if (isLoggedIn && _signedInRedirectRoutes.contains(location)) {
+        return '/dashboard';
+      }
       return null;
     },
     routes: [
       // Public marketing landing at the site root, outside the tabbed shell.
       GoRoute(path: '/', builder: (context, state) => const LandingScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
       GoRoute(
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
@@ -94,23 +107,49 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ResetPasswordScreen(token: state.uri.queryParameters['token']),
       ),
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),
+        builder: (context, state, navigationShell) =>
+            AppShell(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(
             navigatorKey: _shellNavigatorKey,
-            routes: [GoRoute(path: '/dashboard', builder: (context, state) => const DashboardScreen())],
+            routes: [
+              GoRoute(
+                path: '/dashboard',
+                builder: (context, state) => const DashboardScreen(),
+              ),
+            ],
           ),
           StatefulShellBranch(
-            routes: [GoRoute(path: '/clients', builder: (context, state) => const ClientsListScreen())],
+            routes: [
+              GoRoute(
+                path: '/clients',
+                builder: (context, state) => const ClientsListScreen(),
+              ),
+            ],
           ),
           StatefulShellBranch(
-            routes: [GoRoute(path: '/catalog', builder: (context, state) => const CatalogScreen())],
+            routes: [
+              GoRoute(
+                path: '/catalog',
+                builder: (context, state) => const CatalogScreen(),
+              ),
+            ],
           ),
           StatefulShellBranch(
-            routes: [GoRoute(path: '/quotes', builder: (context, state) => const QuotesListScreen())],
+            routes: [
+              GoRoute(
+                path: '/quotes',
+                builder: (context, state) => const QuotesListScreen(),
+              ),
+            ],
           ),
           StatefulShellBranch(
-            routes: [GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen())],
+            routes: [
+              GoRoute(
+                path: '/settings',
+                builder: (context, state) => const SettingsScreen(),
+              ),
+            ],
           ),
         ],
       ),
@@ -122,7 +161,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/clients/:id/edit',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => ClientFormScreen(clientId: state.pathParameters['id']),
+        builder: (context, state) =>
+            ClientFormScreen(clientId: state.pathParameters['id']),
       ),
       GoRoute(
         path: '/catalog/items/new',
@@ -132,7 +172,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/catalog/items/:id/edit',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => ItemFormScreen(itemId: state.pathParameters['id']),
+        builder: (context, state) =>
+            ItemFormScreen(itemId: state.pathParameters['id']),
+      ),
+      GoRoute(
+        path: '/catalog/categories/:id/items',
+        parentNavigatorKey: _rootNavigatorKey,
+        // The folder name is passed as `extra` so the screen can title itself
+        // without a round-trip; it falls back if opened by a raw URL.
+        builder: (context, state) => CategoryItemsScreen(
+          categoryId: state.pathParameters['id']!,
+          categoryName: state.extra is String
+              ? state.extra as String
+              : 'Dossier',
+        ),
       ),
       // DÉPRÉCIÉ (V1) : l'ancien formulaire de devis. Le flux principal est
       // désormais le wizard (`/assistant`). La route est conservée — encore
@@ -143,6 +196,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/quotes/new',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const QuoteFormScreen(),
+      ),
+      // A dashboard card drilling into its filtered devis. Pushed over the
+      // shell (not the Devis tab) so its back arrow returns straight to the
+      // dashboard, instead of the tab's sequential section arrows. The filter
+      // rides on `quotesFilterProvider`, set by the card before it navigates.
+      GoRoute(
+        path: '/quotes-view',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const QuotesListScreen(asPushedView: true),
       ),
       GoRoute(
         path: '/quote-assistant',
@@ -165,27 +227,40 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const MetiersScreen(),
       ),
       GoRoute(
+        path: '/toolbox',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ToolboxScreen(),
+      ),
+      GoRoute(
         path: '/assistant',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const QuoteWizardScreen(),
+        // `?clientId=&clientName=` lets a client's "Créer un devis" open the
+        // wizard with that client already chosen.
+        builder: (context, state) => QuoteWizardScreen(
+          preselectClientId: state.uri.queryParameters['clientId'],
+          preselectClientName: state.uri.queryParameters['clientName'],
+        ),
       ),
       GoRoute(
         path: '/company-profile',
         parentNavigatorKey: _rootNavigatorKey,
         // `?field=` lets the readiness gate deep-link straight to the field a
         // quote is missing, which the form then focuses and scrolls to.
-        builder: (context, state) =>
-            CompanyProfileScreen(focusField: state.uri.queryParameters['field']),
+        builder: (context, state) => CompanyProfileScreen(
+          focusField: state.uri.queryParameters['field'],
+        ),
       ),
       GoRoute(
         path: '/quotes/:id',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => QuoteDetailScreen(quoteId: state.pathParameters['id']!),
+        builder: (context, state) =>
+            QuoteDetailScreen(quoteId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/quotes/:id/pdf',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => QuotePdfPreviewScreen(quoteId: state.pathParameters['id']!),
+        builder: (context, state) =>
+            QuotePdfPreviewScreen(quoteId: state.pathParameters['id']!),
       ),
     ],
   );

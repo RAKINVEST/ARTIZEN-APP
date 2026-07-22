@@ -25,7 +25,9 @@ class QuoteTotalsCard extends StatelessWidget {
             _TotalRow(
               label: 'Total TTC',
               amount: quote.totalTtc,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),

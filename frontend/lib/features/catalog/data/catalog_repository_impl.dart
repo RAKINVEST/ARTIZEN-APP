@@ -15,12 +15,34 @@ class CatalogRepositoryImpl implements CatalogRepository {
 
   @override
   Future<List<CatalogCategory>> listCategories({required String companyId}) async {
-    final response = await _dio.get<List<dynamic>>(
-      '/catalog/categories',
-      queryParameters: {'company_id': companyId},
-    );
+    // Fetch every category, not just the server's default page. The item form's
+    // category picker must contain the article's own folder to select it, and a
+    // company that imported many trades can have well over a hundred folders —
+    // beyond that, the folder would be missing and the dropdown would assert.
+    // Page through until a short page signals the end.
+    const pageSize = 200; // the endpoint's maximum (Query(..., le=200))
+    final all = <CatalogCategory>[];
+    var offset = 0;
+    while (true) {
+      final response = await _dio.get<List<dynamic>>(
+        '/catalog/categories',
+        queryParameters: {'company_id': companyId, 'offset': offset, 'limit': pageSize},
+      );
+      final page = response.data!
+          .map((json) => CatalogCategory.fromJson(json as Map<String, dynamic>))
+          .toList();
+      all.addAll(page);
+      if (page.length < pageSize) break;
+      offset += pageSize;
+    }
+    return all;
+  }
+
+  @override
+  Future<List<TradeGroup>> listCatalogByTrade() async {
+    final response = await _dio.get<List<dynamic>>('/catalog/by-trade');
     return response.data!
-        .map((json) => CatalogCategory.fromJson(json as Map<String, dynamic>))
+        .map((json) => TradeGroup.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 
@@ -48,6 +70,7 @@ class CatalogRepositoryImpl implements CatalogRepository {
   Future<List<CatalogItem>> listItems({
     required String companyId,
     bool activeOnly = false,
+    bool favoriteOnly = false,
     String? categoryId,
     String? query,
     int? offset,
@@ -58,6 +81,7 @@ class CatalogRepositoryImpl implements CatalogRepository {
       queryParameters: {
         'company_id': companyId,
         'active_only': activeOnly,
+        'favorite_only': favoriteOnly,
         'category_id': ?categoryId,
         if (query != null && query.isNotEmpty) 'q': query,
         'offset': ?offset,
@@ -103,6 +127,18 @@ class CatalogRepositoryImpl implements CatalogRepository {
     final response = await _dio.put<Map<String, dynamic>>(
       '/catalog/items/$id',
       data: {'active': true},
+    );
+    return CatalogItem.fromJson(response.data!);
+  }
+
+  @override
+  Future<CatalogItem> setFavorite(String id, {required bool favorite}) async {
+    // A bare {"is_favorite": ...} body, same reasoning as reactivateItem: the
+    // update model is partial and applies exclude_unset, so this touches only
+    // the toolbox flag and nothing else.
+    final response = await _dio.put<Map<String, dynamic>>(
+      '/catalog/items/$id',
+      data: {'is_favorite': favorite},
     );
     return CatalogItem.fromJson(response.data!);
   }

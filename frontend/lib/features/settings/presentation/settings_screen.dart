@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/navigation/section_nav_arrows.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,7 +18,11 @@ class SettingsScreen extends ConsumerWidget {
     final brandingAsync = ref.watch(brandingProfileNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Paramètres')),
+      appBar: AppBar(
+        leading: const SectionNavArrows(current: '/settings'),
+        leadingWidth: 96,
+        title: const Text('Paramètres'),
+      ),
       body: ListView(
         children: [
           const _SectionLabel('Entreprise'),
@@ -27,7 +32,9 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.business_outlined),
             title: const Text('Mon entreprise'),
-            subtitle: const Text('Identité légale, coordonnées, TVA, assurance, paiement'),
+            subtitle: const Text(
+              'Identité légale, coordonnées, TVA, assurance, paiement',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/company-profile'),
           ),
@@ -36,7 +43,9 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.handyman_outlined),
             title: const Text('Mes métiers'),
-            subtitle: const Text('Composez votre catalogue selon vos activités et qualifications'),
+            subtitle: const Text(
+              'Composez votre catalogue selon vos activités et qualifications',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/metiers'),
           ),
@@ -57,7 +66,9 @@ class SettingsScreen extends ConsumerWidget {
               title: const Text('Modèle de devis'),
               subtitle: const Text('Identité indisponible'),
               trailing: TextButton(
-                onPressed: () => ref.read(brandingProfileNotifierProvider.notifier).refresh(),
+                onPressed: () => ref
+                    .read(brandingProfileNotifierProvider.notifier)
+                    .refresh(),
                 child: const Text('Réessayer'),
               ),
             ),
@@ -65,14 +76,18 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.visibility_outlined),
             title: const Text('Aperçu du rendu'),
-            subtitle: const Text('Voir un devis de démonstration avec votre identité'),
+            subtitle: const Text(
+              'Voir un devis de démonstration avec votre identité',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/branding/sample-preview'),
           ),
           ListTile(
             leading: const Icon(Icons.picture_as_pdf_outlined),
             title: const Text('Importer ou remplacer le modèle'),
-            subtitle: const Text("Configure votre modèle à partir d'un ancien devis PDF"),
+            subtitle: const Text(
+              "Configure votre modèle à partir d'un ancien devis PDF",
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/template-import'),
           ),
@@ -118,7 +133,10 @@ class _ActiveModelTile extends StatelessWidget {
     final hasLogo = profile.brand.logoPath != null;
 
     final details = <String>[
-      if (hasImportedTemplate) 'Importé de « ${activeQuoteTemplates.first.name} »' else 'Modèle par défaut',
+      if (hasImportedTemplate)
+        'Importé de « ${activeQuoteTemplates.first.name} »'
+      else
+        'Modèle par défaut',
       if (hasLogo) 'logo appliqué',
     ];
 
@@ -142,9 +160,9 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         text.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              letterSpacing: 0.8,
-            ),
+          color: Theme.of(context).colorScheme.primary,
+          letterSpacing: 0.8,
+        ),
       ),
     );
   }

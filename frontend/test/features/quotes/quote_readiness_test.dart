@@ -4,7 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('QuoteReadiness.fromJson', () {
     test('parses a ready verdict with no issues', () {
-      final readiness = QuoteReadiness.fromJson({'ready': true, 'issues': <dynamic>[]});
+      final readiness = QuoteReadiness.fromJson({
+        'ready': true,
+        'issues': <dynamic>[],
+      });
 
       expect(readiness.ready, isTrue);
       expect(readiness.issues, isEmpty);

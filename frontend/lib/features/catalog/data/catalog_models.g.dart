@@ -57,6 +57,7 @@ _$CatalogItemImpl _$$CatalogItemImplFromJson(Map<String, dynamic> json) =>
       estimatedDurationMinutes: (json['estimated_duration_minutes'] as num?)
           ?.toInt(),
       active: json['active'] as bool,
+      isFavorite: json['is_favorite'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -76,6 +77,7 @@ Map<String, dynamic> _$$CatalogItemImplToJson(_$CatalogItemImpl instance) =>
       if (instance.estimatedDurationMinutes case final value?)
         'estimated_duration_minutes': value,
       'active': instance.active,
+      'is_favorite': instance.isFavorite,
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt.toIso8601String(),
     };
@@ -137,3 +139,33 @@ Map<String, dynamic> _$$CategoryOverviewImplToJson(
   'item_count': instance.itemCount,
   'sample_designations': instance.sampleDesignations,
 };
+
+_$TradeCategoryImpl _$$TradeCategoryImplFromJson(Map<String, dynamic> json) =>
+    _$TradeCategoryImpl(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      itemCount: (json['item_count'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$$TradeCategoryImplToJson(_$TradeCategoryImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'item_count': instance.itemCount,
+    };
+
+_$TradeGroupImpl _$$TradeGroupImplFromJson(Map<String, dynamic> json) =>
+    _$TradeGroupImpl(
+      label: json['label'] as String,
+      categories:
+          (json['categories'] as List<dynamic>?)
+              ?.map((e) => TradeCategory.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <TradeCategory>[],
+    );
+
+Map<String, dynamic> _$$TradeGroupImplToJson(_$TradeGroupImpl instance) =>
+    <String, dynamic>{
+      'label': instance.label,
+      'categories': instance.categories,
+    };

@@ -254,4 +254,49 @@ void main() {
     await _search(tester, 'Article 777');
     expect(find.widgetWithText(Card, 'Article 777'), findsOneWidget);
   });
+
+  testWidgets('the − N + stepper sets the quantity added in a single gesture',
+      (tester) async {
+    await _pumpToArticles(
+      tester,
+      categories: [_category('cat1', 'Sanitaires')],
+      items: [_item('i1', 'cat1', 'WC suspendu')],
+      open: 'Sanitaires',
+    );
+
+    // Compose a quantity of 3 before adding.
+    await tester.tap(find.byTooltip('Augmenter la quantité'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Augmenter la quantité'));
+    await tester.pump();
+
+    await tester.tap(_addButtonFor('WC suspendu'));
+    await tester.pumpAndSettle();
+
+    // One line, added with the composed quantity — not the default 1.
+    expect(find.textContaining('(× 3)'), findsOneWidget);
+    expect(find.textContaining('Ajouté au devis'), findsOneWidget);
+  });
+
+  testWidgets('the pre-add stepper cannot go below 1', (tester) async {
+    await _pumpToArticles(
+      tester,
+      categories: [_category('cat1', 'Sanitaires')],
+      items: [_item('i1', 'cat1', 'WC suspendu')],
+      open: 'Sanitaires',
+    );
+
+    // At the floor, the minus is disabled rather than reaching 0.
+    final minus = tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byTooltip('Diminuer la quantité'),
+        matching: find.byType(IconButton),
+      ),
+    );
+    expect(minus.onPressed, isNull);
+
+    await tester.tap(_addButtonFor('WC suspendu'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('(× 1)'), findsOneWidget);
+  });
 }

@@ -68,8 +68,17 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
   late final _duration = TextEditingController(
     text: widget.initial?.estimatedDurationMinutes?.toString(),
   );
-  late String _categoryId = widget.initial?.categoryId ?? widget.categories.first.id;
+  late String _categoryId = _initialCategoryId();
   late ItemType _itemType = widget.initial?.itemType ?? ItemType.service;
+
+  /// The article's own folder — or the first available one if that folder isn't
+  /// in the loaded list. The category dropdown asserts unless its value matches
+  /// exactly one item, so it must never be handed a value it can't find.
+  String _initialCategoryId() {
+    final own = widget.initial?.categoryId;
+    final exists = widget.categories.any((category) => category.id == own);
+    return exists ? own! : widget.categories.first.id;
+  }
   bool _saving = false;
 
   @override

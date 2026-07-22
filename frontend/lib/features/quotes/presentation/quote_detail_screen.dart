@@ -33,107 +33,110 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   /// slip of the finger.
   bool _busy = false;
 
-  Future<void> _run(Future<void> Function() action, {required String failureLabel}) async {
+  Future<void> _run(
+    Future<void> Function() action, {
+    required String failureLabel,
+  }) async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
       await action();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$failureLabel : $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$failureLabel : $error')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _downloadPdf(Quote quote) => _run(
-        () async {
-          // Pre-flight: a non-conforming quote must not leave the app. The
-          // gate shows what's missing (and where to fix it) and returns false,
-          // so the download is skipped without an error.
-          final ready = await QuoteReadinessGate.ensureReady(
-            context: context,
-            ref: ref,
-            quote: quote,
-          );
-          if (!ready) return;
-          final bytes = await ref.read(quotesRepositoryProvider).downloadPdf(quote.id);
-          // The OS share sheet is how a file gets saved or sent on mobile —
-          // available at any status, a draft included: the artisan can hold
-          // the finished document before ever marking it sent.
-          await Printing.sharePdf(bytes: bytes, filename: '${quote.quoteNumber}.pdf');
-        },
-        failureLabel: 'Téléchargement impossible',
-      );
+  Future<void> _downloadPdf(Quote quote) => _run(() async {
+    // Pre-flight: a non-conforming quote must not leave the app. The
+    // gate shows what's missing (and where to fix it) and returns false,
+    // so the download is skipped without an error.
+    final ready = await QuoteReadinessGate.ensureReady(
+      context: context,
+      ref: ref,
+      quote: quote,
+    );
+    if (!ready) return;
+    final bytes = await ref
+        .read(quotesRepositoryProvider)
+        .downloadPdf(quote.id);
+    // The OS share sheet is how a file gets saved or sent on mobile —
+    // available at any status, a draft included: the artisan can hold
+    // the finished document before ever marking it sent.
+    await Printing.sharePdf(bytes: bytes, filename: '${quote.quoteNumber}.pdf');
+  }, failureLabel: 'Téléchargement impossible');
 
-  Future<void> _changeStatus(Quote quote, QuoteStatus next) => _run(
-        () async {
-          // Sending is the irreversible step — nothing ever returns to draft —
-          // so it earns both a conformity check and a confirmation. Recording
-          // the customer's answer afterwards does neither: the artisan is
-          // reporting a fact about a quote already emitted.
-          if (next == QuoteStatus.sent) {
-            final ready = await QuoteReadinessGate.ensureReady(
-              context: context,
-              ref: ref,
-              quote: quote,
-            );
-            if (!ready) return;
-            if (!mounted) return;
-            final confirmed = await showConfirmDialog(
-              context,
-              title: 'Marquer ce devis comme envoyé ?',
-              message: 'Le devis ${quote.quoteNumber} ne sera plus modifiable ni supprimable. '
-                  'Vous pourrez ensuite indiquer si le client l\'accepte ou le refuse.',
-              confirmLabel: 'Marquer comme envoyé',
-            );
-            if (!confirmed) return;
-          }
-          await ref.read(quotesNotifierProvider.notifier).changeStatus(quote.id, next);
-        },
-        failureLabel: 'Changement de statut impossible',
+  Future<void> _changeStatus(Quote quote, QuoteStatus next) => _run(() async {
+    // Sending is the irreversible step — nothing ever returns to draft —
+    // so it earns both a conformity check and a confirmation. Recording
+    // the customer's answer afterwards does neither: the artisan is
+    // reporting a fact about a quote already emitted.
+    if (next == QuoteStatus.sent) {
+      final ready = await QuoteReadinessGate.ensureReady(
+        context: context,
+        ref: ref,
+        quote: quote,
       );
+      if (!ready) return;
+      if (!mounted) return;
+      final confirmed = await showConfirmDialog(
+        context,
+        title: 'Marquer ce devis comme envoyé ?',
+        message:
+            'Le devis ${quote.quoteNumber} ne sera plus modifiable ni supprimable. '
+            'Vous pourrez ensuite indiquer si le client l\'accepte ou le refuse.',
+        confirmLabel: 'Marquer comme envoyé',
+      );
+      if (!confirmed) return;
+    }
+    await ref
+        .read(quotesNotifierProvider.notifier)
+        .changeStatus(quote.id, next);
+  }, failureLabel: 'Changement de statut impossible');
 
   Future<void> _duplicate(Quote quote) async {
     // No confirmation: duplicating creates a new draft and changes nothing
     // about the original — it is a safe, reversible act (the copy can be
     // deleted). A prompt would only stand between the artisan and the thing
     // they asked for.
-    await _run(
-      () async {
-        final copy = await ref.read(quotesNotifierProvider.notifier).duplicateQuote(quote.id);
-        if (mounted) {
-          // Replace, not push: the artisan wanted the copy, not a stack of
-          // two quote screens to back out of.
-          context.pushReplacement('/quotes/${copy.id}');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Brouillon ${copy.quoteNumber} créé à partir de ${quote.quoteNumber}')),
-          );
-        }
-      },
-      failureLabel: 'Duplication impossible',
-    );
+    await _run(() async {
+      final copy = await ref
+          .read(quotesNotifierProvider.notifier)
+          .duplicateQuote(quote.id);
+      if (mounted) {
+        // Replace, not push: the artisan wanted the copy, not a stack of
+        // two quote screens to back out of.
+        context.pushReplacement('/quotes/${copy.id}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Brouillon ${copy.quoteNumber} créé à partir de ${quote.quoteNumber}',
+            ),
+          ),
+        );
+      }
+    }, failureLabel: 'Duplication impossible');
   }
 
   Future<void> _delete(Quote quote) async {
     final confirmed = await showConfirmDialog(
       context,
       title: 'Supprimer ce brouillon ?',
-      message: 'Le devis ${quote.quoteNumber} sera définitivement supprimé. '
+      message:
+          'Le devis ${quote.quoteNumber} sera définitivement supprimé. '
           'Un devis ne se modifie pas : pour le corriger, supprimez-le et créez-en un nouveau.',
       confirmLabel: 'Supprimer',
     );
     if (!confirmed) return;
-    await _run(
-      () async {
-        await ref.read(quotesNotifierProvider.notifier).deleteQuote(quote.id);
-        if (mounted) context.pop();
-      },
-      failureLabel: 'Suppression impossible',
-    );
+    await _run(() async {
+      await ref.read(quotesNotifierProvider.notifier).deleteQuote(quote.id);
+      if (mounted) context.pop();
+    }, failureLabel: 'Suppression impossible');
   }
 
   @override
@@ -198,7 +201,9 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
               const SizedBox(height: 12),
               Card(
                 child: ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                  leading: const CircleAvatar(
+                    child: Icon(Icons.person_outline),
+                  ),
                   title: clientAsync.when(
                     data: (client) => Text(client.displayName),
                     loading: () => const Text('Chargement du client...'),
@@ -302,7 +307,9 @@ class _StatusActions extends StatelessWidget {
                     : Icons.cancel_outlined,
               ),
               label: Text(
-                status == QuoteStatus.accepted ? 'Le client a accepté' : 'Le client a refusé',
+                status == QuoteStatus.accepted
+                    ? 'Le client a accepté'
+                    : 'Le client a refusé',
               ),
               onPressed: busy ? null : () => onChange(status),
             ),

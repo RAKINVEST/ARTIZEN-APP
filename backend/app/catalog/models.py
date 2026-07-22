@@ -65,3 +65,7 @@ class CatalogItem(Base, UUIDMixin, TimestampMixin):
     # past quote may already reference one (see CatalogService.deactivate
     # and the FK from QuoteLine, which uses ondelete=RESTRICT).
     active: Mapped[bool] = mapped_column(default=True, index=True)
+    # In the artisan's "caisse à outils": the articles he reaches for again and
+    # again, gathered for quick access. A per-item flag, company-scoped like the
+    # rest; toggled from the catalogue, never invented.
+    is_favorite: Mapped[bool] = mapped_column(default=False, index=True)

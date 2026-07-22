@@ -30,7 +30,9 @@ class QuoteReadinessGate {
   }) async {
     // `refresh` (not `read`) so a fix made elsewhere since the badge loaded is
     // picked up, and the badge — watching the same provider — updates too.
-    final readiness = await ref.refresh(quoteReadinessProvider(quote.id).future);
+    final readiness = await ref.refresh(
+      quoteReadinessProvider(quote.id).future,
+    );
     if (readiness.ready) return true;
     if (!context.mounted) return false;
 
@@ -46,21 +48,29 @@ class QuoteReadinessGate {
   }
 
   /// Routes to where a single issue is fixed, based on its [ReadinessTarget].
-  static void _navigateToIssue(BuildContext context, Quote quote, ReadinessIssue issue) {
+  static void _navigateToIssue(
+    BuildContext context,
+    Quote quote,
+    ReadinessIssue issue,
+  ) {
     switch (issue.target) {
       case ReadinessTarget.companyProfile:
         final field = issue.field;
         final location = (field == null || field.isEmpty)
             ? '/company-profile'
             // Carry the field so "Mon entreprise" can focus/scroll to it.
-            : Uri(path: '/company-profile', queryParameters: {'field': field}).toString();
+            : Uri(
+                path: '/company-profile',
+                queryParameters: {'field': field},
+              ).toString();
         context.push(location);
       case ReadinessTarget.client:
         context.push('/clients/${quote.clientId}/edit');
       case ReadinessTarget.quote:
         // The quote is usually the very screen the gate was opened from; only
         // navigate when the gate was triggered from elsewhere (e.g. a list).
-        final alreadyHere = GoRouterState.of(context).matchedLocation == '/quotes/${quote.id}';
+        final alreadyHere =
+            GoRouterState.of(context).matchedLocation == '/quotes/${quote.id}';
         if (!alreadyHere) context.push('/quotes/${quote.id}');
       case ReadinessTarget.unknown:
         // No known destination — the label already told the artisan what to
@@ -96,7 +106,10 @@ class _NotReadySheet extends StatelessWidget {
                 const Icon(Icons.error_outline, color: ArtizenColors.error),
                 const SizedBox(width: ArtizenSpacing.xs),
                 Expanded(
-                  child: Text('Devis non conforme', style: theme.textTheme.titleMedium),
+                  child: Text(
+                    'Devis non conforme',
+                    style: theme.textTheme.titleMedium,
+                  ),
                 ),
               ],
             ),
@@ -104,7 +117,9 @@ class _NotReadySheet extends StatelessWidget {
             Text(
               'Complétez ces points avant de télécharger, imprimer ou envoyer '
               'ce devis. Touchez un élément pour le corriger.',
-              style: theme.textTheme.bodySmall?.copyWith(color: ArtizenColors.textSecondary),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: ArtizenColors.textSecondary,
+              ),
             ),
             const SizedBox(height: ArtizenSpacing.sm),
             Flexible(
@@ -117,12 +132,20 @@ class _NotReadySheet extends StatelessWidget {
                   final navigable = issue.target != ReadinessTarget.unknown;
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.circle, size: 12, color: ArtizenColors.error),
+                    leading: const Icon(
+                      Icons.circle,
+                      size: 12,
+                      color: ArtizenColors.error,
+                    ),
                     title: Text(issue.label),
-                    trailing: navigable ? const Icon(Icons.chevron_right) : null,
+                    trailing: navigable
+                        ? const Icon(Icons.chevron_right)
+                        : null,
                     // Returning the issue lets the caller navigate with the
                     // page context after the sheet has closed.
-                    onTap: navigable ? () => Navigator.of(context).pop(issue) : null,
+                    onTap: navigable
+                        ? () => Navigator.of(context).pop(issue)
+                        : null,
                   );
                 },
               ),
@@ -173,7 +196,11 @@ class QuoteReadinessBadge extends ConsumerWidget {
 }
 
 class _ReadinessPill extends StatelessWidget {
-  const _ReadinessPill({required this.icon, required this.label, required this.color});
+  const _ReadinessPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
 
   final IconData icon;
   final String label;
@@ -182,7 +209,10 @@ class _ReadinessPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: ArtizenSpacing.xs, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: ArtizenSpacing.xs,
+        vertical: 4,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(ArtizenRadii.pill),
@@ -194,7 +224,11 @@ class _ReadinessPill extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

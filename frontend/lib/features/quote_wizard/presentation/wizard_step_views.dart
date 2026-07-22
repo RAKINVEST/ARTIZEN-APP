@@ -101,10 +101,9 @@ class _ClientStepState extends ConsumerState<_ClientStep> {
     final created = await context.push<Client?>('/clients/new');
     if (!mounted) return;
     if (created != null) {
-      ref.read(quoteDraftProvider.notifier).selectClient(
-            id: created.id,
-            label: created.displayName,
-          );
+      ref
+          .read(quoteDraftProvider.notifier)
+          .selectClient(id: created.id, label: created.displayName);
     }
     // Refresh the picker so a just-created client also appears in the list.
     ref.invalidate(clientSearchProvider);
@@ -154,9 +153,13 @@ class _ClientStepState extends ConsumerState<_ClientStep> {
                     for (final client in clients)
                       Card(
                         child: ListTile(
-                          leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                          leading: const CircleAvatar(
+                            child: Icon(Icons.person_outline),
+                          ),
                           title: Text(client.displayName),
-                          subtitle: client.email == null ? null : Text(client.email!),
+                          subtitle: client.email == null
+                              ? null
+                              : Text(client.email!),
                           trailing: client.id == selectedId
                               ? const Icon(
                                   Icons.check_circle,
@@ -167,11 +170,20 @@ class _ClientStepState extends ConsumerState<_ClientStep> {
                           selected: client.id == selectedId,
                           // The one thing this step does: tell the draft who the
                           // quote is for. Selecting again is a harmless no-op, so
-                          // a double tap can't hurt.
-                          onTap: () => ref.read(quoteDraftProvider.notifier).selectClient(
-                                id: client.id,
-                                label: client.displayName,
-                              ),
+                          // a double tap can't hurt. Choosing a client also asks
+                          // the wizard to move on — tapping the name *is* the
+                          // answer, no second click on Suivant needed.
+                          onTap: () {
+                            ref
+                                .read(quoteDraftProvider.notifier)
+                                .selectClient(
+                                  id: client.id,
+                                  label: client.displayName,
+                                );
+                            ref
+                                .read(wizardAdvanceRequestProvider.notifier)
+                                .state++;
+                          },
                         ),
                       ),
                   ],
@@ -226,12 +238,15 @@ class _EmptyClients extends StatelessWidget {
     final message = query.isEmpty
         ? "Vous n'avez pas encore de client. Créez-en un ci-dessous."
         : 'Aucun client ne correspond à « $query ». Vérifiez l\'orthographe, '
-            'ou créez ce client.';
+              'ou créez ce client.';
     return Padding(
       padding: const EdgeInsets.all(ArtizenSpacing.md),
       child: Row(
         children: [
-          const Icon(Icons.person_search_outlined, color: ArtizenColors.textSecondary),
+          const Icon(
+            Icons.person_search_outlined,
+            color: ArtizenColors.textSecondary,
+          ),
           const SizedBox(width: ArtizenSpacing.sm),
           Expanded(child: Text(message)),
         ],
@@ -281,9 +296,14 @@ class _DossierStepState extends ConsumerState<_DossierStep> {
                   _FolderCard(
                     folder: folder,
                     open: folder.id == openId,
-                    // The one thing this step does: open a folder. Opening the
-                    // same one again is a harmless no-op — a double tap can't hurt.
-                    onTap: () => ref.read(selectedFolderProvider.notifier).open(folder.id),
+                    // The one thing this step does: open a folder — which also
+                    // asks the wizard to move on to the Articles step, so a tap
+                    // is enough (no second click on Suivant). Opening the same
+                    // one again is a harmless no-op that still advances.
+                    onTap: () {
+                      ref.read(selectedFolderProvider.notifier).open(folder.id);
+                      ref.read(wizardAdvanceRequestProvider.notifier).state++;
+                    },
                   ),
               ],
             ),
@@ -296,7 +316,11 @@ class _DossierStepState extends ConsumerState<_DossierStep> {
 /// glance what he'll find before opening it. Everything shown comes straight
 /// from `GET /catalog/categories/overview`; nothing is inferred client-side.
 class _FolderCard extends StatelessWidget {
-  const _FolderCard({required this.folder, required this.open, required this.onTap});
+  const _FolderCard({
+    required this.folder,
+    required this.open,
+    required this.onTap,
+  });
 
   final CategoryOverview folder;
   final bool open;
@@ -313,7 +337,10 @@ class _FolderCard extends StatelessWidget {
           Icons.folder_outlined,
           color: open ? ArtizenColors.success : ArtizenColors.nightBlue,
         ),
-        title: Text(folder.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          folder.name,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -323,7 +350,10 @@ class _FolderCard extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
                   'Aperçu : ${folder.sampleDesignations.join(', ')}…',
-                  style: const TextStyle(color: ArtizenColors.textSecondary, fontSize: 12),
+                  style: const TextStyle(
+                    color: ArtizenColors.textSecondary,
+                    fontSize: 12,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -373,7 +403,10 @@ class _EmptyCatalog extends StatelessWidget {
           padding: EdgeInsets.all(ArtizenSpacing.md),
           child: Row(
             children: [
-              Icon(Icons.folder_off_outlined, color: ArtizenColors.textSecondary),
+              Icon(
+                Icons.folder_off_outlined,
+                color: ArtizenColors.textSecondary,
+              ),
               SizedBox(width: ArtizenSpacing.sm),
               Expanded(
                 child: Text(
@@ -411,13 +444,15 @@ class _ArticlesStepState extends ConsumerState<_ArticlesStep> {
   /// Snapshot the catalog article onto the draft line (décision 5): its
   /// designation, unit and price travel with the line. No amount is computed
   /// here — totals come from the backend at the Récap step.
-  void _add(CatalogItem item) {
-    ref.read(quoteDraftProvider.notifier).addArticle(
+  void _add(CatalogItem item, num quantity) {
+    ref
+        .read(quoteDraftProvider.notifier)
+        .addArticle(
           DraftLine(
             catalogItemId: item.id,
             designation: item.designation,
             unit: item.unit,
-            quantity: 1,
+            quantity: quantity,
             unitPriceHt: item.unitPriceHt,
             vatRate: item.vatRate,
           ),
@@ -438,7 +473,9 @@ class _ArticlesStepState extends ConsumerState<_ArticlesStep> {
     final results = ref.watch(articlePickerProvider);
     final quantityByItem = ref.watch(
       quoteDraftProvider.select(
-        (draft) => {for (final line in draft.lines) line.catalogItemId: line.quantity},
+        (draft) => {
+          for (final line in draft.lines) line.catalogItemId: line.quantity,
+        },
       ),
     );
 
@@ -471,12 +508,16 @@ class _ArticlesStepState extends ConsumerState<_ArticlesStep> {
                   children: [
                     for (final item in items)
                       _ArticleRow(
+                        key: ValueKey(item.id),
                         item: item,
                         quantity: quantityByItem[item.id],
-                        onAdd: () => _add(item),
+                        onAdd: (qty) => _add(item, qty),
                         onRemoveOne: () => ref
                             .read(quoteDraftProvider.notifier)
-                            .setQuantity(item.id, (quantityByItem[item.id] ?? 1) - 1),
+                            .setQuantity(
+                              item.id,
+                              (quantityByItem[item.id] ?? 1) - 1,
+                            ),
                       ),
                   ],
                 ),
@@ -487,31 +528,50 @@ class _ArticlesStepState extends ConsumerState<_ArticlesStep> {
 }
 
 /// One catalog article, and the one action this step is about: add it to the
-/// quote. Added lines show a clear "✔ Ajouté" with their quantity, and quick
-/// +/− controls — so the artisan always knows what is already on the devis.
-/// The price shown is the catalog's (a snapshot); no total is computed here.
-class _ArticleRow extends StatelessWidget {
+/// quote — with its quantity chosen right here (− N +), so a whole line is set
+/// in a single gesture instead of adding then adjusting elsewhere. Added lines
+/// show "✔ Ajouté" with their quantity and quick +/− controls — the same
+/// correction the Personnaliser step offers. The price shown is the catalog's
+/// (a snapshot); no total is computed here.
+class _ArticleRow extends StatefulWidget {
   const _ArticleRow({
     required this.item,
     required this.quantity,
     required this.onAdd,
     required this.onRemoveOne,
+    super.key,
   });
 
   final CatalogItem item;
 
   /// Its quantity on the draft, or null if not added yet.
   final num? quantity;
-  final VoidCallback onAdd;
+
+  /// Add [quantity] units of this article to the draft.
+  final void Function(int quantity) onAdd;
   final VoidCallback onRemoveOne;
 
   @override
+  State<_ArticleRow> createState() => _ArticleRowState();
+}
+
+class _ArticleRowState extends State<_ArticleRow> {
+  /// The quantity composed before adding. A fresh row starts at 1.
+  int _pending = 1;
+
+  @override
   Widget build(BuildContext context) {
+    final item = widget.item;
+    final quantity = widget.quantity;
     final added = quantity != null;
     return Card(
       color: added ? ArtizenColors.infoSurface : null,
       child: ListTile(
-        title: Text(item.designation, style: const TextStyle(fontWeight: FontWeight.w600)),
+        isThreeLine: added,
+        title: Text(
+          item.designation,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -530,7 +590,8 @@ class _ArticleRow extends StatelessWidget {
               ),
           ],
         ),
-        isThreeLine: added,
+        // The quantity control lives in the trailing so the row stays compact
+        // (one price line), and many articles still fit on screen at once.
         trailing: added
             ? Row(
                 mainAxisSize: MainAxisSize.min,
@@ -538,21 +599,74 @@ class _ArticleRow extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline),
                     tooltip: 'Retirer une unité',
-                    onPressed: onRemoveOne,
+                    onPressed: widget.onRemoveOne,
                   ),
                   IconButton.filledTonal(
                     icon: const Icon(Icons.add),
                     tooltip: 'Ajouter une unité',
-                    onPressed: onAdd,
+                    onPressed: () => widget.onAdd(1),
                   ),
                 ],
               )
-            : FilledButton.tonalIcon(
-                onPressed: onAdd,
-                icon: const Icon(Icons.add),
-                label: const Text('Ajouter'),
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _QuantityStepper(
+                    value: _pending,
+                    onChanged: (value) => setState(() => _pending = value),
+                  ),
+                  const SizedBox(width: ArtizenSpacing.xs),
+                  FilledButton.tonalIcon(
+                    // The global button theme forces full width
+                    // (Size.fromHeight), which would demand an infinite width
+                    // inside this Row. Size to content instead.
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 40),
+                    ),
+                    onPressed: () => widget.onAdd(_pending),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Ajouter'),
+                  ),
+                ],
               ),
       ),
+    );
+  }
+}
+
+/// A compact "− N +" control for a whole-number quantity. Its floor is 1: it
+/// composes a quantity before adding, so stepping down to nothing is not its
+/// job (removing a line is the Personnaliser step's, or the row's ✔ state).
+class _QuantityStepper extends StatelessWidget {
+  const _QuantityStepper({required this.value, required this.onChanged});
+
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.remove_circle_outline),
+          iconSize: 20,
+          visualDensity: VisualDensity.compact,
+          tooltip: 'Diminuer la quantité',
+          onPressed: value > 1 ? () => onChanged(value - 1) : null,
+        ),
+        Text(
+          '$value',
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
+        IconButton(
+          icon: const Icon(Icons.add_circle_outline),
+          iconSize: 20,
+          visualDensity: VisualDensity.compact,
+          tooltip: 'Augmenter la quantité',
+          onPressed: () => onChanged(value + 1),
+        ),
+      ],
     );
   }
 }
@@ -572,7 +686,10 @@ class _EmptyArticles extends StatelessWidget {
       padding: const EdgeInsets.all(ArtizenSpacing.md),
       child: Row(
         children: [
-          const Icon(Icons.search_off_outlined, color: ArtizenColors.textSecondary),
+          const Icon(
+            Icons.search_off_outlined,
+            color: ArtizenColors.textSecondary,
+          ),
           const SizedBox(width: ArtizenSpacing.sm),
           Expanded(child: Text(message)),
         ],
@@ -610,7 +727,9 @@ class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
     super.initState();
     // Price whatever is already on the draft when the step is first built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && ref.read(quoteDraftProvider).lines.isNotEmpty) _scheduleRecalc();
+      if (mounted && ref.read(quoteDraftProvider).lines.isNotEmpty) {
+        _scheduleRecalc();
+      }
     });
   }
 
@@ -625,18 +744,24 @@ class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
     // Any change to the lines (a quantity, a removal, or articles added
     // upstream) asks the backend to re-price. The backend is the only place a
     // total is ever computed (décision 3); Flutter just shows its answer.
-    ref.listen(quoteDraftProvider.select((draft) => draft.lines), (_, _) => _scheduleRecalc());
+    ref.listen(
+      quoteDraftProvider.select((draft) => draft.lines),
+      (_, _) => _scheduleRecalc(),
+    );
 
     final draft = ref.watch(quoteDraftProvider);
     if (draft.lines.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(ArtizenSpacing.md),
-        child: Text("Ajoutez des articles à l'étape précédente pour les personnaliser."),
+        child: Text(
+          "Ajoutez des articles à l'étape précédente pour les personnaliser.",
+        ),
       );
     }
 
     final totalByItem = {
-      for (final line in draft.calculation?.lines ?? const <QuoteCalculationLine>[])
+      for (final line
+          in draft.calculation?.lines ?? const <QuoteCalculationLine>[])
         line.catalogItemId: line.totalHt,
     };
 
@@ -655,10 +780,15 @@ class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
             onDecrement: () => ref
                 .read(quoteDraftProvider.notifier)
                 .setQuantity(line.catalogItemId, line.quantity - 1),
-            onRemove: () => ref.read(quoteDraftProvider.notifier).removeLine(line.catalogItemId),
+            onRemove: () => ref
+                .read(quoteDraftProvider.notifier)
+                .removeLine(line.catalogItemId),
           ),
         const SizedBox(height: ArtizenSpacing.sm),
-        _TotalsCard(calculation: draft.calculation, recalculating: _recalculating),
+        _TotalsCard(
+          calculation: draft.calculation,
+          recalculating: _recalculating,
+        ),
       ],
     );
   }
@@ -682,8 +812,9 @@ class _EditableLine extends StatelessWidget {
   final VoidCallback onDecrement;
   final VoidCallback onRemove;
 
-  String get _quantityLabel =>
-      line.quantity % 1 == 0 ? line.quantity.toInt().toString() : line.quantity.toString();
+  String get _quantityLabel => line.quantity % 1 == 0
+      ? line.quantity.toInt().toString()
+      : line.quantity.toString();
 
   @override
   Widget build(BuildContext context) {
@@ -699,7 +830,10 @@ class _EditableLine extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(line.designation, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  child: Text(
+                    line.designation,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
@@ -710,7 +844,10 @@ class _EditableLine extends StatelessWidget {
             ),
             Text(
               'PU ${line.unitPriceHt} € HT · ${line.unit}',
-              style: const TextStyle(color: ArtizenColors.textSecondary, fontSize: 12),
+              style: const TextStyle(
+                color: ArtizenColors.textSecondary,
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: ArtizenSpacing.xs),
             Row(
@@ -767,7 +904,11 @@ class _TotalsCard extends StatelessWidget {
             _RecapRow('Total HT', calc == null ? '—' : '${calc.totalHt} €'),
             _RecapRow('TVA', calc == null ? '—' : '${calc.totalVat} €'),
             const Divider(),
-            _RecapRow('Total TTC', calc == null ? '—' : '${calc.totalTtc} €', strong: true),
+            _RecapRow(
+              'Total TTC',
+              calc == null ? '—' : '${calc.totalTtc} €',
+              strong: true,
+            ),
             if (recalculating)
               const Padding(
                 padding: EdgeInsets.only(top: ArtizenSpacing.xs),
@@ -780,7 +921,10 @@ class _TotalsCard extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                     SizedBox(width: ArtizenSpacing.xs),
-                    Text('Recalcul…', style: TextStyle(color: ArtizenColors.textSecondary)),
+                    Text(
+                      'Recalcul…',
+                      style: TextStyle(color: ArtizenColors.textSecondary),
+                    ),
                   ],
                 ),
               ),
@@ -842,12 +986,22 @@ class _RecapStepState extends ConsumerState<_RecapStep> {
             child: Column(
               children: [
                 _CheckItem('Client', draft.clientLabel ?? '—'),
-                _CheckItem('Lignes', '$lineCount article${lineCount > 1 ? 's' : ''}'),
+                _CheckItem(
+                  'Lignes',
+                  '$lineCount article${lineCount > 1 ? 's' : ''}',
+                ),
                 const Divider(),
-                _CheckItem('Total HT', calc == null ? '…' : '${calc.totalHt} €'),
+                _CheckItem(
+                  'Total HT',
+                  calc == null ? '…' : '${calc.totalHt} €',
+                ),
                 _CheckItem('TVA', calc == null ? '…' : '${calc.totalVat} €'),
                 const Divider(),
-                _CheckItem('Total TTC', calc == null ? '…' : '${calc.totalTtc} €', strong: true),
+                _CheckItem(
+                  'Total TTC',
+                  calc == null ? '…' : '${calc.totalTtc} €',
+                  strong: true,
+                ),
               ],
             ),
           ),
@@ -855,7 +1009,10 @@ class _RecapStepState extends ConsumerState<_RecapStep> {
         const SizedBox(height: ArtizenSpacing.md),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: ArtizenSpacing.xs),
-          child: Text('Détail des lignes', style: TextStyle(fontWeight: FontWeight.w700)),
+          child: Text(
+            'Détail des lignes',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
         ),
         const SizedBox(height: ArtizenSpacing.xs),
         for (final line in draft.lines)
@@ -876,13 +1033,21 @@ class _CheckItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final valueStyle = strong
-        ? const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: ArtizenColors.nightBlue)
+        ? const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: ArtizenColors.nightBlue,
+          )
         : const TextStyle();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          const Icon(Icons.check_circle, color: ArtizenColors.success, size: 20),
+          const Icon(
+            Icons.check_circle,
+            color: ArtizenColors.success,
+            size: 20,
+          ),
           const SizedBox(width: ArtizenSpacing.sm),
           Expanded(child: Text(label)),
           Text(value, style: valueStyle),
@@ -900,15 +1065,21 @@ class _RecapLineRow extends StatelessWidget {
   final DraftLine line;
   final String? totalHt;
 
-  String get _quantityLabel =>
-      line.quantity % 1 == 0 ? line.quantity.toInt().toString() : line.quantity.toString();
+  String get _quantityLabel => line.quantity % 1 == 0
+      ? line.quantity.toInt().toString()
+      : line.quantity.toString();
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        title: Text(line.designation, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text('$_quantityLabel × ${line.unitPriceHt} € HT · ${line.unit}'),
+        title: Text(
+          line.designation,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          '$_quantityLabel × ${line.unitPriceHt} € HT · ${line.unit}',
+        ),
         trailing: Text(
           totalHt == null ? '—' : '$totalHt € HT',
           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -928,13 +1099,20 @@ class _RecapRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = strong
-        ? const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: ArtizenColors.nightBlue)
+        ? const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: ArtizenColors.nightBlue,
+          )
         : const TextStyle();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [Text(label, style: style), Text(value, style: style)],
+        children: [
+          Text(label, style: style),
+          Text(value, style: style),
+        ],
       ),
     );
   }
@@ -963,7 +1141,9 @@ class _CreerStepState extends ConsumerState<_CreerStep> {
     try {
       // The backend assigns the number, computes the totals and persists it —
       // Flutter only hands over the client and the lines (décision 3 & 4).
-      final quote = await ref.read(quotesNotifierProvider.notifier).createQuote(
+      final quote = await ref
+          .read(quotesNotifierProvider.notifier)
+          .createQuote(
             clientId: draft.clientId!,
             lines: [
               for (final line in draft.lines)
@@ -991,9 +1171,14 @@ class _CreerStepState extends ConsumerState<_CreerStep> {
       return Card(
         color: ArtizenColors.infoSurface,
         child: ListTile(
-          leading: const Icon(Icons.verified_outlined, color: ArtizenColors.success),
+          leading: const Icon(
+            Icons.verified_outlined,
+            color: ArtizenColors.success,
+          ),
           title: Text('Devis ${createdQuote.quoteNumber} déjà créé'),
-          subtitle: const Text('Passez à l\'étape suivante pour la confirmation.'),
+          subtitle: const Text(
+            'Passez à l\'étape suivante pour la confirmation.',
+          ),
         ),
       );
     }
@@ -1010,9 +1195,15 @@ class _CreerStepState extends ConsumerState<_CreerStep> {
             child: Column(
               children: [
                 _CheckItem('Client', draft.clientLabel ?? '—'),
-                _CheckItem('Lignes',
-                    '${draft.lines.length} article${draft.lines.length > 1 ? 's' : ''}'),
-                _CheckItem('Total TTC', calc == null ? '…' : '${calc.totalTtc} €', strong: true),
+                _CheckItem(
+                  'Lignes',
+                  '${draft.lines.length} article${draft.lines.length > 1 ? 's' : ''}',
+                ),
+                _CheckItem(
+                  'Total TTC',
+                  calc == null ? '…' : '${calc.totalTtc} €',
+                  strong: true,
+                ),
               ],
             ),
           ),
@@ -1032,11 +1223,16 @@ class _CreerStepState extends ConsumerState<_CreerStep> {
               ? const SizedBox(
                   height: 20,
                   width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2.2, color: ArtizenColors.onGold),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: ArtizenColors.onGold,
+                  ),
                 )
               : const Icon(Icons.check_circle_outline),
           label: Text(
-            _creating ? 'Création…' : (hasError ? 'Réessayer' : 'Créer le devis'),
+            _creating
+                ? 'Création…'
+                : (hasError ? 'Réessayer' : 'Créer le devis'),
           ),
           style: FilledButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
@@ -1074,7 +1270,8 @@ class _ConfirmationStep extends ConsumerWidget {
     // professional. Shown only if something is missing; the profile is cached,
     // so this costs nothing extra once loaded.
     final profile = ref.watch(brandingProfileNotifierProvider).valueOrNull;
-    final identityIncomplete = profile != null &&
+    final identityIncomplete =
+        profile != null &&
         ((profile.company.addressLine ?? '').trim().isEmpty ||
             (profile.company.siret ?? '').trim().isEmpty ||
             (profile.brand.logoPath ?? '').trim().isEmpty);
@@ -1087,7 +1284,11 @@ class _ConfirmationStep extends ConsumerWidget {
             padding: const EdgeInsets.all(ArtizenSpacing.md),
             child: Column(
               children: [
-                const Icon(Icons.check_circle, color: ArtizenColors.success, size: 48),
+                const Icon(
+                  Icons.check_circle,
+                  color: ArtizenColors.success,
+                  size: 48,
+                ),
                 const SizedBox(height: ArtizenSpacing.sm),
                 Text(
                   'Votre devis existe',
@@ -1140,7 +1341,10 @@ class _ConfirmationStep extends ConsumerWidget {
           const SizedBox(height: ArtizenSpacing.md),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.tips_and_updates_outlined, color: ArtizenColors.gold),
+              leading: const Icon(
+                Icons.tips_and_updates_outlined,
+                color: ArtizenColors.gold,
+              ),
               title: const Text('Rendez vos devis encore plus pro'),
               subtitle: const Text(
                 'Ajoutez votre logo, votre adresse et votre SIRET pour un PDF impeccable.',

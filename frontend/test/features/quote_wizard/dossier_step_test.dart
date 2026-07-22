@@ -13,22 +13,23 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../support/fake_repositories.dart';
 
 Client _client(String id, String name) => Client(
-      id: id,
-      companyId: 'co1',
-      lastName: name,
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+  id: id,
+  companyId: 'co1',
+  lastName: name,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
 CatalogCategory _category(String id, String name) => CatalogCategory(
-      id: id,
-      companyId: 'co1',
-      name: name,
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+  id: id,
+  companyId: 'co1',
+  name: name,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
-CatalogItem _item(String id, String categoryId, String designation) => CatalogItem(
+CatalogItem _item(String id, String categoryId, String designation) =>
+    CatalogItem(
       id: id,
       companyId: 'co1',
       categoryId: categoryId,
@@ -66,33 +67,42 @@ Future<void> _pumpToDossier(
     ProviderScope(
       overrides: [
         currentCompanyIdProvider.overrideWith((ref) async => 'co1'),
-        clientsRepositoryProvider
-            .overrideWithValue(FakeClientsRepository([_client('c1', 'Dubois')])),
-        catalogRepositoryProvider
-            .overrideWithValue(catalogRepo ?? FakeCatalogRepository([...categories], [...items])),
+        clientsRepositoryProvider.overrideWithValue(
+          FakeClientsRepository([_client('c1', 'Dubois')]),
+        ),
+        catalogRepositoryProvider.overrideWithValue(
+          catalogRepo ?? FakeCatalogRepository([...categories], [...items]),
+        ),
       ],
       child: const MaterialApp(home: QuoteWizardScreen()),
     ),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Dubois')); // choose the client
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Suivant')); // advance to Dossier
+  await tester.tap(
+    find.text('Dubois'),
+  ); // choosing the client advances to Dossier
   await tester.pumpAndSettle();
 }
 
 void main() {
-  testWidgets('lists folders with name, article count and a content preview',
-      (tester) async {
+  testWidgets('lists folders with name, article count and a content preview', (
+    tester,
+  ) async {
     await _pumpToDossier(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
-      items: [_item('i1', 'cat1', 'WC suspendu'), _item('i2', 'cat1', 'Lavabo')],
+      items: [
+        _item('i1', 'cat1', 'WC suspendu'),
+        _item('i2', 'cat1', 'Lavabo'),
+      ],
     );
 
     expect(find.text('Sanitaires'), findsOneWidget); // name
     expect(find.text('2 articles'), findsOneWidget); // count (plural)
-    expect(find.textContaining('Aperçu : WC suspendu, Lavabo'), findsOneWidget); // preview
+    expect(
+      find.textContaining('Aperçu : WC suspendu, Lavabo'),
+      findsOneWidget,
+    ); // preview
   });
 
   testWidgets('a single-article folder reads "1 article"', (tester) async {
@@ -118,31 +128,38 @@ void main() {
     expect(find.byType(ErrorState), findsOneWidget);
   });
 
-  testWidgets('opening a folder marks it and enables Suivant', (tester) async {
+  testWidgets('opening a folder advances to the Articles step', (tester) async {
     await _pumpToDossier(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
       items: [_item('i1', 'cat1', 'WC')],
     );
 
-    expect(_suivant(tester).onPressed, isNull); // nothing open yet
+    expect(_suivant(tester).onPressed, isNull); // nothing open yet, on Dossier
     await tester.tap(find.text('Sanitaires'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Dossier ouvert'), findsOneWidget);
-    expect(_suivant(tester).onPressed, isNotNull);
+    // Opening the folder is the answer — the wizard moves to Articles on its own.
+    expect(find.text('Étape 3 / 7'), findsOneWidget);
   });
 
   testWidgets('opening another folder moves the selection', (tester) async {
     await _pumpToDossier(
       tester,
-      categories: [_category('cat1', 'Sanitaires'), _category('cat2', 'Chauffage')],
+      categories: [
+        _category('cat1', 'Sanitaires'),
+        _category('cat2', 'Chauffage'),
+      ],
       items: [_item('i1', 'cat1', 'WC'), _item('i2', 'cat2', 'Radiateur')],
     );
 
-    await tester.tap(find.text('Sanitaires'));
+    await tester.tap(find.text('Sanitaires')); // opens + advances
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Chauffage'));
+    await tester.tap(find.text('Précédent')); // back to Dossier
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chauffage')); // switch folder (advances again)
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Précédent')); // back to inspect
     await tester.pumpAndSettle();
 
     expect(find.text('Dossier ouvert'), findsOneWidget); // only one open
@@ -150,31 +167,32 @@ void main() {
       of: find.text('Chauffage'),
       matching: find.byType(Card),
     );
-    expect(find.descendant(of: chauffageCard, matching: find.text('Dossier ouvert')),
-        findsOneWidget);
+    expect(
+      find.descendant(of: chauffageCard, matching: find.text('Dossier ouvert')),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('the open folder survives navigating back to Client and returning',
-      (tester) async {
+  testWidgets('the open folder survives navigating away and back', (
+    tester,
+  ) async {
     await _pumpToDossier(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
       items: [_item('i1', 'cat1', 'WC')],
     );
 
-    await tester.tap(find.text('Sanitaires'));
+    await tester.tap(find.text('Sanitaires')); // opens + advances to Articles
     await tester.pumpAndSettle();
-    expect(find.text('Dossier ouvert'), findsOneWidget);
-
-    await tester.tap(find.text('Précédent')); // back to Client
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Suivant')); // forward to Dossier again
+    await tester.tap(find.text('Précédent')); // back to Dossier
     await tester.pumpAndSettle();
 
     expect(find.text('Dossier ouvert'), findsOneWidget); // still open
   });
 
-  testWidgets('double-tapping a folder keeps it open once', (tester) async {
+  testWidgets('double-tapping a folder opens it once and advances', (
+    tester,
+  ) async {
     await _pumpToDossier(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
@@ -185,7 +203,10 @@ void main() {
     await tester.tap(find.text('Sanitaires'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Dossier ouvert'), findsOneWidget);
-    expect(_suivant(tester).onPressed, isNotNull);
+    // A fast double tap opens the folder once and advances once.
+    expect(find.text('Étape 3 / 7'), findsOneWidget);
+    await tester.tap(find.text('Précédent'));
+    await tester.pumpAndSettle();
+    expect(find.text('Dossier ouvert'), findsOneWidget); // exactly one open
   });
 }

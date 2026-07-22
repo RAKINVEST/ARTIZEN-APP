@@ -15,6 +15,11 @@ abstract class CatalogRepository {
   /// The company's folders with article count + sample designations, for the
   /// assistant's "Dossier" picker. Company scoping comes from the JWT.
   Future<List<CategoryOverview>> listCategoryOverviews();
+
+  /// The catalogue grouped by the artisan's trades (métiers), each with the
+  /// folders it brings, so it reads as a handful of trades instead of one flat
+  /// list of a hundred-plus folders. See `GET /catalog/by-trade`.
+  Future<List<TradeGroup>> listCatalogByTrade();
   Future<CatalogCategory> createCategory(
     CatalogCategoryInput input, {
     required String companyId,
@@ -25,6 +30,7 @@ abstract class CatalogRepository {
   Future<List<CatalogItem>> listItems({
     required String companyId,
     bool activeOnly = false,
+    bool favoriteOnly = false,
     String? categoryId,
     String? query,
     int? offset,
@@ -40,4 +46,9 @@ abstract class CatalogRepository {
   /// which the caller doesn't have and shouldn't have to reconstruct just
   /// to flip a boolean — the same reason [deactivateItem] takes only an id.
   Future<CatalogItem> reactivateItem(String id);
+
+  /// Put the article in "Ma caisse à outils" or take it out. A single-field
+  /// change like [reactivateItem], so it takes only the id and the new value —
+  /// not a whole [CatalogItemInput].
+  Future<CatalogItem> setFavorite(String id, {required bool favorite});
 }

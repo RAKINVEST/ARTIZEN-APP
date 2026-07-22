@@ -26,6 +26,12 @@ BrandingProfile _emptyProfile() => const BrandingProfile(
 
 void main() {
   testWidgets('App boots to the login screen and logs in to the dashboard', (tester) async {
+    // A tall surface so the whole dashboard (the permanent quick-access panel,
+    // the "Nouveau devis guidé" button and the three stat cards) lays out —
+    // otherwise the lazy ListView leaves the stats unbuilt off-screen.
+    tester.view.physicalSize = const Size(1200, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -72,14 +78,11 @@ void main() {
     // Appears twice: the AppBar title and the bottom-nav label.
     expect(find.text('Tableau de bord'), findsNWidgets(2));
 
-    // A brand-new account (empty fakes, no SIRET) lands on the onboarding
-    // checklist. Dismiss it via "Masquer" to reveal the underlying empty
-    // dashboard — this also exercises the dismiss control.
-    expect(find.text('Bienvenue ! Voici comment démarrer'), findsOneWidget);
-    await tester.tap(find.text('Masquer'));
-    await tester.pumpAndSettle();
+    // The dashboard opens on its permanent "Bienvenue" quick-access panel.
+    expect(find.text('Bienvenue'), findsOneWidget);
 
-    // The three stat cards, all backed by the empty fakes above.
-    expect(find.text('0'), findsNWidgets(3));
+    // The stat cards, all backed by the empty fakes above: clients, articles,
+    // and the four devis cards (total + validés + en attente + refusés).
+    expect(find.text('0'), findsNWidgets(6));
   });
 }

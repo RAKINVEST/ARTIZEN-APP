@@ -35,9 +35,14 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
   /// than duplicate the line — ticking it twice means "more of it", not a
   /// second line.
   void addArticle(DraftLine line) {
-    final existing = state.lines.indexWhere((l) => l.catalogItemId == line.catalogItemId);
+    final existing = state.lines.indexWhere(
+      (l) => l.catalogItemId == line.catalogItemId,
+    );
     if (existing >= 0) {
-      setQuantity(line.catalogItemId, state.lines[existing].quantity + line.quantity);
+      setQuantity(
+        line.catalogItemId,
+        state.lines[existing].quantity + line.quantity,
+      );
       return;
     }
     state = state.copyWith(lines: [...state.lines, line]);
@@ -45,7 +50,9 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
 
   void removeLine(String catalogItemId) {
     state = state.copyWith(
-      lines: state.lines.where((l) => l.catalogItemId != catalogItemId).toList(),
+      lines: state.lines
+          .where((l) => l.catalogItemId != catalogItemId)
+          .toList(),
     );
   }
 
@@ -79,7 +86,9 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
       state = state.copyWith(calculation: null);
       return;
     }
-    final calculation = await ref.read(quotesRepositoryProvider).calculate(
+    final calculation = await ref
+        .read(quotesRepositoryProvider)
+        .calculate(
           lines: [
             for (final line in state.lines)
               QuoteLineInput(
@@ -92,8 +101,9 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
   }
 }
 
-final quoteDraftProvider =
-    NotifierProvider<QuoteDraftNotifier, QuoteDraft>(QuoteDraftNotifier.new);
+final quoteDraftProvider = NotifierProvider<QuoteDraftNotifier, QuoteDraft>(
+  QuoteDraftNotifier.new,
+);
 
 /// The folder open at the "Dossier" step — pure navigation state, **outside**
 /// the draft on purpose (a folder guides browsing, it is not part of the
@@ -109,7 +119,9 @@ class SelectedFolderNotifier extends Notifier<String?> {
 }
 
 final selectedFolderProvider =
-    NotifierProvider<SelectedFolderNotifier, String?>(SelectedFolderNotifier.new);
+    NotifierProvider<SelectedFolderNotifier, String?>(
+      SelectedFolderNotifier.new,
+    );
 
 /// The artisan's catalog folders — name, article count, sample designations —
 /// shown by the "Dossier" step so he can pick where to work.
@@ -124,7 +136,8 @@ final foldersProvider = FutureProvider<List<CategoryOverview>>((ref) {
 /// the list. Filtering and search are the backend's job (décision 3): a folder
 /// of any size stays one bounded, searchable page — paging can be added later
 /// without touching how this is used.
-class ArticlePickerNotifier extends AutoDisposeAsyncNotifier<List<CatalogItem>> {
+class ArticlePickerNotifier
+    extends AutoDisposeAsyncNotifier<List<CatalogItem>> {
   /// Comfortably above a real folder's size; a bigger folder relies on search.
   static const int _limit = 100;
 
@@ -135,7 +148,9 @@ class ArticlePickerNotifier extends AutoDisposeAsyncNotifier<List<CatalogItem>> 
     final categoryId = ref.read(selectedFolderProvider);
     if (categoryId == null) return const [];
     final companyId = await ref.read(currentCompanyIdProvider.future);
-    return ref.read(catalogRepositoryProvider).listItems(
+    return ref
+        .read(catalogRepositoryProvider)
+        .listItems(
           companyId: companyId,
           categoryId: categoryId,
           activeOnly: true,
@@ -158,7 +173,9 @@ class ArticlePickerNotifier extends AutoDisposeAsyncNotifier<List<CatalogItem>> 
     if (trimmed == _query) return;
     _query = trimmed;
     final requestId = ++_requestId;
-    state = const AsyncValue<List<CatalogItem>>.loading().copyWithPrevious(state);
+    state = const AsyncValue<List<CatalogItem>>.loading().copyWithPrevious(
+      state,
+    );
     final next = await AsyncValue.guard(() => _fetch(trimmed));
     if (requestId != _requestId) return;
     state = next;
@@ -167,8 +184,18 @@ class ArticlePickerNotifier extends AutoDisposeAsyncNotifier<List<CatalogItem>> 
 
 final articlePickerProvider =
     AutoDisposeAsyncNotifierProvider<ArticlePickerNotifier, List<CatalogItem>>(
-  ArticlePickerNotifier.new,
-);
+      ArticlePickerNotifier.new,
+    );
+
+/// A one-shot "the artisan made this step's choice, move on" signal, bumped by
+/// a step the moment its single decision is taken — a client tapped, a folder
+/// opened. The wizard shell listens and advances to the next step: the tap *is*
+/// the answer, so it shouldn't also need a press on Suivant (gain de fluidité).
+/// A counter, not a bool, so tapping again (even the same choice) still fires.
+/// Deliberately left untouched by a pre-selected client (arriving from a
+/// client's "Créer un devis"), which lands on the Client step ready to review
+/// rather than skipping straight past it.
+final wizardAdvanceRequestProvider = StateProvider<int>((ref) => 0);
 
 /// The quote once it has been created — its number and totals come from the
 /// backend (`POST /quotes`). Set on the Créer step's success; it drives the

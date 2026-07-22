@@ -297,6 +297,13 @@ class _Actions extends StatelessWidget {
     final imported = source.status != CatalogSourceStatus.available;
     final needsUpdate = source.status == CatalogSourceStatus.updateAvailable;
 
+    // The app's global button theme makes buttons full-width
+    // (Size.fromHeight), which demands an infinite width inside a Row and
+    // breaks layout. In this action bar the buttons must size to their
+    // content, so override the minimum size to drop the imposed width while
+    // keeping a comfortable tap height.
+    final inRowButton = FilledButton.styleFrom(minimumSize: const Size(0, 44));
+
     final Widget primary;
     if (busy) {
       primary = const Padding(
@@ -307,6 +314,7 @@ class _Actions extends StatelessWidget {
     } else if (!imported) {
       primary = FilledButton.icon(
         onPressed: onImport,
+        style: inRowButton,
         icon: const Icon(Icons.download_outlined),
         label: const Text('Importer'),
       );
@@ -314,6 +322,7 @@ class _Actions extends StatelessWidget {
       final count = source.updateItemCount ?? 0;
       primary = FilledButton.icon(
         onPressed: onImport,
+        style: inRowButton,
         icon: const Icon(Icons.system_update_alt_outlined),
         label: Text(count > 0 ? 'Mettre à jour (+$count)' : 'Mettre à jour'),
       );

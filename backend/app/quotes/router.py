@@ -58,16 +58,19 @@ async def calculate_quote(
 async def list_quotes(
     service: QuoteServiceDep,
     current_user: CurrentUserDep,
-    status: QuoteStatus | None = None,
+    status: list[QuoteStatus] | None = Query(None),
     client_id: uuid.UUID | None = None,
     offset: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
 ) -> list[QuoteRead]:
-    """Filter by ``status`` (draft/sent/accepted/refused) and/or ``client_id``
-    so the artisan can triage instead of scrolling everything."""
+    """Filter by one or more ``status`` values (draft/sent/accepted/refused)
+    and/or ``client_id`` so the artisan can triage instead of scrolling
+    everything. Repeating ``?status=`` (e.g. ``?status=draft&status=sent``)
+    matches any of them — this is how the dashboard's "En attente" view folds
+    draft and sent together server-side."""
     return await service.list(
         company_id=current_user.company_id,
-        status=status,
+        statuses=status,
         client_id=client_id,
         offset=offset,
         limit=limit,

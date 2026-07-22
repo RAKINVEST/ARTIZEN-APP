@@ -472,14 +472,14 @@ class QuoteService:
         self,
         *,
         company_id: uuid.UUID | None = None,
-        status: QuoteStatus | None = None,
+        statuses: list[QuoteStatus] | None = None,
         client_id: uuid.UUID | None = None,
         offset: int = 0,
         limit: int = 100,
     ) -> list[QuoteRead]:
         if company_id is not None:
             quotes = await self._quotes.list_by_company(
-                company_id, status=status, client_id=client_id, offset=offset, limit=limit
+                company_id, statuses=statuses, client_id=client_id, offset=offset, limit=limit
             )
         else:
             quotes = await self._quotes.list(offset=offset, limit=limit)

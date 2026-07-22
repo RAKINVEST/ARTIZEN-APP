@@ -12,22 +12,23 @@ import 'package:go_router/go_router.dart';
 import '../../support/fake_repositories.dart';
 
 Client _client(String id, String name) => Client(
-      id: id,
-      companyId: 'co1',
-      lastName: name,
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+  id: id,
+  companyId: 'co1',
+  lastName: name,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
 CatalogCategory _category(String id, String name) => CatalogCategory(
-      id: id,
-      companyId: 'co1',
-      name: name,
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+  id: id,
+  companyId: 'co1',
+  name: name,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
-CatalogItem _item(String id, String categoryId, String designation) => CatalogItem(
+CatalogItem _item(String id, String categoryId, String designation) =>
+    CatalogItem(
       id: id,
       companyId: 'co1',
       categoryId: categoryId,
@@ -51,9 +52,12 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         currentCompanyIdProvider.overrideWith((ref) async => 'co1'),
-        clientsRepositoryProvider.overrideWithValue(FakeClientsRepository([...clients])),
-        catalogRepositoryProvider
-            .overrideWithValue(FakeCatalogRepository([...categories], [...items])),
+        clientsRepositoryProvider.overrideWithValue(
+          FakeClientsRepository([...clients]),
+        ),
+        catalogRepositoryProvider.overrideWithValue(
+          FakeCatalogRepository([...categories], [...items]),
+        ),
       ],
       child: const MaterialApp(home: QuoteWizardScreen()),
     ),
@@ -91,9 +95,14 @@ Future<void> _pumpRouted(
     ProviderScope(
       overrides: [
         currentCompanyIdProvider.overrideWith((ref) async => 'co1'),
-        clientsRepositoryProvider.overrideWithValue(FakeClientsRepository([...clients])),
+        clientsRepositoryProvider.overrideWithValue(
+          FakeClientsRepository([...clients]),
+        ),
         catalogRepositoryProvider.overrideWithValue(
-          FakeCatalogRepository(const <CatalogCategory>[], const <CatalogItem>[]),
+          FakeCatalogRepository(
+            const <CatalogCategory>[],
+            const <CatalogItem>[],
+          ),
         ),
       ],
       child: MaterialApp.router(routerConfig: router),
@@ -108,54 +117,69 @@ FilledButton _suivant(WidgetTester tester) =>
     tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Suivant'));
 
 Future<void> _chooseClientAndAdvance(WidgetTester tester) async {
+  // Tapping the client both selects it and advances to the Dossier step.
   await tester.tap(find.text('Dubois'));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Suivant'));
   await tester.pumpAndSettle();
 }
 
 void main() {
-  testWidgets('opens on the Client step with the progress at 1/7', (tester) async {
+  testWidgets('opens on the Client step with the progress at 1/7', (
+    tester,
+  ) async {
     await _pump(tester, clients: [_client('c1', 'Dubois')]);
 
-    expect(find.text('Pour quel client faites-vous ce devis ?'), findsOneWidget);
+    expect(
+      find.text('Pour quel client faites-vous ce devis ?'),
+      findsOneWidget,
+    );
     expect(find.text('Étape 1 / 7'), findsOneWidget);
     expect(find.text('ARTIZEN'), findsOneWidget); // left menu is permanent
   });
 
-  testWidgets('Suivant is gated until a client is chosen, then it advances', (tester) async {
-    await _pump(tester, clients: [_client('c1', 'Dubois')], categories: [_category('cat1', 'Sanitaires')]);
+  testWidgets(
+    'Suivant is gated with no client; choosing one advances by itself',
+    (tester) async {
+      await _pump(
+        tester,
+        clients: [_client('c1', 'Dubois')],
+        categories: [_category('cat1', 'Sanitaires')],
+      );
 
-    expect(_suivant(tester).onPressed, isNull); // no client yet
+      expect(_suivant(tester).onPressed, isNull); // step 1, no client yet
 
-    await tester.tap(find.text('Dubois'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Dubois'));
+      await tester.pumpAndSettle();
 
-    expect(_suivant(tester).onPressed, isNotNull);
-    await tester.tap(find.text('Suivant'));
-    await tester.pumpAndSettle();
-    expect(find.text('Étape 2 / 7'), findsOneWidget);
-  });
+      // Tapping the client is the answer — the wizard moves to the Dossier step
+      // without a second press on Suivant.
+      expect(find.text('Étape 2 / 7'), findsOneWidget);
+    },
+  );
 
-  testWidgets('the Dossier step lists folders with counts, and opening one enables Suivant',
-      (tester) async {
-    await _pump(
-      tester,
-      clients: [_client('c1', 'Dubois')],
-      categories: [_category('cat1', 'Sanitaires')],
-      items: [_item('i1', 'cat1', 'WC suspendu'), _item('i2', 'cat1', 'Lavabo')],
-    );
-    await _chooseClientAndAdvance(tester);
+  testWidgets(
+    'the Dossier step lists folders with counts; opening one advances',
+    (tester) async {
+      await _pump(
+        tester,
+        clients: [_client('c1', 'Dubois')],
+        categories: [_category('cat1', 'Sanitaires')],
+        items: [
+          _item('i1', 'cat1', 'WC suspendu'),
+          _item('i2', 'cat1', 'Lavabo'),
+        ],
+      );
+      await _chooseClientAndAdvance(tester);
 
-    expect(find.text('Sanitaires'), findsOneWidget);
-    expect(find.text('2 articles'), findsOneWidget);
+      expect(find.text('Sanitaires'), findsOneWidget);
+      expect(find.text('2 articles'), findsOneWidget);
 
-    // Can't advance until a folder is open.
-    expect(_suivant(tester).onPressed, isNull);
-    await tester.tap(find.text('Sanitaires'));
-    await tester.pumpAndSettle();
-    expect(_suivant(tester).onPressed, isNotNull);
-  });
+      // Can't advance until a folder is open; opening one is itself the advance.
+      expect(_suivant(tester).onPressed, isNull);
+      await tester.tap(find.text('Sanitaires'));
+      await tester.pumpAndSettle();
+      expect(find.text('Étape 3 / 7'), findsOneWidget);
+    },
+  );
 
   testWidgets('cannot jump forward past an incomplete step', (tester) async {
     await _pump(tester, clients: [_client('c1', 'Dubois')]);
@@ -176,8 +200,9 @@ void main() {
     expect(previous.onPressed, isNull);
   });
 
-  testWidgets('leaving an in-progress draft asks to confirm, and cancel stays',
-      (tester) async {
+  testWidgets('leaving an in-progress draft asks to confirm, and cancel stays', (
+    tester,
+  ) async {
     await _pumpRouted(tester, clients: [_client('c1', 'Dubois')]);
     await tester.tap(find.text('Dubois')); // draft now holds a client
     await tester.pumpAndSettle();
@@ -188,7 +213,8 @@ void main() {
 
     await tester.tap(find.text('Continuer le devis'));
     await tester.pumpAndSettle();
-    expect(find.text('Étape 1 / 7'), findsOneWidget); // still in the wizard
+    // Choosing the client advanced to step 2; cancelling the exit stays there.
+    expect(find.text('Étape 2 / 7'), findsOneWidget); // still in the wizard
     expect(find.text('Ouvrir'), findsNothing);
   });
 

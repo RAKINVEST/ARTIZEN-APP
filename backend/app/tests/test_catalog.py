@@ -308,3 +308,78 @@ async def test_update_item_keeps_working_within_its_own_company(
 
     assert response.status_code == 200
     assert response.json()["category_id"] == second.json()["id"]
+
+
+async def test_item_favorite_toggle_and_toolbox_filter(
+    client: AsyncClient, company_id: str, category_id: str
+) -> None:
+    """Ma caisse à outils: an article is starred through the ordinary update
+    route (only the one field sent), and the catalogue can be narrowed to just
+    the starred ones with ``favorite_only``."""
+    create = await client.post(
+        "/api/catalog/items",
+        json={
+            "company_id": company_id,
+            "category_id": category_id,
+            "designation": "Cle a molette",
+            "item_type": "product",
+            "unit": "unite",
+            "unit_price_ht": "12.00",
+            "vat_rate": "20.00",
+        },
+    )
+    item_id = create.json()["id"]
+    assert create.json()["is_favorite"] is False  # not in the toolbox by default
+
+    # Star it — same route as any edit, sending only the one field.
+    put = await client.put(f"/api/catalog/items/{item_id}", json={"is_favorite": True})
+    assert put.status_code == 200
+    assert put.json()["is_favorite"] is True
+
+    # It now shows in "Ma caisse à outils", and everything there is starred.
+    toolbox = await client.get("/api/catalog/items", params={"favorite_only": True})
+    assert toolbox.status_code == 200
+    assert item_id in [i["id"] for i in toolbox.json()]
+    assert all(i["is_favorite"] for i in toolbox.json())
+
+    # Un-star it — it leaves the toolbox but stays in the catalogue.
+    await client.put(f"/api/catalog/items/{item_id}", json={"is_favorite": False})
+    toolbox_after = await client.get("/api/catalog/items", params={"favorite_only": True})
+    assert item_id not in [i["id"] for i in toolbox_after.json()]
+    full = await client.get("/api/catalog/items")
+    assert item_id in [i["id"] for i in full.json()]
+
+
+async def test_catalog_by_trade_groups_folders_under_their_trade(
+    client: AsyncClient, company_id: str
+) -> None:
+    """The by-trade view groups each imported trade's folders under it, and a
+    folder that belongs to no trade lands in "Autres"."""
+    # Import a real trade — this seeds its folders + articles.
+    activities = (await client.get("/api/catalog/activities")).json()
+    trade = activities[0]
+    imported = await client.post(f"/api/catalog/activities/{trade['slug']}")
+    assert imported.status_code == 200
+
+    # A hand-made folder that no trade brings.
+    await client.post(
+        "/api/catalog/categories",
+        json={"company_id": company_id, "name": "Mon dossier perso a moi"},
+    )
+
+    response = await client.get("/api/catalog/by-trade")
+
+    assert response.status_code == 200
+    groups = response.json()
+    labels = [group["label"] for group in groups]
+
+    # The imported trade is its own group, carrying real folders.
+    assert trade["label"] in labels
+    group = next(g for g in groups if g["label"] == trade["label"])
+    assert len(group["categories"]) >= 1
+    assert all(("id" in c and "item_count" in c) for c in group["categories"])
+
+    # The hand-made folder belongs to no trade, so it lands in "Autres".
+    assert "Autres" in labels
+    autres = next(g for g in groups if g["label"] == "Autres")
+    assert any(c["name"] == "Mon dossier perso a moi" for c in autres["categories"])

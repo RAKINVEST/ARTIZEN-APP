@@ -54,13 +54,16 @@ class FakeClientsRepository implements ClientsRepository {
     var rows = _clients;
     if (query != null && query.isNotEmpty) {
       final lower = query.toLowerCase();
-      rows = rows.where((client) => client.lastName.toLowerCase().contains(lower)).toList();
+      rows = rows
+          .where((client) => client.lastName.toLowerCase().contains(lower))
+          .toList();
     }
     return _paginate(rows, offset, limit);
   }
 
   @override
-  Future<Client> get(String id) async => _clients.firstWhere((client) => client.id == id);
+  Future<Client> get(String id) async =>
+      _clients.firstWhere((client) => client.id == id);
 
   @override
   Future<Client> create(ClientInput input, {required String companyId}) async {
@@ -81,28 +84,40 @@ class FakeClientsRepository implements ClientsRepository {
 }
 
 class FakeCatalogRepository implements CatalogRepository {
-  FakeCatalogRepository(this._categories, this._items);
+  FakeCatalogRepository(
+    this._categories,
+    this._items, {
+    this.tradeGroups = const [],
+  });
 
   final List<CatalogCategory> _categories;
   final List<CatalogItem> _items;
+  final List<TradeGroup> tradeGroups;
 
   @override
-  Future<List<CatalogCategory>> listCategories({required String companyId}) async => _categories;
+  Future<List<CatalogCategory>> listCategories({
+    required String companyId,
+  }) async => _categories;
 
   @override
   Future<List<CategoryOverview>> listCategoryOverviews() async => [
-        for (final category in _categories)
-          CategoryOverview(
-            id: category.id,
-            name: category.name,
-            itemCount: _items.where((item) => item.categoryId == category.id).length,
-            sampleDesignations: _items
-                .where((item) => item.categoryId == category.id)
-                .take(3)
-                .map((item) => item.designation)
-                .toList(),
-          ),
-      ];
+    for (final category in _categories)
+      CategoryOverview(
+        id: category.id,
+        name: category.name,
+        itemCount: _items
+            .where((item) => item.categoryId == category.id)
+            .length,
+        sampleDesignations: _items
+            .where((item) => item.categoryId == category.id)
+            .take(3)
+            .map((item) => item.designation)
+            .toList(),
+      ),
+  ];
+
+  @override
+  Future<List<TradeGroup>> listCatalogByTrade() async => tradeGroups;
 
   @override
   Future<CatalogCategory> createCategory(
@@ -116,12 +131,18 @@ class FakeCatalogRepository implements CatalogRepository {
   Future<List<CatalogItem>> listItems({
     required String companyId,
     bool activeOnly = false,
+    bool favoriteOnly = false,
     String? categoryId,
     String? query,
     int? offset,
     int? limit,
   }) async {
-    var rows = activeOnly ? _items.where((item) => item.active).toList() : _items;
+    var rows = activeOnly
+        ? _items.where((item) => item.active).toList()
+        : _items;
+    if (favoriteOnly) {
+      rows = rows.where((item) => item.isFavorite).toList();
+    }
     if (categoryId != null) {
       rows = rows.where((item) => item.categoryId == categoryId).toList();
     }
@@ -136,7 +157,10 @@ class FakeCatalogRepository implements CatalogRepository {
   }
 
   @override
-  Future<CatalogItem> createItem(CatalogItemInput input, {required String companyId}) async {
+  Future<CatalogItem> createItem(
+    CatalogItemInput input, {
+    required String companyId,
+  }) async {
     throw UnimplementedError();
   }
 
@@ -153,6 +177,13 @@ class FakeCatalogRepository implements CatalogRepository {
   @override
   Future<CatalogItem> reactivateItem(String id) async {
     throw UnimplementedError();
+  }
+
+  @override
+  Future<CatalogItem> setFavorite(String id, {required bool favorite}) async {
+    final index = _items.indexWhere((item) => item.id == id);
+    _items[index] = _items[index].copyWith(isFavorite: favorite);
+    return _items[index];
   }
 }
 
@@ -172,19 +203,24 @@ class FakeQuotesRepository implements QuotesRepository {
   @override
   Future<List<Quote>> list({
     required String companyId,
-    QuoteStatus? status,
+    List<QuoteStatus>? statuses,
     String? clientId,
     int? offset,
     int? limit,
   }) async {
     var rows = _quotes;
-    if (status != null) rows = rows.where((quote) => quote.status == status).toList();
-    if (clientId != null) rows = rows.where((quote) => quote.clientId == clientId).toList();
+    if (statuses != null && statuses.isNotEmpty) {
+      rows = rows.where((quote) => statuses.contains(quote.status)).toList();
+    }
+    if (clientId != null) {
+      rows = rows.where((quote) => quote.clientId == clientId).toList();
+    }
     return _paginate(rows, offset, limit);
   }
 
   @override
-  Future<Quote> get(String id) async => _quotes.firstWhere((quote) => quote.id == id);
+  Future<Quote> get(String id) async =>
+      _quotes.firstWhere((quote) => quote.id == id);
 
   @override
   Future<Quote> create({
@@ -231,7 +267,9 @@ class FakeQuotesRepository implements QuotesRepository {
   /// reacts to a quantity change — without needing real catalog prices. (Two
   /// lines of quantity 1 still total "2", as before.)
   @override
-  Future<QuoteCalculation> calculate({required List<QuoteLineInput> lines}) async {
+  Future<QuoteCalculation> calculate({
+    required List<QuoteLineInput> lines,
+  }) async {
     num total = 0;
     final calcLines = <QuoteCalculationLine>[];
     for (final line in lines) {
@@ -291,7 +329,10 @@ class FakeBrandingRepository implements BrandingRepository {
   }
 
   @override
-  Future<String> uploadSignature({required String filename, required List<int> bytes}) async {
+  Future<String> uploadSignature({
+    required String filename,
+    required List<int> bytes,
+  }) async {
     throw UnimplementedError();
   }
 
@@ -301,7 +342,10 @@ class FakeBrandingRepository implements BrandingRepository {
   }
 
   @override
-  Future<String> uploadStamp({required String filename, required List<int> bytes}) async {
+  Future<String> uploadStamp({
+    required String filename,
+    required List<int> bytes,
+  }) async {
     throw UnimplementedError();
   }
 
@@ -335,7 +379,8 @@ class FakeTemplateImportRepository implements TemplateImportRepository {
   }) async => uploadResult;
 
   @override
-  Future<DocumentAnalysisSummary> processAnalysis(String analysisId) async => processResult;
+  Future<DocumentAnalysisSummary> processAnalysis(String analysisId) async =>
+      processResult;
 
   @override
   Future<TemplateImportPreview> getPreview(String analysisId) async => preview;
@@ -354,14 +399,15 @@ class FakeMetiersRepository implements MetiersRepository {
   FakeMetiersRepository({
     List<CatalogSource>? activities,
     List<CatalogSource>? qualifications,
-  })  : _activities = [...?activities],
-        _qualifications = [...?qualifications];
+  }) : _activities = [...?activities],
+       _qualifications = [...?qualifications];
 
   final List<CatalogSource> _activities;
   final List<CatalogSource> _qualifications;
 
   @override
-  Future<List<CatalogSource>> listActivities() async => List.unmodifiable(_activities);
+  Future<List<CatalogSource>> listActivities() async =>
+      List.unmodifiable(_activities);
 
   @override
   Future<List<CatalogSource>> listQualifications() async =>
@@ -379,12 +425,18 @@ class FakeMetiersRepository implements MetiersRepository {
   Future<void> removeActivity(String slug) => _remove(_activities, slug);
 
   @override
-  Future<void> removeQualification(String slug) => _remove(_qualifications, slug);
+  Future<void> removeQualification(String slug) =>
+      _remove(_qualifications, slug);
 
-  Future<CatalogImportResult> _import(List<CatalogSource> list, String slug) async {
+  Future<CatalogImportResult> _import(
+    List<CatalogSource> list,
+    String slug,
+  ) async {
     final index = list.indexWhere((source) => source.slug == slug);
     final source = list[index];
-    final added = source.status == CatalogSourceStatus.imported ? 0 : source.itemCount;
+    final added = source.status == CatalogSourceStatus.imported
+        ? 0
+        : source.itemCount;
     list[index] = source.copyWith(
       status: CatalogSourceStatus.imported,
       importedVersion: source.version,

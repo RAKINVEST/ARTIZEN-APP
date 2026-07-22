@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import '../../../core/navigation/section_nav_arrows.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/paged_list_view.dart';
-import '../data/quote_models.dart';
 import 'quotes_providers.dart';
 import 'widgets/quote_status_chip.dart';
 
 class QuotesListScreen extends ConsumerWidget {
-  const QuotesListScreen({super.key});
+  const QuotesListScreen({this.asPushedView = false, super.key});
+
+  /// True when opened *over* another screen (a dashboard card drilling into
+  /// its filtered devis), so the AppBar shows a plain back arrow that returns
+  /// there. False for the bottom-bar tab, which instead carries the sequential
+  /// section arrows (← Catalogue, → Paramètres).
+  final bool asPushedView;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -19,7 +25,16 @@ class QuotesListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Devis'),
+        // Pushed from a dashboard card → the default back arrow (pops straight
+        // back to the dashboard). As the tab → the section arrows.
+        leading: asPushedView
+            ? null
+            : const SectionNavArrows(current: '/quotes'),
+        leadingWidth: asPushedView ? null : 96,
+        // Follows the active view: "Devis", "Devis en attente", "Devis
+        // validés" or "Devis refusés" — so a dashboard card that filters the
+        // list also names it.
+        title: Text(ref.watch(quotesFilterProvider).title),
         actions: [
           IconButton(
             icon: const Icon(Icons.auto_awesome),
@@ -41,7 +56,8 @@ class QuotesListScreen extends ConsumerWidget {
           Expanded(
             child: PagedListView(
               value: quotes,
-              emptyMessage: 'Aucun devis pour le moment.\nCréez votre premier devis avec le bouton +.',
+              emptyMessage:
+                  'Aucun devis pour le moment.\nCréez votre premier devis avec le bouton +.',
               emptyIcon: Icons.description_outlined,
               onRetry: notifier.refresh,
               onRefresh: notifier.refresh,
@@ -49,7 +65,9 @@ class QuotesListScreen extends ConsumerWidget {
               itemBuilder: (context, quote) => Card(
                 child: ListTile(
                   onTap: () => context.push('/quotes/${quote.id}'),
-                  leading: const CircleAvatar(child: Icon(Icons.description_outlined)),
+                  leading: const CircleAvatar(
+                    child: Icon(Icons.description_outlined),
+                  ),
                   // The number, not the line count: "DEV-2026-0042" is what
                   // the artisan is scanning the list for.
                   title: Text(
@@ -74,43 +92,40 @@ class QuotesListScreen extends ConsumerWidget {
   }
 }
 
-/// The statut filter bar: "Tous" plus one chip per [QuoteStatus]. Selecting a
-/// chip sets [quotesStatusFilterProvider], which re-runs the paged fetch with
-/// `?status=` server-side — no client-side filtering of a truncated page.
+/// The view filter bar: one chip per [QuotesFilter] (Tous / En attente /
+/// Validés / Refusés). Selecting a chip sets [quotesFilterProvider], which
+/// re-runs the paged fetch with `?status=` server-side (En attente sends two)
+/// — no client-side filtering of a truncated page.
 class _StatusFilterBar extends ConsumerWidget {
   const _StatusFilterBar();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selected = ref.watch(quotesStatusFilterProvider);
-
-    // null entry = "Tous"; the rest follow the enum order.
-    final entries = <(QuoteStatus?, String)>[
-      (null, 'Tous'),
-      for (final status in QuoteStatus.values) (status, status.label),
-    ];
+    final selected = ref.watch(quotesFilterProvider);
 
     return SizedBox(
       height: 52,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: entries.length,
+        itemCount: QuotesFilter.values.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final (status, label) = entries[index];
-          final isSelected = status == selected;
+          final filter = QuotesFilter.values[index];
+          final isSelected = filter == selected;
           return ChoiceChip(
-            label: Text(label),
+            label: Text(filter.chipLabel),
             selected: isSelected,
             showCheckmark: false,
             selectedColor: ArtizenColors.nightBlue,
             labelStyle: TextStyle(
-              color: isSelected ? ArtizenColors.onNightBlue : ArtizenColors.textSecondary,
+              color: isSelected
+                  ? ArtizenColors.onNightBlue
+                  : ArtizenColors.textSecondary,
               fontWeight: FontWeight.w600,
             ),
             onSelected: (_) =>
-                ref.read(quotesStatusFilterProvider.notifier).state = status,
+                ref.read(quotesFilterProvider.notifier).state = filter,
           );
         },
       ),

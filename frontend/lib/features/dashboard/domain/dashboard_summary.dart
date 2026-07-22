@@ -36,12 +36,23 @@ class DashboardSummary {
     required this.quoteCount,
     required this.recentQuotes,
     required this.companyHasSiret,
+    this.acceptedCount = 0,
+    this.pendingCount = 0,
+    this.refusedCount = 0,
   });
 
   final ApproximateCount clientCount;
   final ApproximateCount catalogItemCount;
   final ApproximateCount quoteCount;
   final List<Quote> recentQuotes;
+
+  /// Quotes by outcome, counted from the same page as [quoteCount]. "Validés" =
+  /// accepted, "En attente" = **draft + sent** (not yet decided — a fresh quote
+  /// or one awaiting the client's answer), "Refusés" = refused. Counted, never
+  /// decided here (the status lives on the backend).
+  final int acceptedCount;
+  final int pendingCount;
+  final int refusedCount;
 
   /// Whether the company already carries a SIRET — the signal the onboarding
   /// checklist uses to mark "Configurer mon entreprise" as done. Read from
@@ -57,11 +68,11 @@ class DashboardSummary {
 
   /// How many onboarding steps are complete (0–4).
   int get onboardingDoneCount => [
-        companyConfigured,
-        hasCatalogItem,
-        hasClient,
-        hasQuote,
-      ].where((done) => done).length;
+    companyConfigured,
+    hasCatalogItem,
+    hasClient,
+    hasQuote,
+  ].where((done) => done).length;
 
   /// True once every onboarding step is done — the checklist stops showing.
   bool get onboardingComplete => onboardingDoneCount == 4;

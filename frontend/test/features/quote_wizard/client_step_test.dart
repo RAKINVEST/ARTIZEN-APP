@@ -16,21 +16,21 @@ import 'package:go_router/go_router.dart';
 import '../../support/fake_repositories.dart';
 
 Client _client(String id, String name, {String? email}) => Client(
-      id: id,
-      companyId: 'co1',
-      lastName: name,
-      email: email,
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+  id: id,
+  companyId: 'co1',
+  lastName: name,
+  email: email,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
 CatalogCategory _category(String id, String name) => CatalogCategory(
-      id: id,
-      companyId: 'co1',
-      name: name,
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+  id: id,
+  companyId: 'co1',
+  name: name,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
 /// A repository whose list always fails — for the network-error state.
 class _ThrowingClientsRepository extends FakeClientsRepository {
@@ -57,10 +57,12 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         currentCompanyIdProvider.overrideWith((ref) async => 'co1'),
-        clientsRepositoryProvider
-            .overrideWithValue(clientsRepo ?? FakeClientsRepository([...clients])),
-        catalogRepositoryProvider
-            .overrideWithValue(FakeCatalogRepository([...categories], const [])),
+        clientsRepositoryProvider.overrideWithValue(
+          clientsRepo ?? FakeClientsRepository([...clients]),
+        ),
+        catalogRepositoryProvider.overrideWithValue(
+          FakeCatalogRepository([...categories], const []),
+        ),
       ],
       child: const MaterialApp(home: QuoteWizardScreen()),
     ),
@@ -88,18 +90,26 @@ Future<void> _pumpRouted(
           ),
         ),
       ),
-      GoRoute(path: '/assistant', builder: (context, state) => const QuoteWizardScreen()),
-      GoRoute(path: '/clients/new', builder: (context, state) => const ClientFormScreen()),
+      GoRoute(
+        path: '/assistant',
+        builder: (context, state) => const QuoteWizardScreen(),
+      ),
+      GoRoute(
+        path: '/clients/new',
+        builder: (context, state) => const ClientFormScreen(),
+      ),
     ],
   );
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         currentCompanyIdProvider.overrideWith((ref) async => 'co1'),
-        clientsRepositoryProvider
-            .overrideWithValue(FakeClientsRepository([], createResult: createResult)),
-        catalogRepositoryProvider
-            .overrideWithValue(FakeCatalogRepository(const [], const [])),
+        clientsRepositoryProvider.overrideWithValue(
+          FakeClientsRepository([], createResult: createResult),
+        ),
+        catalogRepositoryProvider.overrideWithValue(
+          FakeCatalogRepository(const [], const []),
+        ),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -114,7 +124,10 @@ FilledButton _suivant(WidgetTester tester) =>
 
 Future<void> _type(WidgetTester tester, String text) async {
   await tester.enterText(
-    find.descendant(of: find.byType(DebouncedSearchField), matching: find.byType(EditableText)),
+    find.descendant(
+      of: find.byType(DebouncedSearchField),
+      matching: find.byType(EditableText),
+    ),
     text,
   );
   await tester.pump(const Duration(milliseconds: 350)); // outlast the debounce
@@ -123,14 +136,20 @@ Future<void> _type(WidgetTester tester, String text) async {
 
 void main() {
   testWidgets('an empty search lists every client', (tester) async {
-    await _pump(tester, clients: [_client('c1', 'Dubois'), _client('c2', 'Martin')]);
+    await _pump(
+      tester,
+      clients: [_client('c1', 'Dubois'), _client('c2', 'Martin')],
+    );
 
     expect(find.text('Dubois'), findsOneWidget);
     expect(find.text('Martin'), findsOneWidget);
   });
 
   testWidgets('search filters the list to matching clients', (tester) async {
-    await _pump(tester, clients: [_client('c1', 'Dubois'), _client('c2', 'Martin')]);
+    await _pump(
+      tester,
+      clients: [_client('c1', 'Dubois'), _client('c2', 'Martin')],
+    );
 
     await _type(tester, 'Dub');
 
@@ -138,20 +157,28 @@ void main() {
     expect(find.text('Martin'), findsNothing);
   });
 
-  testWidgets('a search with no match explains why, mentioning the query', (tester) async {
+  testWidgets('a search with no match explains why, mentioning the query', (
+    tester,
+  ) async {
     await _pump(tester, clients: [_client('c1', 'Dubois')]);
 
     await _type(tester, 'zzz');
 
     // « zzz » (with guillemets) is unique to the message — the search field
     // holds a bare "zzz", so this asserts the query is echoed back.
-    expect(find.textContaining('Aucun client ne correspond à « zzz »'), findsOneWidget);
+    expect(
+      find.textContaining('Aucun client ne correspond à « zzz »'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('with no clients at all, invites creating one', (tester) async {
     await _pump(tester);
 
-    expect(find.textContaining("Vous n'avez pas encore de client"), findsOneWidget);
+    expect(
+      find.textContaining("Vous n'avez pas encore de client"),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a network error shows a retry affordance', (tester) async {
@@ -160,36 +187,58 @@ void main() {
     expect(find.byType(ErrorState), findsOneWidget);
   });
 
-  testWidgets('choosing a client shows it in a banner and enables Suivant', (tester) async {
+  testWidgets('choosing a client advances to the next step on its own', (
+    tester,
+  ) async {
     await _pump(tester, clients: [_client('c1', 'Dubois')]);
 
-    expect(_suivant(tester).onPressed, isNull);
+    expect(_suivant(tester).onPressed, isNull); // step 1, nothing chosen yet
     await tester.tap(find.text('Dubois'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Client de ce devis'), findsOneWidget); // the banner
-    expect(_suivant(tester).onPressed, isNotNull);
+    // Tapping the client is the answer to "which client?" — the wizard moves
+    // on without a second press on Suivant.
+    expect(find.text('Étape 2 / 7'), findsOneWidget);
   });
 
-  testWidgets('picking another client changes the selection', (tester) async {
-    await _pump(tester, clients: [_client('c1', 'Dubois'), _client('c2', 'Martin')]);
+  testWidgets('coming back and picking another client changes the selection', (
+    tester,
+  ) async {
+    // A tall surface so both clients stay above the fold once the selected
+    // banner pushes the list down — otherwise the second one can't be tapped.
+    tester.view.physicalSize = const Size(1200, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await _pump(
+      tester,
+      clients: [_client('c1', 'Dubois'), _client('c2', 'Martin')],
+    );
 
-    await tester.tap(find.text('Dubois'));
+    await tester.tap(find.text('Dubois')); // selects + advances
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Martin'));
+    await tester.tap(find.text('Précédent')); // back to the client step
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Martin')); // switch client (advances again)
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Précédent')); // back once more to inspect
     await tester.pumpAndSettle();
 
     final banner = find.ancestor(
       of: find.text('Client de ce devis'),
       matching: find.byType(Card),
     );
-    expect(find.descendant(of: banner, matching: find.text('Martin')), findsOneWidget);
+    expect(
+      find.descendant(of: banner, matching: find.text('Martin')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('removing the selected client re-gates the step', (tester) async {
     await _pump(tester, clients: [_client('c1', 'Dubois')]);
 
-    await tester.tap(find.text('Dubois'));
+    await tester.tap(find.text('Dubois')); // selects + advances
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Précédent')); // back to the client step
     await tester.pumpAndSettle();
     expect(_suivant(tester).onPressed, isNotNull);
 
@@ -200,27 +249,29 @@ void main() {
     expect(_suivant(tester).onPressed, isNull); // gated again
   });
 
-  testWidgets('double-tapping a client keeps it selected once', (tester) async {
+  testWidgets('double-tapping a client still advances just once', (
+    tester,
+  ) async {
     await _pump(tester, clients: [_client('c1', 'Dubois')]);
 
     await tester.tap(find.text('Dubois'));
     await tester.tap(find.text('Dubois'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Client de ce devis'), findsOneWidget);
-    expect(_suivant(tester).onPressed, isNotNull);
+    // A fast double tap chooses the client once and advances once.
+    expect(find.text('Étape 2 / 7'), findsOneWidget);
   });
 
-  testWidgets('the chosen client survives moving to the next step and back', (tester) async {
+  testWidgets('the chosen client survives moving to the next step and back', (
+    tester,
+  ) async {
     await _pump(
       tester,
       clients: [_client('c1', 'Dubois')],
       categories: [_category('cat1', 'Sanitaires')],
     );
 
-    await tester.tap(find.text('Dubois'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Suivant'));
+    await tester.tap(find.text('Dubois')); // selects + advances to Dossier
     await tester.pumpAndSettle();
     expect(find.text('Sanitaires'), findsOneWidget); // on the Dossier step
 
@@ -229,7 +280,9 @@ void main() {
     expect(find.text('Client de ce devis'), findsOneWidget); // still selected
   });
 
-  testWidgets('creating a client inline selects it automatically', (tester) async {
+  testWidgets('creating a client inline selects it automatically', (
+    tester,
+  ) async {
     // A tall viewport so the whole client form (7 fields + button) fits without
     // scrolling — the submit button sits below a 600px fold otherwise.
     tester.view.physicalSize = const Size(1200, 2400);
@@ -246,7 +299,12 @@ void main() {
     expect(find.text('CRÉER LE CLIENT'), findsOneWidget);
 
     await tester.enterText(
-      find.descendant(of: find.byType(Form), matching: find.byType(EditableText)).first,
+      find
+          .descendant(
+            of: find.byType(Form),
+            matching: find.byType(EditableText),
+          )
+          .first,
       'Nouveau',
     );
     await tester.pump();

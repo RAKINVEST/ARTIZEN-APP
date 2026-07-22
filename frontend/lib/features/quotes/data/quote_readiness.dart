@@ -29,11 +29,13 @@ class ReadinessIssue with _$ReadinessIssue {
   const factory ReadinessIssue({
     required String code,
     required String label,
-    @JsonKey(unknownEnumValue: ReadinessTarget.unknown) required ReadinessTarget target,
+    @JsonKey(unknownEnumValue: ReadinessTarget.unknown)
+    required ReadinessTarget target,
     String? field,
   }) = _ReadinessIssue;
 
-  factory ReadinessIssue.fromJson(Map<String, dynamic> json) => _$ReadinessIssueFromJson(json);
+  factory ReadinessIssue.fromJson(Map<String, dynamic> json) =>
+      _$ReadinessIssueFromJson(json);
 }
 
 /// The verdict of `GET /quotes/{id}/readiness`: whether the quote can be
@@ -46,5 +48,6 @@ class QuoteReadiness with _$QuoteReadiness {
     @Default(<ReadinessIssue>[]) List<ReadinessIssue> issues,
   }) = _QuoteReadiness;
 
-  factory QuoteReadiness.fromJson(Map<String, dynamic> json) => _$QuoteReadinessFromJson(json);
+  factory QuoteReadiness.fromJson(Map<String, dynamic> json) =>
+      _$QuoteReadinessFromJson(json);
 }

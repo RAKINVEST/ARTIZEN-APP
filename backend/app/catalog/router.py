@@ -30,6 +30,7 @@ from app.catalog.schemas import (
     CatalogItemRead,
     CatalogItemUpdate,
     QualificationRead,
+    TradeGroupRead,
 )
 from app.core.authorization import ensure_same_company
 from app.users.deps import CurrentUserDep
@@ -167,6 +168,16 @@ async def list_category_overviews(
     return await service.list_category_overviews(current_user.company_id)
 
 
+@router.get("/by-trade", response_model=list[TradeGroupRead])
+async def list_catalog_by_trade(
+    current_user: CurrentUserDep, service: CatalogServiceDep
+) -> list[TradeGroupRead]:
+    """The catalogue grouped by the artisan's trades (métiers), each with the
+    folders it brings — for browsing by trade instead of one flat list of
+    folders. Folders that belong to no imported trade land in "Autres"."""
+    return await service.list_catalog_by_trade(current_user.company_id)
+
+
 @router.get("/categories/{category_id}", response_model=CatalogCategoryRead)
 async def get_category(
     service: CatalogServiceDep, current_user: CurrentUserDep, category_id: uuid.UUID
@@ -213,6 +224,7 @@ async def list_items(
     current_user: CurrentUserDep,
     q: str | None = None,
     active_only: bool = False,
+    favorite_only: bool = False,
     category_id: uuid.UUID | None = None,
     offset: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
@@ -220,10 +232,12 @@ async def list_items(
     """``q`` searches items by designation or code (ILIKE) — server-side, so a
     catalogue of any size is searchable, not just the first page.
     ``category_id`` scopes the list to one folder (the quote wizard picks
-    articles from the folder the artisan opened)."""
+    articles from the folder the artisan opened). ``favorite_only`` narrows to
+    the artisan's "caisse à outils" (starred articles)."""
     items = await service.list_items(
         company_id=current_user.company_id,
         active_only=active_only,
+        favorite_only=favorite_only,
         category_id=category_id,
         query=q,
         offset=offset,

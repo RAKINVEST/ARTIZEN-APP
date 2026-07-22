@@ -486,7 +486,10 @@ mixin _$CatalogItem {
   String get unitPriceHt => throw _privateConstructorUsedError;
   String get vatRate => throw _privateConstructorUsedError;
   int? get estimatedDurationMinutes => throw _privateConstructorUsedError;
-  bool get active => throw _privateConstructorUsedError;
+  bool get active =>
+      throw _privateConstructorUsedError; // In "Ma caisse à outils" — the artisan's starred articles. Defaulted so
+  // older payloads/fixtures without the field still parse.
+  bool get isFavorite => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
 
@@ -520,6 +523,7 @@ abstract class $CatalogItemCopyWith<$Res> {
     String vatRate,
     int? estimatedDurationMinutes,
     bool active,
+    bool isFavorite,
     DateTime createdAt,
     DateTime updatedAt,
   });
@@ -552,6 +556,7 @@ class _$CatalogItemCopyWithImpl<$Res, $Val extends CatalogItem>
     Object? vatRate = null,
     Object? estimatedDurationMinutes = freezed,
     Object? active = null,
+    Object? isFavorite = null,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -605,6 +610,10 @@ class _$CatalogItemCopyWithImpl<$Res, $Val extends CatalogItem>
                 ? _value.active
                 : active // ignore: cast_nullable_to_non_nullable
                       as bool,
+            isFavorite: null == isFavorite
+                ? _value.isFavorite
+                : isFavorite // ignore: cast_nullable_to_non_nullable
+                      as bool,
             createdAt: null == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -641,6 +650,7 @@ abstract class _$$CatalogItemImplCopyWith<$Res>
     String vatRate,
     int? estimatedDurationMinutes,
     bool active,
+    bool isFavorite,
     DateTime createdAt,
     DateTime updatedAt,
   });
@@ -672,6 +682,7 @@ class __$$CatalogItemImplCopyWithImpl<$Res>
     Object? vatRate = null,
     Object? estimatedDurationMinutes = freezed,
     Object? active = null,
+    Object? isFavorite = null,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -725,6 +736,10 @@ class __$$CatalogItemImplCopyWithImpl<$Res>
             ? _value.active
             : active // ignore: cast_nullable_to_non_nullable
                   as bool,
+        isFavorite: null == isFavorite
+            ? _value.isFavorite
+            : isFavorite // ignore: cast_nullable_to_non_nullable
+                  as bool,
         createdAt: null == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -754,6 +769,7 @@ class _$CatalogItemImpl implements _CatalogItem {
     required this.vatRate,
     this.estimatedDurationMinutes,
     required this.active,
+    this.isFavorite = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -785,6 +801,11 @@ class _$CatalogItemImpl implements _CatalogItem {
   final int? estimatedDurationMinutes;
   @override
   final bool active;
+  // In "Ma caisse à outils" — the artisan's starred articles. Defaulted so
+  // older payloads/fixtures without the field still parse.
+  @override
+  @JsonKey()
+  final bool isFavorite;
   @override
   final DateTime createdAt;
   @override
@@ -792,7 +813,7 @@ class _$CatalogItemImpl implements _CatalogItem {
 
   @override
   String toString() {
-    return 'CatalogItem(id: $id, companyId: $companyId, categoryId: $categoryId, code: $code, designation: $designation, description: $description, itemType: $itemType, unit: $unit, unitPriceHt: $unitPriceHt, vatRate: $vatRate, estimatedDurationMinutes: $estimatedDurationMinutes, active: $active, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'CatalogItem(id: $id, companyId: $companyId, categoryId: $categoryId, code: $code, designation: $designation, description: $description, itemType: $itemType, unit: $unit, unitPriceHt: $unitPriceHt, vatRate: $vatRate, estimatedDurationMinutes: $estimatedDurationMinutes, active: $active, isFavorite: $isFavorite, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -822,6 +843,8 @@ class _$CatalogItemImpl implements _CatalogItem {
                 ) ||
                 other.estimatedDurationMinutes == estimatedDurationMinutes) &&
             (identical(other.active, active) || other.active == active) &&
+            (identical(other.isFavorite, isFavorite) ||
+                other.isFavorite == isFavorite) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -844,6 +867,7 @@ class _$CatalogItemImpl implements _CatalogItem {
     vatRate,
     estimatedDurationMinutes,
     active,
+    isFavorite,
     createdAt,
     updatedAt,
   );
@@ -876,6 +900,7 @@ abstract class _CatalogItem implements CatalogItem {
     required final String vatRate,
     final int? estimatedDurationMinutes,
     required final bool active,
+    final bool isFavorite,
     required final DateTime createdAt,
     required final DateTime updatedAt,
   }) = _$CatalogItemImpl;
@@ -906,7 +931,10 @@ abstract class _CatalogItem implements CatalogItem {
   @override
   int? get estimatedDurationMinutes;
   @override
-  bool get active;
+  bool get active; // In "Ma caisse à outils" — the artisan's starred articles. Defaulted so
+  // older payloads/fixtures without the field still parse.
+  @override
+  bool get isFavorite;
   @override
   DateTime get createdAt;
   @override
@@ -1573,5 +1601,385 @@ abstract class _CategoryOverview implements CategoryOverview {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$CategoryOverviewImplCopyWith<_$CategoryOverviewImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+TradeCategory _$TradeCategoryFromJson(Map<String, dynamic> json) {
+  return _TradeCategory.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TradeCategory {
+  String get id => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  int get itemCount => throw _privateConstructorUsedError;
+
+  /// Serializes this TradeCategory to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of TradeCategory
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $TradeCategoryCopyWith<TradeCategory> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TradeCategoryCopyWith<$Res> {
+  factory $TradeCategoryCopyWith(
+    TradeCategory value,
+    $Res Function(TradeCategory) then,
+  ) = _$TradeCategoryCopyWithImpl<$Res, TradeCategory>;
+  @useResult
+  $Res call({String id, String name, int itemCount});
+}
+
+/// @nodoc
+class _$TradeCategoryCopyWithImpl<$Res, $Val extends TradeCategory>
+    implements $TradeCategoryCopyWith<$Res> {
+  _$TradeCategoryCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of TradeCategory
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? itemCount = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            itemCount: null == itemCount
+                ? _value.itemCount
+                : itemCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$TradeCategoryImplCopyWith<$Res>
+    implements $TradeCategoryCopyWith<$Res> {
+  factory _$$TradeCategoryImplCopyWith(
+    _$TradeCategoryImpl value,
+    $Res Function(_$TradeCategoryImpl) then,
+  ) = __$$TradeCategoryImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String id, String name, int itemCount});
+}
+
+/// @nodoc
+class __$$TradeCategoryImplCopyWithImpl<$Res>
+    extends _$TradeCategoryCopyWithImpl<$Res, _$TradeCategoryImpl>
+    implements _$$TradeCategoryImplCopyWith<$Res> {
+  __$$TradeCategoryImplCopyWithImpl(
+    _$TradeCategoryImpl _value,
+    $Res Function(_$TradeCategoryImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of TradeCategory
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? itemCount = null,
+  }) {
+    return _then(
+      _$TradeCategoryImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        itemCount: null == itemCount
+            ? _value.itemCount
+            : itemCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TradeCategoryImpl implements _TradeCategory {
+  const _$TradeCategoryImpl({
+    required this.id,
+    required this.name,
+    required this.itemCount,
+  });
+
+  factory _$TradeCategoryImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TradeCategoryImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final int itemCount;
+
+  @override
+  String toString() {
+    return 'TradeCategory(id: $id, name: $name, itemCount: $itemCount)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TradeCategoryImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.itemCount, itemCount) ||
+                other.itemCount == itemCount));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, name, itemCount);
+
+  /// Create a copy of TradeCategory
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TradeCategoryImplCopyWith<_$TradeCategoryImpl> get copyWith =>
+      __$$TradeCategoryImplCopyWithImpl<_$TradeCategoryImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TradeCategoryImplToJson(this);
+  }
+}
+
+abstract class _TradeCategory implements TradeCategory {
+  const factory _TradeCategory({
+    required final String id,
+    required final String name,
+    required final int itemCount,
+  }) = _$TradeCategoryImpl;
+
+  factory _TradeCategory.fromJson(Map<String, dynamic> json) =
+      _$TradeCategoryImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get name;
+  @override
+  int get itemCount;
+
+  /// Create a copy of TradeCategory
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$TradeCategoryImplCopyWith<_$TradeCategoryImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+TradeGroup _$TradeGroupFromJson(Map<String, dynamic> json) {
+  return _TradeGroup.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TradeGroup {
+  String get label => throw _privateConstructorUsedError;
+  List<TradeCategory> get categories => throw _privateConstructorUsedError;
+
+  /// Serializes this TradeGroup to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of TradeGroup
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $TradeGroupCopyWith<TradeGroup> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TradeGroupCopyWith<$Res> {
+  factory $TradeGroupCopyWith(
+    TradeGroup value,
+    $Res Function(TradeGroup) then,
+  ) = _$TradeGroupCopyWithImpl<$Res, TradeGroup>;
+  @useResult
+  $Res call({String label, List<TradeCategory> categories});
+}
+
+/// @nodoc
+class _$TradeGroupCopyWithImpl<$Res, $Val extends TradeGroup>
+    implements $TradeGroupCopyWith<$Res> {
+  _$TradeGroupCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of TradeGroup
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? label = null, Object? categories = null}) {
+    return _then(
+      _value.copyWith(
+            label: null == label
+                ? _value.label
+                : label // ignore: cast_nullable_to_non_nullable
+                      as String,
+            categories: null == categories
+                ? _value.categories
+                : categories // ignore: cast_nullable_to_non_nullable
+                      as List<TradeCategory>,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$TradeGroupImplCopyWith<$Res>
+    implements $TradeGroupCopyWith<$Res> {
+  factory _$$TradeGroupImplCopyWith(
+    _$TradeGroupImpl value,
+    $Res Function(_$TradeGroupImpl) then,
+  ) = __$$TradeGroupImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String label, List<TradeCategory> categories});
+}
+
+/// @nodoc
+class __$$TradeGroupImplCopyWithImpl<$Res>
+    extends _$TradeGroupCopyWithImpl<$Res, _$TradeGroupImpl>
+    implements _$$TradeGroupImplCopyWith<$Res> {
+  __$$TradeGroupImplCopyWithImpl(
+    _$TradeGroupImpl _value,
+    $Res Function(_$TradeGroupImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of TradeGroup
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? label = null, Object? categories = null}) {
+    return _then(
+      _$TradeGroupImpl(
+        label: null == label
+            ? _value.label
+            : label // ignore: cast_nullable_to_non_nullable
+                  as String,
+        categories: null == categories
+            ? _value._categories
+            : categories // ignore: cast_nullable_to_non_nullable
+                  as List<TradeCategory>,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TradeGroupImpl implements _TradeGroup {
+  const _$TradeGroupImpl({
+    required this.label,
+    final List<TradeCategory> categories = const <TradeCategory>[],
+  }) : _categories = categories;
+
+  factory _$TradeGroupImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TradeGroupImplFromJson(json);
+
+  @override
+  final String label;
+  final List<TradeCategory> _categories;
+  @override
+  @JsonKey()
+  List<TradeCategory> get categories {
+    if (_categories is EqualUnmodifiableListView) return _categories;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_categories);
+  }
+
+  @override
+  String toString() {
+    return 'TradeGroup(label: $label, categories: $categories)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TradeGroupImpl &&
+            (identical(other.label, label) || other.label == label) &&
+            const DeepCollectionEquality().equals(
+              other._categories,
+              _categories,
+            ));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    label,
+    const DeepCollectionEquality().hash(_categories),
+  );
+
+  /// Create a copy of TradeGroup
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TradeGroupImplCopyWith<_$TradeGroupImpl> get copyWith =>
+      __$$TradeGroupImplCopyWithImpl<_$TradeGroupImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TradeGroupImplToJson(this);
+  }
+}
+
+abstract class _TradeGroup implements TradeGroup {
+  const factory _TradeGroup({
+    required final String label,
+    final List<TradeCategory> categories,
+  }) = _$TradeGroupImpl;
+
+  factory _TradeGroup.fromJson(Map<String, dynamic> json) =
+      _$TradeGroupImpl.fromJson;
+
+  @override
+  String get label;
+  @override
+  List<TradeCategory> get categories;
+
+  /// Create a copy of TradeGroup
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$TradeGroupImplCopyWith<_$TradeGroupImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

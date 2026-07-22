@@ -79,6 +79,23 @@ class CatalogCategoryOverview(BaseModel):
     sample_designations: list[str]
 
 
+class TradeCategoryRead(BaseModel):
+    """A folder as it appears under a trade in the by-trade catalogue view."""
+
+    id: uuid.UUID
+    name: str
+    item_count: int
+
+
+class TradeGroupRead(BaseModel):
+    """A trade (or "Autres") and the folders it groups — the catalogue browsed
+    by trade instead of as one flat list of folders. A folder shared by several
+    trades appears under each of them (décision 2), which is intended."""
+
+    label: str
+    categories: list[TradeCategoryRead]
+
+
 class CatalogItemCreate(BaseModel):
     # Always overridden with the authenticated user's company_id (see
     # catalog/router.py) — optional here so callers don't need to send a
@@ -106,6 +123,7 @@ class CatalogItemUpdate(BaseModel):
     vat_rate: Decimal | None = Field(default=None, ge=0, le=100, max_digits=5, decimal_places=2)
     estimated_duration_minutes: int | None = Field(default=None, ge=0)
     active: bool | None = None
+    is_favorite: bool | None = None
 
 
 class CatalogItemRead(BaseModel):
@@ -123,6 +141,7 @@ class CatalogItemRead(BaseModel):
     vat_rate: Decimal
     estimated_duration_minutes: int | None
     active: bool
+    is_favorite: bool
     created_at: datetime
     updated_at: datetime
 

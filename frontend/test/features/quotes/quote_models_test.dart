@@ -44,14 +44,17 @@ void main() {
   });
 
   group('QuoteLineInput', () {
-    test('toJson carries only catalog_item_id and quantity — no price field exists', () {
-      const input = QuoteLineInput(catalogItemId: 'i1', quantity: '3');
+    test(
+      'toJson carries only catalog_item_id and quantity — no price field exists',
+      () {
+        const input = QuoteLineInput(catalogItemId: 'i1', quantity: '3');
 
-      final json = input.toJson();
+        final json = input.toJson();
 
-      expect(json.keys, containsAll(['catalog_item_id', 'quantity']));
-      expect(json.keys, hasLength(2));
-    });
+        expect(json.keys, containsAll(['catalog_item_id', 'quantity']));
+        expect(json.keys, hasLength(2));
+      },
+    );
   });
 
   group('QuoteStatus', () {
@@ -74,7 +77,10 @@ void main() {
       // 409. The backend stays the authority; this only decides what to
       // show.
       expect(QuoteStatus.draft.nextStates, [QuoteStatus.sent]);
-      expect(QuoteStatus.sent.nextStates, [QuoteStatus.accepted, QuoteStatus.refused]);
+      expect(QuoteStatus.sent.nextStates, [
+        QuoteStatus.accepted,
+        QuoteStatus.refused,
+      ]);
       expect(QuoteStatus.accepted.nextStates, isEmpty);
       expect(QuoteStatus.refused.nextStates, isEmpty);
     });
@@ -88,8 +94,16 @@ void main() {
 
     test('only a draft is editable', () {
       expect(QuoteStatus.draft.isEditable, isTrue);
-      for (final status in [QuoteStatus.sent, QuoteStatus.accepted, QuoteStatus.refused]) {
-        expect(status.isEditable, isFalse, reason: '${status.name} must be frozen');
+      for (final status in [
+        QuoteStatus.sent,
+        QuoteStatus.accepted,
+        QuoteStatus.refused,
+      ]) {
+        expect(
+          status.isEditable,
+          isFalse,
+          reason: '${status.name} must be frozen',
+        );
       }
     });
 
@@ -103,15 +117,15 @@ void main() {
 }
 
 Map<String, dynamic> _quoteJson({String status = 'draft'}) => {
-      'id': 'q1',
-      'company_id': 'co1',
-      'client_id': 'cl1',
-      'quote_number': 'DEV-2026-0001',
-      'status': status,
-      'total_ht': '100.00',
-      'total_vat': '20.00',
-      'total_ttc': '120.00',
-      'lines': <dynamic>[],
-      'created_at': '2026-01-01T10:00:00Z',
-      'updated_at': '2026-01-01T10:00:00Z',
-    };
+  'id': 'q1',
+  'company_id': 'co1',
+  'client_id': 'cl1',
+  'quote_number': 'DEV-2026-0001',
+  'status': status,
+  'total_ht': '100.00',
+  'total_vat': '20.00',
+  'total_ttc': '120.00',
+  'lines': <dynamic>[],
+  'created_at': '2026-01-01T10:00:00Z',
+  'updated_at': '2026-01-01T10:00:00Z',
+};

@@ -54,6 +54,7 @@ class CatalogItemRepository(BaseRepository[CatalogItem]):
         company_id: uuid.UUID,
         *,
         active_only: bool = False,
+        favorite_only: bool = False,
         category_id: uuid.UUID | None = None,
         search: str | None = None,
         offset: int = 0,
@@ -62,6 +63,9 @@ class CatalogItemRepository(BaseRepository[CatalogItem]):
         stmt = select(CatalogItem).where(CatalogItem.company_id == company_id)
         if active_only:
             stmt = stmt.where(CatalogItem.active.is_(True))
+        if favorite_only:
+            # "Ma caisse à outils" — only the articles the artisan starred.
+            stmt = stmt.where(CatalogItem.is_favorite.is_(True))
         if category_id is not None:
             # Scopes the list to one folder — the quote wizard picks articles
             # from the folder the artisan opened. Filtered server-side so a

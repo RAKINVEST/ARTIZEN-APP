@@ -38,6 +38,9 @@ class WizardNavBar extends StatelessWidget {
       child: Row(
         children: [
           OutlinedButton.icon(
+            // The global button theme forces full width (Size.fromHeight),
+            // which demands an infinite width inside a Row. Size to content.
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
             onPressed: step.isFirst ? null : onPrevious,
             icon: const Icon(Icons.arrow_back),
             label: const Text('Précédent'),
@@ -50,12 +53,14 @@ class WizardNavBar extends StatelessWidget {
           const Spacer(),
           if (step.isLast)
             FilledButton.icon(
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
               onPressed: onFinish,
               icon: const Icon(Icons.check),
               label: const Text('Terminer'),
             )
           else
             FilledButton.icon(
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
               onPressed: canAdvance ? onNext : null,
               icon: const Icon(Icons.arrow_forward),
               label: const Text('Suivant'),

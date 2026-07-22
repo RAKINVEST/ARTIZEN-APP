@@ -10,7 +10,11 @@ import '../../data/quote_models.dart';
 /// on a phone in daylight should not have to distinguish two greys, and a
 /// colour-blind artisan should not have to distinguish anything at all.
 class QuoteStatusChip extends StatelessWidget {
-  const QuoteStatusChip({required this.status, this.compact = false, super.key});
+  const QuoteStatusChip({
+    required this.status,
+    this.compact = false,
+    super.key,
+  });
 
   final QuoteStatus status;
   final bool compact;
@@ -21,14 +25,33 @@ class QuoteStatusChip extends StatelessWidget {
     // hardcoded here: draft neutral, sent blue, accepted gold (a
     // confirmation), refused the danger token.
     final (background, foreground, icon) = switch (status) {
-      QuoteStatus.draft => (ArtizenColors.statusDraftBg, ArtizenColors.statusDraftFg, Icons.edit_outlined),
-      QuoteStatus.sent => (ArtizenColors.statusSentBg, ArtizenColors.statusSentFg, Icons.send_outlined),
-      QuoteStatus.accepted => (ArtizenColors.statusAcceptedBg, ArtizenColors.statusAcceptedFg, Icons.check_circle_outline),
-      QuoteStatus.refused => (ArtizenColors.statusRefusedBg, ArtizenColors.statusRefusedFg, Icons.cancel_outlined),
+      QuoteStatus.draft => (
+        ArtizenColors.statusDraftBg,
+        ArtizenColors.statusDraftFg,
+        Icons.edit_outlined,
+      ),
+      QuoteStatus.sent => (
+        ArtizenColors.statusSentBg,
+        ArtizenColors.statusSentFg,
+        Icons.send_outlined,
+      ),
+      QuoteStatus.accepted => (
+        ArtizenColors.statusAcceptedBg,
+        ArtizenColors.statusAcceptedFg,
+        Icons.check_circle_outline,
+      ),
+      QuoteStatus.refused => (
+        ArtizenColors.statusRefusedBg,
+        ArtizenColors.statusRefusedFg,
+        Icons.cancel_outlined,
+      ),
     };
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10, vertical: compact ? 3 : 5),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 3 : 5,
+      ),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(20),

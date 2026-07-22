@@ -4,6 +4,7 @@ import '../../../shared/providers/current_company_provider.dart';
 import '../../branding/data/branding_repository_impl.dart';
 import '../../catalog/data/catalog_repository_impl.dart';
 import '../../clients/data/clients_repository_impl.dart';
+import '../../quotes/data/quote_models.dart';
 import '../../quotes/data/quotes_repository_impl.dart';
 import '../domain/dashboard_summary.dart';
 
@@ -29,11 +30,15 @@ const _backendPageSize = 100;
 final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
   final companyId = await ref.watch(currentCompanyIdProvider.future);
 
-  final clientsFuture = ref.watch(clientsRepositoryProvider).list(companyId: companyId);
+  final clientsFuture = ref
+      .watch(clientsRepositoryProvider)
+      .list(companyId: companyId);
   final itemsFuture = ref
       .watch(catalogRepositoryProvider)
       .listItems(companyId: companyId, activeOnly: true);
-  final quotesFuture = ref.watch(quotesRepositoryProvider).list(companyId: companyId);
+  final quotesFuture = ref
+      .watch(quotesRepositoryProvider)
+      .list(companyId: companyId);
   // The company profile drives the onboarding "Configurer mon entreprise"
   // step. Fetched directly here — like the three counts above — so a single
   // invalidation of this provider re-runs everything fresh (no separate
@@ -46,7 +51,8 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
   final quotes = await quotesFuture;
   final profile = await profileFuture;
 
-  final recentQuotes = [...quotes]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  final recentQuotes = [...quotes]
+    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   final siret = profile.company.siret?.trim() ?? '';
 
   return DashboardSummary(
@@ -55,16 +61,26 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
     quoteCount: _countOf(quotes),
     recentQuotes: recentQuotes.take(5).toList(),
     companyHasSiret: siret.isNotEmpty,
+    acceptedCount: quotes
+        .where((quote) => quote.status == QuoteStatus.accepted)
+        .length,
+    // "En attente" folds draft + sent: everything not yet accepted or refused.
+    pendingCount: quotes
+        .where(
+          (quote) =>
+              quote.status == QuoteStatus.draft ||
+              quote.status == QuoteStatus.sent,
+        )
+        .length,
+    refusedCount: quotes
+        .where((quote) => quote.status == QuoteStatus.refused)
+        .length,
   );
 });
 
-/// Whether the artisan dismissed the onboarding checklist this session (the
-/// "Masquer" button). In-memory on purpose: the checklist also disappears on
-/// its own once all four steps are done, so this is only the manual escape
-/// hatch, not durable state worth persisting.
-final onboardingDismissedProvider = StateProvider<bool>((ref) => false);
-
 /// A full page means the backend had at least this many rows and possibly
 /// more, so the number is a floor — not a total.
-ApproximateCount _countOf(List<Object?> page) =>
-    ApproximateCount(value: page.length, capped: page.length >= _backendPageSize);
+ApproximateCount _countOf(List<Object?> page) => ApproximateCount(
+  value: page.length,
+  capped: page.length >= _backendPageSize,
+);
