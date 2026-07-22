@@ -199,13 +199,13 @@ def test_recette_minimal_company_no_branding() -> None:
 
 def test_recette_micro_entrepreneur_hides_vat() -> None:
     text = _renders(_document(show_vat=False))
-    assert "Total TVA" not in text
+    assert "Montant TVA" not in text
     assert "293 B du CGI" in text
 
 
 def test_recette_normal_vat_shows_vat() -> None:
     text = _renders(_document(show_vat=True))
-    assert "Total TVA" in text
+    assert "Montant TVA" in text
 
 
 def test_recette_without_signature_still_has_client_box() -> None:

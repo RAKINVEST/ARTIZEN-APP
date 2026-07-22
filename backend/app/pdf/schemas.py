@@ -112,6 +112,9 @@ class Document:
     recipient: DocumentParty
     lines: list[DocumentLine]
     totals: DocumentTotals
+    #: Optional "valid until" date shown next to the issue date (a quote's
+    #: validity). ``None`` for document types that have no such date.
+    valid_until: date | None = None
     #: Printed small at the bottom. The caller decides what the law
     #: requires of *this* document type — the engine only lays it out.
     legal_mentions: list[str] = field(default_factory=list)

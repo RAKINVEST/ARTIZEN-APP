@@ -13,7 +13,7 @@ engine will not change.
 This is a translation, not a calculation.
 """
 
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from app.branding.schemas import BrandingProfileRead, CompanyRead
@@ -160,6 +160,7 @@ def sample_document(
         title=QUOTE_TITLE,
         number="DEV-2026-0001",
         issued_on=date(2026, 1, 1),
+        valid_until=date(2026, 1, 1) + timedelta(days=company.quote_validity_days or 30),
         issuer=_company_party(profile),
         recipient=DocumentParty(
             name="Client Démonstration",
@@ -204,7 +205,15 @@ def _client_party(client: Client) -> DocumentParty:
     # A company client is addressed by its company name, with the contact
     # underneath; a private individual only has the name.
     name = client.company_name or personal
-    details = [line for line in (personal if client.company_name else None, client.email) if line]
+    details = [
+        line
+        for line in (
+            personal if client.company_name else None,
+            f"Tél : {client.phone}" if client.phone else None,
+            client.email,
+        )
+        if line
+    ]
     address = [client.address] if client.address else []
     return DocumentParty(name=name or "—", address_lines=address, detail_lines=details)
 
@@ -228,13 +237,16 @@ def quote_to_document(
     of these stay pure functions of their inputs.
     """
     brand = profile.brand
+    # The document is dated when it was created, not when it was printed:
+    # re-downloading a quote next month must not silently re-date the document
+    # the customer already holds.
+    resolved_issued_on = issued_on or quote.created_at.date()
+    validity_days = profile.company.quote_validity_days or 30
     return Document(
         title=QUOTE_TITLE,
         number=quote.quote_number,
-        # The document is dated when it was created, not when it was
-        # printed: re-downloading a quote next month must not silently
-        # re-date the document the customer already holds.
-        issued_on=issued_on or quote.created_at.date(),
+        issued_on=resolved_issued_on,
+        valid_until=resolved_issued_on + timedelta(days=validity_days),
         issuer=_company_party(profile),
         recipient=_client_party(client),
         lines=[

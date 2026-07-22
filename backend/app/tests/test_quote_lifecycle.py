@@ -70,9 +70,16 @@ async def _create_quote(client: AsyncClient, client_id: str, item_id: str) -> di
 
 
 async def _advance_to(client: AsyncClient, quote_id: str, status: str) -> None:
+    """Walk the lifecycle to ``status``: draft → pending → sent → (accepted |
+    refused). A quote can no longer jump straight to "sent" — validating it
+    into "en attente" (pending) is a step of its own."""
+    await client.put(f"/api/quotes/{quote_id}/status", json={"status": "pending"})
+    if status == "pending":
+        return
     await client.put(f"/api/quotes/{quote_id}/status", json={"status": "sent"})
-    if status != "sent":
-        await client.put(f"/api/quotes/{quote_id}/status", json={"status": status})
+    if status == "sent":
+        return
+    await client.put(f"/api/quotes/{quote_id}/status", json={"status": status})
 
 
 # --- Numbering ---
@@ -165,6 +172,7 @@ async def test_draft_can_be_sent_then_accepted(
 ) -> None:
     quote = await _create_quote(client, client_id, item_id)
 
+    await client.put(f"/api/quotes/{quote['id']}/status", json={"status": "pending"})
     sent = await client.put(f"/api/quotes/{quote['id']}/status", json={"status": "sent"})
     accepted = await client.put(f"/api/quotes/{quote['id']}/status", json={"status": "accepted"})
 
@@ -306,6 +314,24 @@ async def test_changing_status_of_another_companys_quote_is_a_404(
 
 
 # --- PDF (V2.1-2) ---
+
+
+async def test_preview_pdf_renders_a_draft_without_persisting(
+    client: AsyncClient, client_id: str, item_id: str
+) -> None:
+    """The wizard's "prêt à remplir" preview: a real premium PDF of a
+    not-yet-created quote — no row, no number burned."""
+    response = await client.post(
+        "/api/quotes/preview-pdf",
+        json={"client_id": client_id, "lines": [{"catalog_item_id": item_id, "quantity": "3"}]},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.content.startswith(b"%PDF-")
+    assert "DEVIS" in PdfReader(io.BytesIO(response.content)).pages[0].extract_text()
+    # It created nothing.
+    assert (await client.get("/api/quotes", params={"status": "draft"})).json() == []
 
 
 async def test_quote_pdf_is_downloadable_and_readable(

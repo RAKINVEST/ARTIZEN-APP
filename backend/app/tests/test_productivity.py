@@ -83,6 +83,8 @@ async def test_quotes_filter_by_status(client: AsyncClient) -> None:
 
     draft = await new_quote()
     to_send = await new_quote()
+    # draft → pending → sent: a quote can't jump straight to sent.
+    await client.put(f"/api/quotes/{to_send}/status", json={"status": "pending"})
     await client.put(f"/api/quotes/{to_send}/status", json={"status": "sent"})
 
     sent = (await client.get("/api/quotes", params={"status": "sent"})).json()

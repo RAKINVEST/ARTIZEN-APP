@@ -54,6 +54,37 @@ async def calculate_quote(
     return await service.calculate(payload)
 
 
+@router.post(
+    "/preview-pdf",
+    response_class=Response,
+    responses={
+        200: {
+            "content": {"application/pdf": {}},
+            "description": "A live premium preview of a not-yet-created quote.",
+        }
+    },
+)
+async def preview_draft_pdf(
+    service: QuoteServiceDep, current_user: CurrentUserDep, payload: QuoteCreate
+) -> Response:
+    """The wizard's "prêt à remplir" preview: renders the draft (selected
+    client + lines) as the premium PDF without creating anything or burning a
+    number. Declared before ``/{quote_id}`` so "preview-pdf" is matched as this
+    static route, never parsed as a quote id.
+    """
+    payload = payload.model_copy(update={"company_id": current_user.company_id})
+    filename, pdf = await service.render_draft_pdf(
+        company_id=payload.company_id,
+        client_id=payload.client_id,
+        lines_data=payload.lines,
+    )
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
 @router.get("", response_model=list[QuoteRead])
 async def list_quotes(
     service: QuoteServiceDep,

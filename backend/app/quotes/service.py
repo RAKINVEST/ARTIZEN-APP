@@ -13,7 +13,7 @@ so this module is naturally "downstream" of both.
 import asyncio
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -366,6 +366,63 @@ class QuoteService:
         )
         pdf = await asyncio.to_thread(self._renderer.render, document)
         return f"{quote.quote_number}.pdf", pdf
+
+    async def render_draft_pdf(
+        self,
+        *,
+        company_id: uuid.UUID,
+        client_id: uuid.UUID,
+        lines_data: list[QuoteLineCreate],
+    ) -> tuple[str, bytes]:
+        """The wizard's "prêt à remplir" preview: renders a not-yet-created
+        quote (the selected client + the draft lines) to the exact same premium
+        PDF a real quote produces — so the artisan sees their devis take shape
+        as they fill it in.
+
+        Persists nothing and burns no number: it shares ``_price_lines`` with
+        ``create``/``calculate`` (same catalog lookups, same VAT regime, same
+        calculator), and the number shows a "PROJET" placeholder until the quote
+        is actually created. A pure function of (company, client, lines).
+        """
+        line_models, totals = await self._price_lines(
+            company_id=company_id, lines_data=lines_data
+        )
+        client = await self._clients.get(client_id)
+        if client is None or client.company_id != company_id:
+            raise NotFoundError(f"Client {client_id} not found.")
+
+        profile = await self._branding.get_profile(company_id)
+        vat_breakdown = self._calculator.calculate_vat_breakdown(
+            [(line.vat_rate, line.total_ht, line.total_vat) for line in line_models]
+        )
+        logo = await self._load_asset(profile.brand.logo_path)
+        signature = await self._load_asset(profile.brand.signature_path)
+        stamp = await self._load_asset(profile.brand.stamp_path)
+
+        # An unsaved, transient quote: quote_to_document only reads its number
+        # and totals (the date comes from `issued_on`), so it never needs a row.
+        draft = Quote(
+            company_id=company_id,
+            client_id=client_id,
+            quote_number="PROJET",
+            status=QuoteStatus.DRAFT,
+            total_ht=totals.total_ht,
+            total_vat=totals.total_vat,
+            total_ttc=totals.total_ttc,
+        )
+        document = quote_to_document(
+            quote=draft,
+            lines=line_models,
+            client=client,
+            profile=profile,
+            vat_breakdown=vat_breakdown,
+            logo=logo,
+            signature=signature,
+            stamp=stamp,
+            issued_on=date.today(),
+        )
+        pdf = await asyncio.to_thread(self._renderer.render, document)
+        return "apercu-devis.pdf", pdf
 
     async def render_sample_pdf(self, company_id: uuid.UUID) -> tuple[str, bytes]:
         """A demo quote rendered with the company's *current* branding, for
