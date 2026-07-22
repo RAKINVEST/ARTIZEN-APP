@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
+import '../../../core/widgets/app_surfaces.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../shared/providers/current_company_provider.dart';
+import '../../quotes/data/quote_models.dart';
 import '../../quotes/presentation/quotes_providers.dart';
 import '../../quotes/presentation/widgets/quote_status_chip.dart';
 import 'dashboard_providers.dart';
@@ -46,37 +49,53 @@ class DashboardScreen extends ConsumerWidget {
     final summary = ref.watch(dashboardSummaryProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       // No history arrows here on purpose: the dashboard is the home / starting
-      // point, so "back" and "forward" have nothing useful to do. The arrows
-      // live on the other sections (Clients, Catalogue, Devis, Paramètres),
-      // which is where returning to the dashboard actually matters.
-      appBar: AppBar(title: const Text('Tableau de bord')),
+      // point. The gear jumps straight to the settings tab.
+      appBar: AppBar(
+        title: const Text('Tableau de bord'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: ArtizenSpacing.sm),
+            child: _CircleIconButton(
+              icon: Icons.settings_outlined,
+              tooltip: 'Paramètres',
+              onPressed: () => context.go('/settings'),
+            ),
+          ),
+        ],
+      ),
       body: AsyncValueView(
         value: summary,
         onRetry: () => _retry(ref),
         builder: (context, data) => RefreshIndicator(
           onRefresh: () async => _retry(ref),
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
               const QuickAccessCard(),
-              const SizedBox(height: 24),
+              const SizedBox(height: ArtizenSpacing.md),
+              // Two headline resource cards.
               Row(
                 children: [
                   Expanded(
-                    child: _StatCard(
+                    child: StatCard(
+                      large: true,
                       icon: Icons.people_outline,
                       label: 'Clients',
                       value: data.clientCount.display,
+                      accent: ArtizenAccents.blue,
                       onTap: () => context.go('/clients'),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _StatCard(
+                    child: StatCard(
+                      large: true,
                       icon: Icons.inventory_2_outlined,
                       label: 'Articles catalogue',
                       value: data.catalogItemCount.display,
+                      accent: ArtizenAccents.violet,
                       onTap: () => context.go('/catalog'),
                     ),
                   ),
@@ -87,89 +106,51 @@ class DashboardScreen extends ConsumerWidget {
               // Devis (envoyés & +), then the two outcomes Validés / Refusés.
               // Each tile opens the devis list already filtered to itself.
               // Brouillons and en-attente are *not* counted in "Devis".
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.edit_note_outlined,
-                      label: 'Brouillon',
-                      value: '${data.draftCount}',
-                      onTap: () =>
-                          _openQuotes(context, ref, QuotesFilter.brouillon),
-                    ),
+              _ResponsiveCardGrid(
+                cards: [
+                  StatCard(
+                    icon: Icons.edit_note_outlined,
+                    label: 'Brouillon',
+                    value: '${data.draftCount}',
+                    accent: ArtizenAccents.slate,
+                    onTap: () => _openQuotes(context, ref, QuotesFilter.brouillon),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.schedule_outlined,
-                      label: 'En attente',
-                      value: '${data.pendingCount}',
-                      onTap: () =>
-                          _openQuotes(context, ref, QuotesFilter.pending),
-                    ),
+                  StatCard(
+                    icon: Icons.schedule_outlined,
+                    label: 'En attente',
+                    value: '${data.pendingCount}',
+                    accent: ArtizenAccents.amber,
+                    onTap: () => _openQuotes(context, ref, QuotesFilter.pending),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.description_outlined,
-                      label: 'Devis',
-                      value: '${data.sentPlusCount}',
-                      onTap: () => _openQuotes(context, ref, QuotesFilter.all),
-                    ),
+                  StatCard(
+                    icon: Icons.description_outlined,
+                    label: 'Devis',
+                    value: '${data.sentPlusCount}',
+                    accent: ArtizenAccents.blue,
+                    onTap: () => _openQuotes(context, ref, QuotesFilter.all),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.check_circle_outline,
-                      label: 'Devis validés',
-                      value: '${data.acceptedCount}',
-                      onTap: () =>
-                          _openQuotes(context, ref, QuotesFilter.accepted),
-                    ),
+                  StatCard(
+                    icon: Icons.check_circle_outline,
+                    label: 'Devis validés',
+                    value: '${data.acceptedCount}',
+                    accent: ArtizenAccents.green,
+                    onTap: () => _openQuotes(context, ref, QuotesFilter.accepted),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.cancel_outlined,
-                      label: 'Devis refusés',
-                      value: '${data.refusedCount}',
-                      onTap: () =>
-                          _openQuotes(context, ref, QuotesFilter.refused),
-                    ),
+                  StatCard(
+                    icon: Icons.cancel_outlined,
+                    label: 'Devis refusés',
+                    value: '${data.refusedCount}',
+                    accent: ArtizenAccents.red,
+                    onTap: () => _openQuotes(context, ref, QuotesFilter.refused),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Derniers devis',
-                style: Theme.of(context).textTheme.titleMedium,
+              const SizedBox(height: ArtizenSpacing.md),
+              _RecentQuotesCard(
+                quotes: data.recentQuotes,
+                onOpen: (id) => context.push('/quotes/$id'),
+                onSeeAll: () => context.go('/quotes'),
               ),
-              const SizedBox(height: 8),
-              if (data.recentQuotes.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text('Aucun devis créé pour le moment.'),
-                )
-              else
-                for (final quote in data.recentQuotes)
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.description_outlined),
-                      // Same identity as everywhere else: the number and
-                      // the status. The line count told the artisan nothing
-                      // they were looking for.
-                      title: Text(
-                        quote.quoteNumber,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(CurrencyFormatter.format(quote.totalTtc)),
-                      trailing: QuoteStatusChip(
-                        status: quote.status,
-                        compact: true,
-                      ),
-                      onTap: () => context.push('/quotes/${quote.id}'),
-                    ),
-                  ),
             ],
           ),
         ),
@@ -178,37 +159,188 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onTap,
+/// Lays a set of stat cards out in a row that reflows: 5 across on a wide
+/// screen, 3 on a tablet, 2 on a phone.
+class _ResponsiveCardGrid extends StatelessWidget {
+  const _ResponsiveCardGrid({required this.cards});
+
+  final List<Widget> cards;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final columns = w >= 760 ? 5 : (w >= 500 ? 3 : 2);
+        const spacing = 12.0;
+        final itemWidth = (w - spacing * (columns - 1)) / columns;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final card in cards)
+              SizedBox(width: itemWidth, child: card),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _RecentQuotesCard extends StatelessWidget {
+  const _RecentQuotesCard({
+    required this.quotes,
+    required this.onOpen,
+    required this.onSeeAll,
   });
 
-  final IconData icon;
-  final String label;
-  final String value;
+  final List<Quote> quotes;
+  final ValueChanged<String> onOpen;
+  final VoidCallback onSeeAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(vertical: ArtizenSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(
+              ArtizenSpacing.sm,
+              0,
+              ArtizenSpacing.sm,
+              ArtizenSpacing.xs,
+            ),
+            child: Text(
+              'Derniers devis',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: ArtizenColors.textPrimary,
+              ),
+            ),
+          ),
+          if (quotes.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: ArtizenSpacing.sm,
+                vertical: ArtizenSpacing.sm,
+              ),
+              child: Text(
+                'Aucun devis créé pour le moment.',
+                style: TextStyle(color: ArtizenColors.textSecondary),
+              ),
+            )
+          else
+            for (var i = 0; i < quotes.length; i++) ...[
+              if (i > 0)
+                const Divider(height: 1, indent: 16, endIndent: 16),
+              _RecentQuoteTile(quote: quotes[i], onTap: () => onOpen(quotes[i].id)),
+            ],
+          const Divider(height: 1),
+          Center(
+            child: TextButton.icon(
+              onPressed: onSeeAll,
+              icon: const Text('Voir tous les devis'),
+              label: const Icon(Icons.keyboard_arrow_down, size: 18),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentQuoteTile extends StatelessWidget {
+  const _RecentQuoteTile({required this.quote, required this.onTap});
+
+  final Quote quote;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
+    return Material(
+      type: MaterialType.transparency,
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.symmetric(
+            horizontal: ArtizenSpacing.sm,
+            vertical: 10,
+          ),
+          child: Row(
             children: [
-              Icon(icon, color: theme.colorScheme.primary),
-              const SizedBox(height: 8),
-              Text(value, style: theme.textTheme.headlineSmall),
-              Text(label, style: theme.textTheme.bodySmall),
+              const AccentIconChip(
+                icon: Icons.description_outlined,
+                accent: ArtizenAccents.slate,
+                size: 42,
+              ),
+              const SizedBox(width: ArtizenSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      quote.quoteNumber,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: ArtizenColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      CurrencyFormatter.format(quote.totalTtc),
+                      style: const TextStyle(
+                        color: ArtizenColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: ArtizenSpacing.xs),
+              QuoteStatusChip(status: quote.status, compact: true),
+              const SizedBox(width: 4),
+              const Icon(
+                Icons.chevron_right,
+                color: ArtizenColors.textSecondary,
+                size: 20,
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A white circular icon button — the app-bar affordance in the "web" identity
+/// (settings gear, back arrow). Kept here until a second screen needs it, then
+/// it graduates to `core/widgets`.
+class _CircleIconButton extends StatelessWidget {
+  const _CircleIconButton({
+    required this.icon,
+    required this.onPressed,
+    this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      elevation: 1,
+      shadowColor: ArtizenColors.nightBlue.withValues(alpha: 0.12),
+      child: IconButton(
+        icon: Icon(icon, color: ArtizenColors.textPrimary, size: 22),
+        tooltip: tooltip,
+        onPressed: onPressed,
       ),
     );
   }

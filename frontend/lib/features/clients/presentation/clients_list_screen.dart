@@ -3,6 +3,8 @@ import '../../../core/navigation/section_nav_arrows.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_surfaces.dart';
 import '../../../core/widgets/paged_list_view.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/debounced_search_field.dart';
@@ -18,21 +20,30 @@ class ClientsListScreen extends ConsumerWidget {
     final notifier = ref.read(clientsNotifierProvider.notifier);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         leading: const SectionNavArrows(current: '/clients'),
         leadingWidth: 96,
         title: const Text('Clients'),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: GradientFab(
         onPressed: () => context.push('/clients/new'),
-        child: const Icon(Icons.add),
+        tooltip: 'Nouveau client',
       ),
       body: Column(
         children: [
-          DebouncedSearchField(
-            hintText: 'Rechercher un client (nom, société, téléphone, email)',
-            initialValue: notifier.searchQuery,
-            onChanged: notifier.search,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              ArtizenSpacing.sm,
+              0,
+              ArtizenSpacing.sm,
+              ArtizenSpacing.xs,
+            ),
+            child: DebouncedSearchField(
+              hintText: 'Rechercher un client (nom, société, téléphone, email)',
+              initialValue: notifier.searchQuery,
+              onChanged: notifier.search,
+            ),
           ),
           Expanded(
             child: PagedListView(

@@ -33,11 +33,11 @@ void main() {
     await tester.enterText(fields.at(5), 'pas-un-email'); // Email (malformed)
     await tester.pump();
 
-    await tester.tap(find.text('CRÉER LE CLIENT'));
+    await tester.tap(find.text('Créer le client'));
     await tester.pumpAndSettle();
 
     // Inline error shown, and the form did not proceed (still on the form).
     expect(find.text('Adresse email invalide'), findsOneWidget);
-    expect(find.text('CRÉER LE CLIENT'), findsOneWidget);
+    expect(find.text('Créer le client'), findsOneWidget);
   });
 }

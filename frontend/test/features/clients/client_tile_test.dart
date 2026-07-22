@@ -1,4 +1,5 @@
 import 'package:artizen/core/theme/app_theme.dart';
+import 'package:artizen/core/widgets/app_components.dart';
 import 'package:artizen/features/clients/data/client_model.dart';
 import 'package:artizen/features/clients/presentation/widgets/client_tile.dart';
 import 'package:flutter/material.dart';
@@ -36,9 +37,9 @@ void main() {
       ),
     );
 
-    expect(find.widgetWithText(FilledButton, 'Créer un devis'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Modifier'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Supprimer'), findsOneWidget);
+    expect(find.widgetWithText(GradientButton, 'Créer un devis'), findsOneWidget);
+    expect(find.widgetWithText(GradientButton, 'Modifier'), findsOneWidget);
+    expect(find.widgetWithText(GradientButton, 'Supprimer'), findsOneWidget);
 
     await tester.tap(find.text('Créer un devis'));
     await tester.tap(find.text('Modifier'));
@@ -50,7 +51,7 @@ void main() {
     expect(deleted, 1);
   });
 
-  testWidgets('each action carries its colour: green / orange / blue',
+  testWidgets('each action carries its gradient: create / edit / delete',
       (tester) async {
     await _pump(
       tester,
@@ -62,14 +63,12 @@ void main() {
       ),
     );
 
-    Color? background(String label) => tester
-        .widget<FilledButton>(find.widgetWithText(FilledButton, label))
-        .style
-        ?.backgroundColor
-        ?.resolve({});
+    List<Color> gradient(String label) => tester
+        .widget<GradientButton>(find.widgetWithText(GradientButton, label))
+        .gradient;
 
-    expect(background('Créer un devis'), ArtizenColors.success); // vert
-    expect(background('Modifier'), ArtizenColors.warning); // orange
-    expect(background('Supprimer'), ArtizenColors.blueSecondary); // bleu
+    expect(gradient('Créer un devis'), ArtizenGradients.create); // bleu
+    expect(gradient('Modifier'), ArtizenGradients.edit); // orange
+    expect(gradient('Supprimer'), ArtizenGradients.delete); // rouge
   });
 }

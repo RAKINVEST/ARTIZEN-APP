@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/api/api_config.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_surfaces.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../branding/data/branding_models.dart';
 import '../../branding/presentation/branding_providers.dart';
@@ -18,102 +20,184 @@ class SettingsScreen extends ConsumerWidget {
     final brandingAsync = ref.watch(brandingProfileNotifierProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         leading: const SectionNavArrows(current: '/settings'),
         leadingWidth: 96,
         title: const Text('Paramètres'),
       ),
       body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           const _SectionLabel('Entreprise'),
-          // The one place to configure the whole company identity (legal,
-          // contact, VAT regime, insurance, payment terms) from inside the
-          // app — no longer only via a PDF import.
-          ListTile(
-            leading: const Icon(Icons.business_outlined),
-            title: const Text('Mon entreprise'),
-            subtitle: const Text(
-              'Identité légale, coordonnées, TVA, assurance, paiement',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/company-profile'),
-          ),
-          // The toolbox: activities compose the catalog, qualifications add
-          // their reserved packs (gas…). Configured once, applied everywhere.
-          ListTile(
-            leading: const Icon(Icons.handyman_outlined),
-            title: const Text('Mes métiers'),
-            subtitle: const Text(
-              'Composez votre catalogue selon vos activités et qualifications',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/metiers'),
-          ),
-          const Divider(),
-          const _SectionLabel('Modèle de devis'),
-          // The active quote model — its identity and whether an imported
-          // template is in use — so the artisan can see at a glance what
-          // their PDFs carry, then preview or replace it.
-          brandingAsync.when(
-            data: (profile) => _ActiveModelTile(profile: profile),
-            loading: () => const ListTile(
-              leading: Icon(Icons.badge_outlined),
-              title: Text('Modèle de devis'),
-              subtitle: Text('Chargement…'),
-            ),
-            error: (_, _) => ListTile(
-              leading: const Icon(Icons.badge_outlined),
-              title: const Text('Modèle de devis'),
-              subtitle: const Text('Identité indisponible'),
-              trailing: TextButton(
-                onPressed: () => ref
-                    .read(brandingProfileNotifierProvider.notifier)
-                    .refresh(),
-                child: const Text('Réessayer'),
+          _SettingsGroup(
+            children: [
+              // The one place to configure the whole company identity (legal,
+              // contact, VAT regime, insurance, payment terms) from inside the
+              // app — no longer only via a PDF import.
+              _SettingsTile(
+                icon: Icons.business_outlined,
+                accent: ArtizenAccents.blue,
+                title: 'Mon entreprise',
+                subtitle:
+                    'Identité légale, coordonnées, TVA, assurance, paiement',
+                onTap: () => context.push('/company-profile'),
               ),
-            ),
+              // The toolbox: activities compose the catalog, qualifications add
+              // their reserved packs (gas…). Configured once, applied everywhere.
+              _SettingsTile(
+                icon: Icons.handyman_outlined,
+                accent: ArtizenAccents.violet,
+                title: 'Mes métiers',
+                subtitle:
+                    'Composez votre catalogue selon vos activités et qualifications',
+                onTap: () => context.push('/metiers'),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.visibility_outlined),
-            title: const Text('Aperçu du rendu'),
-            subtitle: const Text(
-              'Voir un devis de démonstration avec votre identité',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/branding/sample-preview'),
+          const _SectionLabel('Modèle de devis'),
+          _SettingsGroup(
+            children: [
+              // The active quote model — its identity and whether an imported
+              // template is in use — so the artisan can see at a glance what
+              // their PDFs carry, then preview or replace it.
+              brandingAsync.when(
+                data: (profile) => _ActiveModelTile(profile: profile),
+                loading: () => const _SettingsTile(
+                  icon: Icons.badge_outlined,
+                  accent: ArtizenAccents.amber,
+                  title: 'Modèle de devis',
+                  subtitle: 'Chargement…',
+                ),
+                error: (_, _) => _SettingsTile(
+                  icon: Icons.badge_outlined,
+                  accent: ArtizenAccents.amber,
+                  title: 'Modèle de devis',
+                  subtitle: 'Identité indisponible',
+                  trailing: TextButton(
+                    onPressed: () => ref
+                        .read(brandingProfileNotifierProvider.notifier)
+                        .refresh(),
+                    child: const Text('Réessayer'),
+                  ),
+                ),
+              ),
+              _SettingsTile(
+                icon: Icons.visibility_outlined,
+                accent: ArtizenAccents.cyan,
+                title: 'Aperçu du rendu',
+                subtitle: 'Voir un devis de démonstration avec votre identité',
+                onTap: () => context.push('/branding/sample-preview'),
+              ),
+              _SettingsTile(
+                icon: Icons.picture_as_pdf_outlined,
+                accent: ArtizenAccents.green,
+                title: 'Importer ou remplacer le modèle',
+                subtitle: "Configure votre modèle à partir d'un ancien devis PDF",
+                onTap: () => context.push('/template-import'),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.picture_as_pdf_outlined),
-            title: const Text('Importer ou remplacer le modèle'),
-            subtitle: const Text(
-              "Configure votre modèle à partir d'un ancien devis PDF",
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/template-import'),
-          ),
-          const Divider(),
           const _SectionLabel('Application'),
-          const ListTile(
-            leading: Icon(Icons.dns_outlined),
-            title: Text('Serveur'),
-            subtitle: Text(ApiConfig.baseUrl),
+          _SettingsGroup(
+            children: [
+              _SettingsTile(
+                icon: Icons.dns_outlined,
+                accent: ArtizenAccents.slate,
+                title: 'Serveur',
+                subtitle: ApiConfig.baseUrl,
+              ),
+              const _SettingsTile(
+                icon: Icons.info_outline,
+                accent: ArtizenAccents.slate,
+                title: 'Version',
+                subtitle: '2.0.0',
+              ),
+            ],
           ),
-          const ListTile(
-            leading: Icon(Icons.info_outline),
-            title: Text('Version'),
-            subtitle: Text('2.0.0'),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Se déconnecter'),
-            onTap: () async {
-              await ref.read(authNotifierProvider.notifier).logout();
-              if (context.mounted) context.go('/login');
-            },
+          const SizedBox(height: ArtizenSpacing.sm),
+          _SettingsGroup(
+            children: [
+              _SettingsTile(
+                icon: Icons.logout,
+                accent: ArtizenAccents.red,
+                title: 'Se déconnecter',
+                onTap: () async {
+                  await ref.read(authNotifierProvider.notifier).logout();
+                  if (context.mounted) context.go('/login');
+                },
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A white card grouping a section's rows, with hairline dividers between them.
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const Divider(height: 1, indent: 68, endIndent: 12),
+            children[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// A single settings row: a pastel icon chip, a title, an optional subtitle,
+/// and either a chevron (when tappable) or a custom [trailing].
+class _SettingsTile extends StatelessWidget {
+  const _SettingsTile({
+    required this.icon,
+    required this.accent,
+    required this.title,
+    this.subtitle,
+    this.onTap,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final ArtizenAccent accent;
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      leading: AccentIconChip(icon: icon, accent: accent, size: 42),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: ArtizenColors.textPrimary,
+        ),
+      ),
+      subtitle: subtitle == null ? null : Text(subtitle!),
+      trailing:
+          trailing ??
+          (onTap == null
+              ? null
+              : const Icon(
+                  Icons.chevron_right,
+                  color: ArtizenColors.textSecondary,
+                )),
+      onTap: onTap,
     );
   }
 }
@@ -140,10 +224,11 @@ class _ActiveModelTile extends StatelessWidget {
       if (hasLogo) 'logo appliqué',
     ];
 
-    return ListTile(
-      leading: const Icon(Icons.badge_outlined),
-      title: Text(identity ?? 'Modèle par défaut'),
-      subtitle: Text(details.join(' · ')),
+    return _SettingsTile(
+      icon: Icons.badge_outlined,
+      accent: ArtizenAccents.amber,
+      title: identity ?? 'Modèle par défaut',
+      subtitle: details.join(' · '),
     );
   }
 }
@@ -156,11 +241,13 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.fromLTRB(8, 20, 16, 8),
       child: Text(
         text.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
+        style: const TextStyle(
+          color: kArtizenViolet,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
           letterSpacing: 0.8,
         ),
       ),

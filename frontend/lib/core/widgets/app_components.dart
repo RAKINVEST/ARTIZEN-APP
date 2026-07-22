@@ -96,8 +96,10 @@ class _AppTextFieldState extends State<AppTextField> {
   }
 }
 
-/// The screen's primary call to action — gold, night-blue label, leading
-/// icon, full width, with a built-in loading state.
+/// The screen's primary call to action — the violet→magenta gradient, a white
+/// label and leading icon, full width, with a built-in loading state. This is
+/// the single button every screen reaches for, so restyling it here re-skins
+/// the whole app's primary actions at once.
 class AppPrimaryButton extends StatelessWidget {
   const AppPrimaryButton({
     required this.label,
@@ -114,22 +116,114 @@ class AppPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: loading ? null : onPressed,
-      child: loading
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(strokeWidth: 2.2, color: ArtizenColors.onGold),
-            )
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: ArtizenSpacing.xs)],
-                Text(label.toUpperCase(), style: const TextStyle(letterSpacing: 0.5)),
-              ],
-            ),
+    return GradientButton(
+      gradient: ArtizenGradients.button,
+      onPressed: onPressed,
+      loading: loading,
+      icon: icon,
+      label: label,
+      height: 56,
+    );
+  }
+}
+
+/// A full-width button poured from a [gradient]. The building block behind
+/// [AppPrimaryButton] and the coloured list actions (Créer / Modifier /
+/// Supprimer). Disabled or loading states desaturate the gradient and drop the
+/// shadow so the button reads as inert.
+class GradientButton extends StatelessWidget {
+  const GradientButton({
+    required this.gradient,
+    required this.label,
+    this.onPressed,
+    this.icon,
+    this.loading = false,
+    this.height = 52,
+    this.compact = false,
+    super.key,
+  });
+
+  final List<Color> gradient;
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? icon;
+  final bool loading;
+  final double height;
+
+  /// Tighter horizontal padding + smaller text — for in-row list actions
+  /// where several buttons sit side by side.
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null && !loading;
+    final colors = enabled
+        ? gradient
+        : gradient.map((c) => c.withValues(alpha: 0.45)).toList();
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(ArtizenRadii.button),
+        boxShadow: enabled
+            ? [
+                BoxShadow(
+                  color: gradient.last.withValues(alpha: 0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: enabled ? onPressed : null,
+          borderRadius: BorderRadius.circular(ArtizenRadii.button),
+          child: Container(
+            height: height,
+            padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 20),
+            alignment: Alignment.center,
+            child: loading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (icon != null) ...[
+                        Icon(icon, size: compact ? 18 : 20, color: Colors.white),
+                        SizedBox(width: compact ? 6 : ArtizenSpacing.xs),
+                      ],
+                      // A plain Text (not Flexible): the button sizes to its
+                      // content in a row, and labels are short — so this stays
+                      // safe even when the incoming width is unbounded.
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontFamily,
+                          color: Colors.white,
+                          fontSize: compact ? 14 : 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
     );
   }
 }

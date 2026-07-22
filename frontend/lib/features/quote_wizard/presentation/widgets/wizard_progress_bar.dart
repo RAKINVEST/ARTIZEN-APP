@@ -78,9 +78,9 @@ class _StepDot extends StatelessWidget {
         ArtizenColors.textSecondary,
       ),
       _DotState.current => (
-        ArtizenColors.gold,
-        ArtizenColors.onGold,
-        ArtizenColors.nightBlue,
+        kArtizenViolet,
+        Colors.white,
+        kArtizenViolet,
       ),
       _DotState.upcoming => (
         ArtizenColors.border,

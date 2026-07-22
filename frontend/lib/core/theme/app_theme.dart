@@ -13,37 +13,37 @@ import 'package:flutter/services.dart';
 class ArtizenColors {
   const ArtizenColors._();
 
-  // --- Official palette ---
-  /// Bleu nuit (principal) — the dominant colour.
-  static const Color nightBlue = Color(0xFF10233F);
+  // --- Official palette (charte ARTIZEN Premium) ---
+  /// Bleu nuit (principal) — the dominant dark, primary brand colour.
+  static const Color nightBlue = Color(0xFF140E55);
 
-  /// Bleu secondaire — focus borders, secondary accents.
-  static const Color blueSecondary = Color(0xFF1C355E);
+  /// Bleu interface (icônes, focus, statut « envoyé »).
+  static const Color blueSecondary = Color(0xFF1156F7);
 
-  /// Or premium (accent) — used sparingly: primary actions, key icons,
-  /// badges, confirmations. Never replaces the blue.
-  static const Color gold = Color(0xFFD4AF37);
+  /// Or clair (accent premium) — used sparingly: key icons, badges,
+  /// confirmations. Never replaces the blue or the violet.
+  static const Color gold = Color(0xFFF4C95D);
 
-  /// Fond — the app background.
-  static const Color surfaceLight = Color(0xFFF8FAFC);
+  /// Fond général — the app background.
+  static const Color surfaceLight = Color(0xFFF9F9FC);
 
   /// Texte principal.
   static const Color textPrimary = Color(0xFF1E293B);
 
   /// Texte secondaire.
-  static const Color textSecondary = Color(0xFF64748B);
+  static const Color textSecondary = Color(0xFF63688E);
 
-  /// Succès.
-  static const Color success = Color(0xFF16A34A);
+  /// Succès (validation).
+  static const Color success = Color(0xFF49C25A);
 
   /// Erreur.
-  static const Color error = Color(0xFFDC2626);
+  static const Color error = Color(0xFFE63946);
 
   /// Info.
-  static const Color info = Color(0xFF0EA5E9);
+  static const Color info = Color(0xFF1156F7);
 
-  /// Avertissement.
-  static const Color warning = Color(0xFFF59E0B);
+  /// Avertissement (orange).
+  static const Color warning = Color(0xFFF59717);
 
   // --- Derived tokens (still all from the palette) ---
   static const Color onNightBlue = Colors.white;
@@ -53,30 +53,129 @@ class ArtizenColors {
   static const Color cardSurface = Color(0xFFFEFFFF);
 
   /// Field border at rest and hairline dividers.
-  static const Color border = Color(0xFFE2E8F0);
+  static const Color border = Color(0xFFECECF4);
 
   /// Placeholder text inside fields.
-  static const Color placeholder = Color(0xFF94A3B8);
+  static const Color placeholder = Color(0xFF9498B0);
 
-  /// Info-card background (the "données sécurisées" block).
-  static const Color infoSurface = Color(0xFFF1F5F9);
+  /// Info-card background (the "données sécurisées" block) — soft lavender.
+  static const Color infoSurface = Color(0xFFF1EEF9);
 
   /// Soft shadow used on cards and the primary button.
-  static const Color shadow = Color(0x1410233F); // rgba(16,35,63,0.08)
+  static const Color shadow = Color(0x14140E55); // rgba(20,14,85,0.08)
 
   // --- Quote status tokens (background, foreground) ---
-  static const Color statusDraftBg = Color(0xFFE2E8F0);
+  static const Color statusDraftBg = Color(0xFFECECF4);
   static const Color statusDraftFg = textSecondary;
-  // "En attente" — an amber "waiting" tone, distinct from the sent blue.
-  static const Color statusPendingBg = Color(0xFFFEF3C7);
-  static const Color statusPendingFg = Color(0xFFB45309);
-  static const Color statusSentBg = Color(0xFFDCE5F2);
+  // "En attente" — an orange "waiting" tone, distinct from the sent blue.
+  static const Color statusPendingBg = Color(0xFFFCEFD3);
+  static const Color statusPendingFg = Color(0xFFC77A12);
+  static const Color statusSentBg = Color(0xFFE6EDFF);
   static const Color statusSentFg = blueSecondary;
-  static const Color statusAcceptedBg = Color(0xFFDCFCE7);
+  static const Color statusAcceptedBg = Color(0xFFDFF7E3);
   static const Color statusAcceptedFg = success;
-  static const Color statusRefusedBg = Color(0xFFFDE2E2);
+  static const Color statusRefusedBg = Color(0xFFFFE5E7);
   static const Color statusRefusedFg = error;
 }
+
+/// The gradients that carry the ARTIZEN "web" identity. Kept as raw stops so
+/// widgets can pour them into a [LinearGradient] with whatever direction they
+/// need. Violet→magenta is the signature: primary actions, the FAB, the active
+/// navigation item. The night-blue→indigo sidebar and the near-white lavender
+/// page background frame them.
+class ArtizenGradients {
+  const ArtizenGradients._();
+
+  /// The signature gradient — blue → violet → pink. Reserved for the "hero"
+  /// moment: the active navigation item. This is what gives ARTIZEN its modern
+  /// look; used sparingly so it stays special.
+  static const List<Color> primary = [
+    Color(0xFF4D5AF3),
+    Color(0xFF9631DE),
+    Color(0xFFF5506D),
+  ];
+
+  /// The everyday primary-button / FAB gradient — a sober violet, on-brand but
+  /// calmer than the full signature so a screen full of buttons stays clean.
+  static const List<Color> button = [Color(0xFF603AF6), Color(0xFF9631DE)];
+
+  /// The desktop sidebar — night blue fading into the deep night.
+  static const List<Color> sidebar = [Color(0xFF140E55), Color(0xFF060930)];
+
+  /// The page background — an almost-white lavender wash.
+  static const List<Color> background = [Color(0xFFFCFBFE), Color(0xFFF1EAFB)];
+
+  // --- List action gradients (Créer / Modifier / Supprimer) ---
+  /// "Créer" — interface blue.
+  static const List<Color> create = [Color(0xFF1156F7), Color(0xFF4D5AF3)];
+
+  /// "Modifier" — orange → gold.
+  static const List<Color> edit = [Color(0xFFF59717), Color(0xFFF4C95D)];
+
+  /// "Supprimer" — red → signature pink.
+  static const List<Color> delete = [Color(0xFFE63946), Color(0xFFF5506D)];
+}
+
+/// A pastel accent: the soft [bg] behind an icon chip, the saturated [fg] of
+/// the icon/number, and the [gradient] used for the thin progress bar under a
+/// stat card. One per semantic colour so a card picks an accent, never a raw
+/// colour.
+class ArtizenAccent {
+  const ArtizenAccent({
+    required this.bg,
+    required this.fg,
+    required this.gradient,
+  });
+
+  final Color bg;
+  final Color fg;
+  final List<Color> gradient;
+}
+
+/// The named accents used across the dashboard and lists.
+class ArtizenAccents {
+  const ArtizenAccents._();
+
+  static const ArtizenAccent blue = ArtizenAccent(
+    bg: Color(0xFFE9EFFF),
+    fg: Color(0xFF1156F7),
+    gradient: [Color(0xFF1156F7), Color(0xFF4D5AF3)],
+  );
+  static const ArtizenAccent violet = ArtizenAccent(
+    bg: Color(0xFFECE4FE),
+    fg: Color(0xFF603AF6),
+    gradient: [Color(0xFF603AF6), Color(0xFF9631DE)],
+  );
+  static const ArtizenAccent amber = ArtizenAccent(
+    bg: Color(0xFFFCEFD3),
+    fg: Color(0xFFC77A12),
+    gradient: [Color(0xFFF59717), Color(0xFFF4C95D)],
+  );
+  static const ArtizenAccent green = ArtizenAccent(
+    bg: Color(0xFFDFF7E3),
+    fg: Color(0xFF49C25A),
+    gradient: [Color(0xFF49C25A), Color(0xFF7FD79A)],
+  );
+  static const ArtizenAccent red = ArtizenAccent(
+    bg: Color(0xFFFFE5E7),
+    fg: Color(0xFFE63946),
+    gradient: [Color(0xFFE63946), Color(0xFFF5506D)],
+  );
+  static const ArtizenAccent cyan = ArtizenAccent(
+    bg: Color(0xFFE9EFFF),
+    fg: Color(0xFF1156F7),
+    gradient: [Color(0xFF1156F7), Color(0xFF4D5AF3)],
+  );
+  static const ArtizenAccent slate = ArtizenAccent(
+    bg: Color(0xFFECECF4),
+    fg: Color(0xFF63688E),
+    gradient: [Color(0xFF9498B0), Color(0xFFC6C9D9)],
+  );
+}
+
+/// Violet principal — the interactive accent hue (active nav, pastille icons,
+/// focus). The middle of the ARTIZEN identity (bleu nuit / violet / or).
+const Color kArtizenViolet = Color(0xFF603AF6);
 
 /// The 8-pt spacing system (8 / 16 / 24 / 32 / 48 / 64).
 class ArtizenSpacing {
@@ -134,33 +233,41 @@ class AppTheme {
     );
 
     return base.copyWith(
+      // A near-white lavender base. Tab screens paint the real
+      // white→lavender gradient via the shell's AppBackground; pushed routes
+      // fall back to this tint until they carry their own AppBackground.
       scaffoldBackgroundColor: ArtizenColors.surfaceLight,
       textTheme: base.textTheme.apply(
         bodyColor: ArtizenColors.textPrimary,
         displayColor: ArtizenColors.textPrimary,
       ),
-      // Night-blue app bars everywhere: what makes blue the dominant colour.
+      // Light, borderless app bars: the title reads as dark text on the page
+      // background (the "web" identity), not a night-blue band. Screens supply
+      // a white-circle back button in `leading` where they need one.
       appBarTheme: const AppBarTheme(
-        backgroundColor: ArtizenColors.nightBlue,
-        foregroundColor: ArtizenColors.onNightBlue,
+        backgroundColor: Colors.transparent,
+        foregroundColor: ArtizenColors.textPrimary,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: false,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         titleTextStyle: TextStyle(
           fontFamily: fontFamily,
-          color: ArtizenColors.onNightBlue,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
+          color: ArtizenColors.textPrimary,
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
         ),
-        iconTheme: IconThemeData(color: ArtizenColors.onNightBlue),
+        iconTheme: IconThemeData(color: ArtizenColors.textPrimary),
       ),
-      // Primary action = gold, night-blue label, 56 high, soft shadow.
+      // Filled action = solid violet, white label, 56 high, soft shadow. The
+      // signature-gradient CTA is `AppPrimaryButton`; this covers the plain
+      // FilledButtons (wizard nav, pickers) so they read violet, not gold.
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: ArtizenColors.gold,
-          foregroundColor: ArtizenColors.onGold,
-          disabledBackgroundColor: ArtizenColors.gold.withValues(alpha: 0.6),
-          disabledForegroundColor: ArtizenColors.onGold.withValues(alpha: 0.7),
+          backgroundColor: kArtizenViolet,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: kArtizenViolet.withValues(alpha: 0.45),
+          disabledForegroundColor: Colors.white.withValues(alpha: 0.85),
           minimumSize: const Size.fromHeight(56),
           elevation: 2,
           shadowColor: ArtizenColors.nightBlue.withValues(alpha: 0.10),
@@ -196,9 +303,11 @@ class AppTheme {
           textStyle: const TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.w500),
         ),
       ),
+      // Safety net for any default FAB — the exact violet→magenta gradient FAB
+      // is the `GradientFab` widget; this keeps a plain FAB on-brand too.
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: ArtizenColors.gold,
-        foregroundColor: ArtizenColors.onGold,
+        backgroundColor: kArtizenViolet,
+        foregroundColor: Colors.white,
       ),
       cardTheme: CardThemeData(
         color: ArtizenColors.cardSurface,
@@ -241,15 +350,15 @@ class AppTheme {
         ),
         errorStyle: const TextStyle(color: ArtizenColors.error, fontSize: 12),
       ),
-      // Bottom navigation: white, active icon night blue, active indicator gold.
+      // Bottom navigation: white, active icon/label violet, violet indicator.
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
         elevation: 3,
-        indicatorColor: ArtizenColors.gold.withValues(alpha: 0.22),
+        indicatorColor: kArtizenViolet.withValues(alpha: 0.14),
         iconTheme: WidgetStateProperty.resolveWith(
           (states) => IconThemeData(
             color: states.contains(WidgetState.selected)
-                ? ArtizenColors.nightBlue
+                ? kArtizenViolet
                 : ArtizenColors.textSecondary,
           ),
         ),
@@ -261,7 +370,7 @@ class AppTheme {
                 ? FontWeight.w600
                 : FontWeight.w400,
             color: states.contains(WidgetState.selected)
-                ? ArtizenColors.nightBlue
+                ? kArtizenViolet
                 : ArtizenColors.textSecondary,
           ),
         ),

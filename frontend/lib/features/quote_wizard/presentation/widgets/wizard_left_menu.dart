@@ -103,7 +103,7 @@ class _MenuItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final enabled = onTap != null || destination.route != null;
     final color = destination.current
-        ? ArtizenColors.gold
+        ? Colors.white
         : enabled
         ? Colors.white
         : Colors.white38;
@@ -118,7 +118,7 @@ class _MenuItem extends StatelessWidget {
           vertical: 12,
         ),
         color: destination.current
-            ? Colors.white.withValues(alpha: 0.06)
+            ? kArtizenViolet.withValues(alpha: 0.35)
             : null,
         child: Row(
           mainAxisAlignment: compact

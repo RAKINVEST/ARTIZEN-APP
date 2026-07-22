@@ -70,9 +70,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // The wordmark and CTA are uppercase in the premium identity.
+    // The wordmark stays uppercase; the CTA is sentence case in the web identity.
     expect(find.text('ARTIZEN'), findsOneWidget);
-    expect(find.text('SE CONNECTER'), findsOneWidget);
+    expect(find.text('Se connecter'), findsOneWidget);
 
     await tester.enterText(
       find.byType(TextFormField).at(0),
@@ -81,9 +81,9 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(1), 'Password123!');
     // The premium login now leads with a brand banner, so the button can sit
     // below the fold on a small test surface — scroll it into view first.
-    await tester.ensureVisible(find.text('SE CONNECTER'));
+    await tester.ensureVisible(find.text('Se connecter'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('SE CONNECTER'));
+    await tester.tap(find.text('Se connecter'));
     await tester.pumpAndSettle();
 
     // Appears twice: the AppBar title and the bottom-nav label.

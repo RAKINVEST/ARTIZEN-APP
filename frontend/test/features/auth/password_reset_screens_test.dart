@@ -23,7 +23,7 @@ void main() {
       await tester.pumpWidget(_host(const ForgotPasswordScreen(), repo));
 
       await tester.enterText(find.byType(TextFormField), 'a@artizen-qa.io');
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.text('Envoyer le lien'));
       await tester.pumpAndSettle();
 
       expect(repo.lastForgotPasswordEmail, 'a@artizen-qa.io');
@@ -36,7 +36,7 @@ void main() {
       await tester.pumpWidget(_host(const ForgotPasswordScreen(), repo));
 
       await tester.enterText(find.byType(TextFormField), 'not-an-email');
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.text('Envoyer le lien'));
       await tester.pump();
 
       expect(find.text('Email invalide'), findsOneWidget);
@@ -51,7 +51,7 @@ void main() {
 
       await tester.enterText(find.byType(TextFormField).at(0), 'secret123');
       await tester.enterText(find.byType(TextFormField).at(1), 'different1');
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.text('Réinitialiser'));
       await tester.pump();
 
       expect(find.text('Les mots de passe ne correspondent pas'), findsOneWidget);
@@ -69,7 +69,7 @@ void main() {
 
       await tester.enterText(find.byType(TextFormField).at(0), 'secret123');
       await tester.enterText(find.byType(TextFormField).at(1), 'secret123');
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.text('Réinitialiser'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('invalide ou expiré'), findsOneWidget);

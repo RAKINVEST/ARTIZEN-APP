@@ -21,17 +21,18 @@ void main() {
     expect(find.text('Masquer'), findsNothing);
 
     // Every tile is present and stays clickable — including the ones that used
-    // to grey out once "done" (configure company, add client).
+    // to grey out once "done" (configure company, add client). Each pastel
+    // chip is an InkWell carrying the tap.
     for (final label in const [
       'Configurer mon entreprise',
       'Mes catalogues',
       'Ma caisse à outils',
       'Ajouter un client',
     ]) {
-      final tile = tester.widget<ListTile>(
-        find.ancestor(of: find.text(label), matching: find.byType(ListTile)),
+      final inkWell = tester.widget<InkWell>(
+        find.ancestor(of: find.text(label), matching: find.byType(InkWell)),
       );
-      expect(tile.onTap, isNotNull, reason: '"$label" must be clickable');
+      expect(inkWell.onTap, isNotNull, reason: '"$label" must be clickable');
     }
   });
 }

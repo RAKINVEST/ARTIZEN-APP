@@ -282,9 +282,9 @@ void main() {
 
     await tester.tap(find.text('Nouveau client'));
     await tester.pumpAndSettle();
-    // The primary button uppercases its label (AppPrimaryButton) — this is
-    // also how we know we've reached the form.
-    expect(find.text('CRÉER LE CLIENT'), findsOneWidget);
+    // The primary button's label (AppPrimaryButton) — this is also how we
+    // know we've reached the form.
+    expect(find.text('Créer le client'), findsOneWidget);
 
     await tester.enterText(
       find
@@ -296,7 +296,7 @@ void main() {
       'Nouveau',
     );
     await tester.pump();
-    await tester.tap(find.text('CRÉER LE CLIENT'));
+    await tester.tap(find.text('Créer le client'));
     await tester.pumpAndSettle();
 
     // Back on the wizard, the just-created client is already selected.

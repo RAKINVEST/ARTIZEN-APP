@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/utils/decimal_input.dart';
 import '../../../core/widgets/app_components.dart';
@@ -201,22 +202,25 @@ class _SuggestionResult extends StatelessWidget {
     final theme = Theme.of(context);
     final confidencePercent = (suggestion.confidence * 100).round();
     final level = _confidenceLevelOf(suggestion.confidence);
+    // ARTIZEN status tokens, not M3 seed containers: high = accepted green,
+    // medium = pending amber, low = refused red — the same palette the status
+    // pills use, so "confiance" reads on the same colour language.
     final (Color background, Color foreground, IconData icon, String label) = switch (level) {
       _ConfidenceLevel.high => (
-          theme.colorScheme.primaryContainer,
-          theme.colorScheme.onPrimaryContainer,
+          ArtizenColors.statusAcceptedBg,
+          ArtizenColors.statusAcceptedFg,
           Icons.verified_outlined,
           'Confiance forte',
         ),
       _ConfidenceLevel.medium => (
-          theme.colorScheme.tertiaryContainer,
-          theme.colorScheme.onTertiaryContainer,
+          ArtizenColors.statusPendingBg,
+          ArtizenColors.statusPendingFg,
           Icons.info_outline,
           'Confiance modérée',
         ),
       _ConfidenceLevel.low => (
-          theme.colorScheme.errorContainer,
-          theme.colorScheme.onErrorContainer,
+          ArtizenColors.statusRefusedBg,
+          ArtizenColors.statusRefusedFg,
           Icons.warning_amber_outlined,
           'Confiance faible — vérifiez les suggestions',
         ),
@@ -226,10 +230,10 @@ class _SuggestionResult extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: background,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(ArtizenRadii.card),
           ),
           child: Row(
             children: [

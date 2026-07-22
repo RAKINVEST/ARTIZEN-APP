@@ -71,7 +71,7 @@ void main() {
     await _pump(tester, 0.9);
 
     expect(find.text('Ajouter un article'), findsOneWidget);
-    // The primary CTA label is uppercased by AppPrimaryButton.
-    expect(find.text('CRÉER LE DEVIS'), findsOneWidget);
+    // The primary CTA label (AppPrimaryButton, sentence case).
+    expect(find.text('Créer le devis'), findsOneWidget);
   });
 }

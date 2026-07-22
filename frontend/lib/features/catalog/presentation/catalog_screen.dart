@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_surfaces.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../core/widgets/paged_list_view.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
@@ -21,19 +22,18 @@ class CatalogScreen extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           leading: const SectionNavArrows(current: '/catalog'),
           leadingWidth: 96,
           title: const Text('Catalogue'),
           bottom: const TabBar(
-            // The AppBar is night-blue; without explicit colours Material 3
-            // paints the *selected* label in colorScheme.primary (also
-            // night-blue) — invisible — and the rest a faint grey. Gold on
-            // blue for the active tab, bright white for the other, both bigger
-            // and bolder so the two sections read at a glance.
-            labelColor: ArtizenColors.gold,
-            unselectedLabelColor: Colors.white,
-            indicatorColor: ArtizenColors.gold,
+            // Light app bar now: the active tab is violet with a violet
+            // indicator, the other muted — both bigger and bolder so the two
+            // sections read at a glance.
+            labelColor: kArtizenViolet,
+            unselectedLabelColor: ArtizenColors.textSecondary,
+            indicatorColor: kArtizenViolet,
             indicatorWeight: 3,
             labelStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             unselectedLabelStyle: TextStyle(
@@ -61,16 +61,25 @@ class _ItemsTab extends ConsumerWidget {
     final notifier = ref.read(itemsNotifierProvider.notifier);
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
+      backgroundColor: Colors.transparent,
+      floatingActionButton: GradientFab(
         onPressed: () => context.push('/catalog/items/new'),
-        child: const Icon(Icons.add),
+        tooltip: 'Nouvel article',
       ),
       body: Column(
         children: [
-          DebouncedSearchField(
-            hintText: 'Rechercher un article (désignation, code)',
-            initialValue: notifier.searchQuery,
-            onChanged: notifier.search,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              ArtizenSpacing.sm,
+              8,
+              ArtizenSpacing.sm,
+              ArtizenSpacing.xs,
+            ),
+            child: DebouncedSearchField(
+              hintText: 'Rechercher un article (désignation, code)',
+              initialValue: notifier.searchQuery,
+              onChanged: notifier.search,
+            ),
           ),
           Expanded(
             child: PagedListView(
@@ -157,7 +166,10 @@ class _CategoriesTabState extends ConsumerState<_CategoriesTab> {
     final query = _query.trim().toLowerCase();
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
+      backgroundColor: Colors.transparent,
+      floatingActionButton: GradientFab(
+        icon: Icons.add,
+        tooltip: 'Nouvelle catégorie',
         onPressed: () async {
           final input = await showAddCategoryDialog(context);
           if (input != null) {
@@ -166,13 +178,20 @@ class _CategoriesTabState extends ConsumerState<_CategoriesTab> {
                 .createCategory(input);
           }
         },
-        child: const Icon(Icons.add),
       ),
       body: Column(
         children: [
-          DebouncedSearchField(
-            hintText: 'Rechercher un métier ou un dossier',
-            onChanged: (value) => setState(() => _query = value),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              ArtizenSpacing.sm,
+              8,
+              ArtizenSpacing.sm,
+              ArtizenSpacing.xs,
+            ),
+            child: DebouncedSearchField(
+              hintText: 'Rechercher un métier ou un dossier',
+              onChanged: (value) => setState(() => _query = value),
+            ),
           ),
           Expanded(
             child: AsyncListView<TradeGroup>(
@@ -237,7 +256,12 @@ class _TradeGroupTile extends StatelessWidget {
     return Card(
       child: ExpansionTile(
         initiallyExpanded: initiallyExpanded,
-        leading: const CircleAvatar(child: Icon(Icons.handyman_outlined)),
+        shape: const Border(),
+        leading: const AccentIconChip(
+          icon: Icons.handyman_outlined,
+          accent: ArtizenAccents.violet,
+          size: 44,
+        ),
         title: Text(
           label,
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),

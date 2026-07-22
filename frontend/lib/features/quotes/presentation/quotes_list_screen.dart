@@ -5,9 +5,32 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
+import '../../../core/widgets/app_surfaces.dart';
 import '../../../core/widgets/paged_list_view.dart';
+import '../data/quote_models.dart';
 import 'quotes_providers.dart';
 import 'widgets/quote_status_chip.dart';
+
+/// The pastel accent that matches a quote's status — keeps the list row's icon
+/// chip in step with its status pill.
+ArtizenAccent accentForStatus(QuoteStatus status) => switch (status) {
+  QuoteStatus.draft => ArtizenAccents.slate,
+  QuoteStatus.pending => ArtizenAccents.amber,
+  QuoteStatus.sent => ArtizenAccents.blue,
+  QuoteStatus.accepted => ArtizenAccents.green,
+  QuoteStatus.refused => ArtizenAccents.red,
+};
+
+/// The colour a filter chip carries — each view keeps the same accent as its
+/// dashboard card and its status pill, so "En attente" is amber everywhere,
+/// "Validés" green, "Refusés" red, and so on.
+ArtizenAccent accentForFilter(QuotesFilter filter) => switch (filter) {
+  QuotesFilter.all => ArtizenAccents.violet,
+  QuotesFilter.brouillon => ArtizenAccents.slate,
+  QuotesFilter.pending => ArtizenAccents.amber,
+  QuotesFilter.accepted => ArtizenAccents.green,
+  QuotesFilter.refused => ArtizenAccents.red,
+};
 
 class QuotesListScreen extends ConsumerWidget {
   const QuotesListScreen({this.asPushedView = false, super.key});
@@ -24,6 +47,7 @@ class QuotesListScreen extends ConsumerWidget {
     final notifier = ref.read(quotesNotifierProvider.notifier);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         // Pushed from a dashboard card → the default back arrow (pops straight
         // back to the dashboard). As the tab → the section arrows.
@@ -43,12 +67,12 @@ class QuotesListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: GradientFab(
         // "Nouveau devis" now opens the guided wizard (V1). The old
         // QuoteFormScreen (/quotes/new) is deprecated — no visible link points
         // to it anymore.
         onPressed: () => context.push('/assistant'),
-        child: const Icon(Icons.add),
+        tooltip: 'Nouveau devis',
       ),
       body: Column(
         children: [
@@ -62,24 +86,55 @@ class QuotesListScreen extends ConsumerWidget {
               onRetry: notifier.refresh,
               onRefresh: notifier.refresh,
               onLoadMore: notifier.loadMore,
-              itemBuilder: (context, quote) => Card(
-                child: ListTile(
+              itemBuilder: (context, quote) => Padding(
+                padding: const EdgeInsets.fromLTRB(16, 5, 16, 5),
+                child: AppCard(
                   onTap: () => context.push('/quotes/${quote.id}'),
-                  leading: const CircleAvatar(
-                    child: Icon(Icons.description_outlined),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
                   ),
-                  // The number, not the line count: "DEV-2026-0042" is what
-                  // the artisan is scanning the list for.
-                  title: Text(
-                    quote.quoteNumber,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(CurrencyFormatter.format(quote.totalTtc)),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Row(
                     children: [
+                      AccentIconChip(
+                        icon: Icons.description_outlined,
+                        accent: accentForStatus(quote.status),
+                        size: 46,
+                      ),
+                      const SizedBox(width: ArtizenSpacing.sm),
+                      // The number, not the line count: "DEV-2026-0042" is what
+                      // the artisan is scanning the list for.
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              quote.quoteNumber,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: ArtizenColors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              CurrencyFormatter.format(quote.totalTtc),
+                              style: const TextStyle(
+                                color: ArtizenColors.textSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: ArtizenSpacing.xs),
                       QuoteStatusChip(status: quote.status, compact: true),
-                      const Icon(Icons.chevron_right),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: ArtizenColors.textSecondary,
+                        size: 20,
+                      ),
                     ],
                   ),
                 ),
@@ -113,15 +168,21 @@ class _StatusFilterBar extends ConsumerWidget {
         itemBuilder: (context, index) {
           final filter = QuotesFilter.values[index];
           final isSelected = filter == selected;
+          final accent = accentForFilter(filter);
           return ChoiceChip(
             label: Text(filter.chipLabel),
             selected: isSelected,
             showCheckmark: false,
-            selectedColor: ArtizenColors.nightBlue,
+            selectedColor: accent.fg,
+            backgroundColor: Colors.white,
+            side: BorderSide(
+              color: isSelected ? accent.fg : ArtizenColors.border,
+            ),
             labelStyle: TextStyle(
-              color: isSelected
-                  ? ArtizenColors.onNightBlue
-                  : ArtizenColors.textSecondary,
+              // Selected → filled with its colour, white label. Unselected →
+              // white chip whose label already carries the status colour, so
+              // the four views read at a glance even before you pick one.
+              color: isSelected ? Colors.white : accent.fg,
               fontWeight: FontWeight.w600,
             ),
             onSelected: (_) =>
