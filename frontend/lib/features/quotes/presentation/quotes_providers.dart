@@ -12,11 +12,14 @@ import '../data/quote_readiness.dart';
 import '../data/quotes_repository_impl.dart';
 
 /// The view selected on the devis list — the same buckets as the dashboard's
-/// cards. "En attente" folds **draft + sent** (a quote awaiting an outcome),
-/// so this is a thin semantic layer over [QuoteStatus] rather than a raw
-/// status: it also names the screen ([title]) and its chips ([chipLabel]).
+/// cards, mirroring the quote life cycle. A thin semantic layer over
+/// [QuoteStatus]: it also names the screen ([title]) and its chips
+/// ([chipLabel]). Note "Devis" ([all]) is **not** literally every status — it
+/// is the devis proper (sent and beyond); brouillons and en-attente live in
+/// their own views and never inflate that total.
 enum QuotesFilter {
   all,
+  brouillon,
   pending,
   accepted,
   refused;
@@ -24,6 +27,7 @@ enum QuotesFilter {
   /// The AppBar title for this view.
   String get title => switch (this) {
     QuotesFilter.all => 'Devis',
+    QuotesFilter.brouillon => 'Devis en brouillon',
     QuotesFilter.pending => 'Devis en attente',
     QuotesFilter.accepted => 'Devis validés',
     QuotesFilter.refused => 'Devis refusés',
@@ -32,16 +36,23 @@ enum QuotesFilter {
   /// The (shorter) chip label.
   String get chipLabel => switch (this) {
     QuotesFilter.all => 'Tous',
+    QuotesFilter.brouillon => 'Brouillon',
     QuotesFilter.pending => 'En attente',
     QuotesFilter.accepted => 'Validés',
     QuotesFilter.refused => 'Refusés',
   };
 
-  /// The statuses this view fetches server-side (empty = every status). "En
-  /// attente" = draft + sent, matched by a repeated `?status=` (backend `IN`).
+  /// The statuses this view fetches server-side, via a repeated `?status=`
+  /// (backend `IN`). "Devis" = sent + accepted + refused (a brouillon or an
+  /// en-attente is not yet a devis); the rest map to a single status.
   List<QuoteStatus> get statuses => switch (this) {
-    QuotesFilter.all => const [],
-    QuotesFilter.pending => const [QuoteStatus.draft, QuoteStatus.sent],
+    QuotesFilter.all => const [
+      QuoteStatus.sent,
+      QuoteStatus.accepted,
+      QuoteStatus.refused,
+    ],
+    QuotesFilter.brouillon => const [QuoteStatus.draft],
+    QuotesFilter.pending => const [QuoteStatus.pending],
     QuotesFilter.accepted => const [QuoteStatus.accepted],
     QuotesFilter.refused => const [QuoteStatus.refused],
   };

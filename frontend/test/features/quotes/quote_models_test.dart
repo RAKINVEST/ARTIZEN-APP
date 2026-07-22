@@ -63,6 +63,7 @@ void main() {
       // label is translated.
       for (final entry in {
         'draft': QuoteStatus.draft,
+        'pending': QuoteStatus.pending,
         'sent': QuoteStatus.sent,
         'accepted': QuoteStatus.accepted,
         'refused': QuoteStatus.refused,
@@ -76,7 +77,8 @@ void main() {
       // The app must never offer a button the server would refuse with a
       // 409. The backend stays the authority; this only decides what to
       // show.
-      expect(QuoteStatus.draft.nextStates, [QuoteStatus.sent]);
+      expect(QuoteStatus.draft.nextStates, [QuoteStatus.pending]);
+      expect(QuoteStatus.pending.nextStates, [QuoteStatus.sent]);
       expect(QuoteStatus.sent.nextStates, [
         QuoteStatus.accepted,
         QuoteStatus.refused,
@@ -95,6 +97,7 @@ void main() {
     test('only a draft is editable', () {
       expect(QuoteStatus.draft.isEditable, isTrue);
       for (final status in [
+        QuoteStatus.pending,
         QuoteStatus.sent,
         QuoteStatus.accepted,
         QuoteStatus.refused,

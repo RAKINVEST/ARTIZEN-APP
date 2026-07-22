@@ -34,6 +34,7 @@ class QuoteLine with _$QuoteLine {
 @JsonEnum(fieldRename: FieldRename.snake)
 enum QuoteStatus {
   draft,
+  pending,
   sent,
   accepted,
   refused;
@@ -42,6 +43,7 @@ enum QuoteStatus {
   /// backend; only the label is translated.
   String get label => switch (this) {
     QuoteStatus.draft => 'Brouillon',
+    QuoteStatus.pending => 'En attente',
     QuoteStatus.sent => 'Envoyé',
     QuoteStatus.accepted => 'Accepté',
     QuoteStatus.refused => 'Refusé',
@@ -49,13 +51,17 @@ enum QuoteStatus {
 
   /// Mirrors the backend's `QUOTE_TRANSITIONS`. Duplicated on purpose:
   /// the app must not offer a button the server will refuse. The backend
-  /// stays the authority — this only decides what to *show*.
+  /// stays the authority — this only decides what to *show*. The artisan first
+  /// validates a draft (→ pending), then sends it (→ sent); no shortcut, and
+  /// nothing ever travels backwards.
   List<QuoteStatus> get nextStates => switch (this) {
-    QuoteStatus.draft => const [QuoteStatus.sent],
+    QuoteStatus.draft => const [QuoteStatus.pending],
+    QuoteStatus.pending => const [QuoteStatus.sent],
     QuoteStatus.sent => const [QuoteStatus.accepted, QuoteStatus.refused],
     QuoteStatus.accepted || QuoteStatus.refused => const [],
   };
 
+  /// Only a draft is editable/deletable — validating it (→ pending) freezes it.
   bool get isEditable => this == QuoteStatus.draft;
 }
 

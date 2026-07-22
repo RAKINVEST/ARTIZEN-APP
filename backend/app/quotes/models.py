@@ -30,20 +30,27 @@ class QuoteStatus(str, enum.Enum):
     it sums. Freezing everything past ``DRAFT`` removes that class of bug
     rather than relying on a future caller to remember.
 
-    ``SENT`` is the point of no return: a PDF has left for the customer,
-    so the document must never change afterwards. Correcting a sent quote
-    means issuing a new one.
+    The life cycle is one-directional, brouillon → en attente → envoyé:
+    ``DRAFT`` is the artisan's editable working copy; validating it moves it to
+    ``PENDING`` ("en attente"), the state from which it is sent to the customer;
+    ``SENT`` is the point of no return — a PDF has left for the customer, so the
+    document must never change afterwards. Correcting a sent quote means issuing
+    a new one. A quote never travels backwards (nothing returns to ``DRAFT``).
     """
 
     DRAFT = "draft"
+    PENDING = "pending"
     SENT = "sent"
     ACCEPTED = "accepted"
     REFUSED = "refused"
 
 
 #: Which statuses a quote may move to from a given one. Absent key = final.
+#: The artisan first *validates* a draft (→ pending), then *sends* it (→ sent);
+#: there is no shortcut straight from draft to sent, and no way back.
 QUOTE_TRANSITIONS: dict[QuoteStatus, frozenset[QuoteStatus]] = {
-    QuoteStatus.DRAFT: frozenset({QuoteStatus.SENT}),
+    QuoteStatus.DRAFT: frozenset({QuoteStatus.PENDING}),
+    QuoteStatus.PENDING: frozenset({QuoteStatus.SENT}),
     QuoteStatus.SENT: frozenset({QuoteStatus.ACCEPTED, QuoteStatus.REFUSED}),
     QuoteStatus.ACCEPTED: frozenset(),
     QuoteStatus.REFUSED: frozenset(),

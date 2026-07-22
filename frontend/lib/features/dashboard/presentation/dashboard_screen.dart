@@ -83,18 +83,19 @@ class DashboardScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              // Devis, then a breakdown by outcome right next to it. Each tile
-              // opens the devis list already filtered to itself: all devis, then
-              // en attente (draft + sent), validés (accepted), refusés. Order:
-              // total, then pending, then the two resolved outcomes.
+              // The quote life cycle, left to right: Brouillon → En attente →
+              // Devis (envoyés & +), then the two outcomes Validés / Refusés.
+              // Each tile opens the devis list already filtered to itself.
+              // Brouillons and en-attente are *not* counted in "Devis".
               Row(
                 children: [
                   Expanded(
                     child: _StatCard(
-                      icon: Icons.description_outlined,
-                      label: 'Devis',
-                      value: data.quoteCount.display,
-                      onTap: () => _openQuotes(context, ref, QuotesFilter.all),
+                      icon: Icons.edit_note_outlined,
+                      label: 'Brouillon',
+                      value: '${data.draftCount}',
+                      onTap: () =>
+                          _openQuotes(context, ref, QuotesFilter.brouillon),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -105,6 +106,15 @@ class DashboardScreen extends ConsumerWidget {
                       value: '${data.pendingCount}',
                       onTap: () =>
                           _openQuotes(context, ref, QuotesFilter.pending),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      icon: Icons.description_outlined,
+                      label: 'Devis',
+                      value: '${data.sentPlusCount}',
+                      onTap: () => _openQuotes(context, ref, QuotesFilter.all),
                     ),
                   ),
                   const SizedBox(width: 12),

@@ -19,13 +19,15 @@ import 'support/fake_repositories.dart';
 /// A minimal company/brand profile for the dashboard's onboarding step, which
 /// now reads `/branding/profile` to know whether the company has a SIRET.
 BrandingProfile _emptyProfile() => const BrandingProfile(
-      company: Company(id: 'co1'),
-      brand: BrandProfile(id: 'b1'),
-      templates: [],
-    );
+  company: Company(id: 'co1'),
+  brand: BrandProfile(id: 'b1'),
+  templates: [],
+);
 
 void main() {
-  testWidgets('App boots to the login screen and logs in to the dashboard', (tester) async {
+  testWidgets('App boots to the login screen and logs in to the dashboard', (
+    tester,
+  ) async {
     // A tall surface so the whole dashboard (the permanent quick-access panel,
     // the "Nouveau devis guidé" button and the three stat cards) lays out —
     // otherwise the lazy ListView leaves the stats unbuilt off-screen.
@@ -52,10 +54,16 @@ void main() {
           // not depend on the backend actually running, so every one of
           // them is replaced with an in-memory fake.
           currentCompanyIdProvider.overrideWith((ref) async => 'co1'),
-          clientsRepositoryProvider.overrideWithValue(FakeClientsRepository([])),
-          catalogRepositoryProvider.overrideWithValue(FakeCatalogRepository([], [])),
+          clientsRepositoryProvider.overrideWithValue(
+            FakeClientsRepository([]),
+          ),
+          catalogRepositoryProvider.overrideWithValue(
+            FakeCatalogRepository([], []),
+          ),
           quotesRepositoryProvider.overrideWithValue(FakeQuotesRepository([])),
-          brandingRepositoryProvider.overrideWithValue(FakeBrandingRepository(_emptyProfile())),
+          brandingRepositoryProvider.overrideWithValue(
+            FakeBrandingRepository(_emptyProfile()),
+          ),
         ],
         child: const ArtizenApp(),
       ),
@@ -66,7 +74,10 @@ void main() {
     expect(find.text('ARTIZEN'), findsOneWidget);
     expect(find.text('SE CONNECTER'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'demo@artizen-qa.io');
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'demo@artizen-qa.io',
+    );
     await tester.enterText(find.byType(TextFormField).at(1), 'Password123!');
     // The premium login now leads with a brand banner, so the button can sit
     // below the fold on a small test surface — scroll it into view first.
@@ -82,7 +93,8 @@ void main() {
     expect(find.text('Bienvenue'), findsOneWidget);
 
     // The stat cards, all backed by the empty fakes above: clients, articles,
-    // and the four devis cards (total + validés + en attente + refusés).
-    expect(find.text('0'), findsNWidgets(6));
+    // and the five devis cards (brouillon + en attente + devis + validés +
+    // refusés).
+    expect(find.text('0'), findsNWidgets(7));
   });
 }

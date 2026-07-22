@@ -34,49 +34,55 @@ ProviderContainer _containerWith(List<Quote> quotes) {
 
 void main() {
   test(
-    'QuotesNotifier loads every quote when no status filter is set',
+    'the default view shows the devis (sent & beyond), not brouillons',
     () async {
       final container = _containerWith([
-        _quote('1', QuoteStatus.draft),
-        _quote('2', QuoteStatus.sent),
+        _quote('1', QuoteStatus.draft), // brouillon — excluded from "Devis"
+        _quote('2', QuoteStatus.pending), // en attente — excluded too
+        _quote('3', QuoteStatus.sent),
+        _quote('4', QuoteStatus.accepted),
       ]);
 
+      // Default filter is QuotesFilter.all = the devis proper: sent + accepted
+      // + refused. A brouillon or en-attente never shows here.
       final page = await container.read(quotesNotifierProvider.future);
 
-      expect(page.items, hasLength(2));
-    },
-  );
-
-  test(
-    'Setting the "en attente" view re-fetches draft + sent (server ?status=)',
-    () async {
-      final container = _containerWith([
-        _quote('1', QuoteStatus.draft),
-        _quote('2', QuoteStatus.sent),
-        _quote('3', QuoteStatus.accepted),
-      ]);
-
-      await container.read(quotesNotifierProvider.future);
-      // "En attente" folds draft + sent into one compound view — a single fetch.
-      container.read(quotesFilterProvider.notifier).state =
-          QuotesFilter.pending;
-
-      final page = await container.read(quotesNotifierProvider.future);
-      expect(page.items, hasLength(2)); // draft + sent, never the accepted one
+      expect(page.items, hasLength(2)); // the sent + accepted ones
       expect(
         page.items.every(
           (quote) =>
-              quote.status == QuoteStatus.draft ||
-              quote.status == QuoteStatus.sent,
+              quote.status == QuoteStatus.sent ||
+              quote.status == QuoteStatus.accepted ||
+              quote.status == QuoteStatus.refused,
         ),
         isTrue,
       );
     },
   );
 
+  test(
+    'the "en attente" view re-fetches only pending (server ?status=)',
+    () async {
+      final container = _containerWith([
+        _quote('1', QuoteStatus.draft),
+        _quote('2', QuoteStatus.pending),
+        _quote('3', QuoteStatus.sent),
+      ]);
+
+      await container.read(quotesNotifierProvider.future);
+      container.read(quotesFilterProvider.notifier).state =
+          QuotesFilter.pending;
+
+      final page = await container.read(quotesNotifierProvider.future);
+      expect(page.items, hasLength(1)); // only the pending one
+      expect(page.items.single.status, QuoteStatus.pending);
+    },
+  );
+
   test('QuotesNotifier.loadMore appends the next page', () async {
+    // Sent quotes so they show under the default "Devis" (sent & beyond) view.
     final quotes = [
-      for (var i = 0; i < 35; i++) _quote('$i', QuoteStatus.draft),
+      for (var i = 0; i < 35; i++) _quote('$i', QuoteStatus.sent),
     ];
     final container = _containerWith(quotes);
 

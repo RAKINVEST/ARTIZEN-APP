@@ -67,6 +67,9 @@ class ArtizenColors {
   // --- Quote status tokens (background, foreground) ---
   static const Color statusDraftBg = Color(0xFFE2E8F0);
   static const Color statusDraftFg = textSecondary;
+  // "En attente" — an amber "waiting" tone, distinct from the sent blue.
+  static const Color statusPendingBg = Color(0xFFFEF3C7);
+  static const Color statusPendingFg = Color(0xFFB45309);
   static const Color statusSentBg = Color(0xFFDCE5F2);
   static const Color statusSentFg = blueSecondary;
   static const Color statusAcceptedBg = Color(0xFFDCFCE7);

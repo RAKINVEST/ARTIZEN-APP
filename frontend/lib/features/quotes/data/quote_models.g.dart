@@ -67,6 +67,7 @@ Map<String, dynamic> _$$QuoteImplToJson(_$QuoteImpl instance) =>
 
 const _$QuoteStatusEnumMap = {
   QuoteStatus.draft: 'draft',
+  QuoteStatus.pending: 'pending',
   QuoteStatus.sent: 'sent',
   QuoteStatus.accepted: 'accepted',
   QuoteStatus.refused: 'refused',

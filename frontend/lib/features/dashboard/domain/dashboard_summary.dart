@@ -36,8 +36,10 @@ class DashboardSummary {
     required this.quoteCount,
     required this.recentQuotes,
     required this.companyHasSiret,
-    this.acceptedCount = 0,
+    this.draftCount = 0,
     this.pendingCount = 0,
+    this.sentPlusCount = 0,
+    this.acceptedCount = 0,
     this.refusedCount = 0,
   });
 
@@ -46,12 +48,16 @@ class DashboardSummary {
   final ApproximateCount quoteCount;
   final List<Quote> recentQuotes;
 
-  /// Quotes by outcome, counted from the same page as [quoteCount]. "Validés" =
-  /// accepted, "En attente" = **draft + sent** (not yet decided — a fresh quote
-  /// or one awaiting the client's answer), "Refusés" = refused. Counted, never
-  /// decided here (the status lives on the backend).
-  final int acceptedCount;
+  /// Quotes by life-cycle stage, counted from the same page as [quoteCount].
+  /// "Brouillon" = draft (editable, not yet a devis), "En attente" = pending
+  /// (validated, awaiting sending), and the "Devis" total = [sentPlusCount] =
+  /// sent + accepted + refused (the devis proper — a brouillon or en-attente
+  /// never counts here). "Validés" = accepted, "Refusés" = refused. Counted,
+  /// never decided here (the status lives on the backend).
+  final int draftCount;
   final int pendingCount;
+  final int sentPlusCount;
+  final int acceptedCount;
   final int refusedCount;
 
   /// Whether the company already carries a SIRET — the signal the onboarding

@@ -61,16 +61,24 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
     quoteCount: _countOf(quotes),
     recentQuotes: recentQuotes.take(5).toList(),
     companyHasSiret: siret.isNotEmpty,
-    acceptedCount: quotes
-        .where((quote) => quote.status == QuoteStatus.accepted)
+    draftCount: quotes
+        .where((quote) => quote.status == QuoteStatus.draft)
         .length,
-    // "En attente" folds draft + sent: everything not yet accepted or refused.
     pendingCount: quotes
+        .where((quote) => quote.status == QuoteStatus.pending)
+        .length,
+    // The "Devis" total: sent and beyond — a brouillon or en-attente is not a
+    // devis yet, so it never inflates this count.
+    sentPlusCount: quotes
         .where(
           (quote) =>
-              quote.status == QuoteStatus.draft ||
-              quote.status == QuoteStatus.sent,
+              quote.status == QuoteStatus.sent ||
+              quote.status == QuoteStatus.accepted ||
+              quote.status == QuoteStatus.refused,
         )
+        .length,
+    acceptedCount: quotes
+        .where((quote) => quote.status == QuoteStatus.accepted)
         .length,
     refusedCount: quotes
         .where((quote) => quote.status == QuoteStatus.refused)

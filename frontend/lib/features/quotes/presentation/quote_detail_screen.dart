@@ -72,11 +72,22 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   }, failureLabel: 'Téléchargement impossible');
 
   Future<void> _changeStatus(Quote quote, QuoteStatus next) => _run(() async {
-    // Sending is the irreversible step — nothing ever returns to draft —
-    // so it earns both a conformity check and a confirmation. Recording
-    // the customer's answer afterwards does neither: the artisan is
-    // reporting a fact about a quote already emitted.
-    if (next == QuoteStatus.sent) {
+    // Validating a draft freezes it (no longer editable or deletable), so it
+    // asks first — but no conformity check yet: the artisan is finalising, not
+    // emitting. Sending is the irreversible step (nothing ever returns to
+    // draft), so it earns both a conformity check and a confirmation.
+    // Recording the customer's answer afterwards does neither.
+    if (next == QuoteStatus.pending) {
+      final confirmed = await showConfirmDialog(
+        context,
+        title: 'Valider ce devis ?',
+        message:
+            'Le devis ${quote.quoteNumber} passera « en attente » et ne sera '
+            "plus modifiable. Vous pourrez ensuite l'envoyer au client.",
+        confirmLabel: 'Valider',
+      );
+      if (!confirmed) return;
+    } else if (next == QuoteStatus.sent) {
       final ready = await QuoteReadinessGate.ensureReady(
         context: context,
         ref: ref,
@@ -293,7 +304,13 @@ class _StatusActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final status in next) ...[
-          if (status == QuoteStatus.sent)
+          if (status == QuoteStatus.pending)
+            AppPrimaryButton(
+              label: 'Valider le devis',
+              icon: Icons.verified_outlined,
+              onPressed: busy ? null : () => onChange(status),
+            )
+          else if (status == QuoteStatus.sent)
             AppPrimaryButton(
               label: 'Marquer comme envoyé',
               icon: Icons.send_outlined,

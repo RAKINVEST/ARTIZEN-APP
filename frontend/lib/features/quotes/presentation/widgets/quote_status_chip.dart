@@ -30,6 +30,11 @@ class QuoteStatusChip extends StatelessWidget {
         ArtizenColors.statusDraftFg,
         Icons.edit_outlined,
       ),
+      QuoteStatus.pending => (
+        ArtizenColors.statusPendingBg,
+        ArtizenColors.statusPendingFg,
+        Icons.schedule_outlined,
+      ),
       QuoteStatus.sent => (
         ArtizenColors.statusSentBg,
         ArtizenColors.statusSentFg,
