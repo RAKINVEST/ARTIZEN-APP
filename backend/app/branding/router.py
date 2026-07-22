@@ -35,6 +35,13 @@ async def upload_logo(
     return await service.upload_logo(current_user.company_id, file)
 
 
+@router.delete("/logo", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_logo(service: BrandingServiceDep, current_user: CurrentUserDep) -> None:
+    """Remove the company logo — so an account that has none (or a wrongly
+    imported one) falls back to its name in the document header."""
+    await service.delete_asset(current_user.company_id, "logo")
+
+
 @router.post("/signature", response_model=StoredFileInfo, status_code=status.HTTP_201_CREATED)
 async def upload_signature(
     service: BrandingServiceDep, current_user: CurrentUserDep, file: UploadFile = File(...)

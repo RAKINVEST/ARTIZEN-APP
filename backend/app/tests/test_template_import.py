@@ -85,6 +85,39 @@ def test_extract_first_image_png_returns_none_without_an_image() -> None:
     assert extract_first_image_png(_make_pdf_bytes()) is None
 
 
+def _make_pdf_with_full_page_image() -> bytes:
+    """A one-page PDF whose only image *is* the whole page — the shape of a
+    scan or an "export as image" quote. It must never be mistaken for a logo:
+    stamping a full page into the little header logo box was a real bug."""
+    page = PILImage.new("RGB", (400, 400), (10, 14, 85))
+    page_buffer = io.BytesIO()
+    page.save(page_buffer, format="PNG")
+    page_buffer.seek(0)
+
+    pdf_buffer = io.BytesIO()
+    c = canvas.Canvas(pdf_buffer, pagesize=(400, 400))
+    c.drawImage(ImageReader(page_buffer), 0, 0, width=400, height=400)
+    c.save()
+    return pdf_buffer.getvalue()
+
+
+def test_extract_first_image_png_skips_a_full_page_image() -> None:
+    """A page-sized image is the document itself, not a logo."""
+    from app.document_detection.logo_detector import extract_first_image_png
+
+    assert extract_first_image_png(_make_pdf_with_full_page_image()) is None
+
+
+async def test_logo_detector_rejects_a_full_page_image() -> None:
+    """`logo_detected` must be False for a full-page image, so the import
+    never extracts it as the company logo."""
+    from app.document_detection.logo_detector import LogoDetector
+
+    result = await LogoDetector().detect(_make_pdf_with_full_page_image())
+
+    assert result.detected is False
+
+
 async def test_preview_requires_completed_analysis(client: AsyncClient, company_id: str) -> None:
     upload_response = await client.post(
         "/api/document-analysis/upload",
