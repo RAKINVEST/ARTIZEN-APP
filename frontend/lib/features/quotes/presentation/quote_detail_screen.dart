@@ -8,6 +8,7 @@ import '../../../core/widgets/app_components.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../clients/presentation/clients_providers.dart';
+import '../../quote_wizard/presentation/quote_draft_provider.dart';
 import '../data/quote_models.dart';
 import '../data/quotes_repository_impl.dart';
 import 'quote_readiness_gate.dart';
@@ -134,6 +135,17 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     }, failureLabel: 'Duplication impossible');
   }
 
+  Future<void> _edit(Quote quote) => _run(() async {
+    // Reopen this brouillon in the wizard, pre-filled with its client and
+    // lines — "reprendre là où on était". Saving there creates a fresh quote
+    // and deletes this one (a quote has no in-place edit; delete + recreate is
+    // how a draft is corrected). Only a draft reaches here (isEditable).
+    final client = await ref.read(clientByIdProvider(quote.clientId).future);
+    if (!mounted) return;
+    loadQuoteForEdit(ref, quote, clientLabel: client.displayName);
+    context.go('/assistant');
+  }, failureLabel: 'Ouverture du brouillon impossible');
+
   Future<void> _delete(Quote quote) async {
     final confirmed = await showConfirmDialog(
       context,
@@ -247,6 +259,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                 busy: _busy,
                 onChange: (next) => _changeStatus(quote, next),
                 onDuplicate: () => _duplicate(quote),
+                onEdit: () => _edit(quote),
               ),
             ],
           );
@@ -268,12 +281,14 @@ class _StatusActions extends StatelessWidget {
     required this.busy,
     required this.onChange,
     required this.onDuplicate,
+    required this.onEdit,
   });
 
   final Quote quote;
   final bool busy;
   final ValueChanged<QuoteStatus> onChange;
   final VoidCallback onDuplicate;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -303,6 +318,16 @@ class _StatusActions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // A brouillon can be reopened and edited (add/remove articles, adjust
+        // quantities) before it is validated. Only a draft is editable.
+        if (quote.status.isEditable) ...[
+          OutlinedButton.icon(
+            icon: const Icon(Icons.edit_outlined),
+            label: const Text('Modifier le brouillon'),
+            onPressed: busy ? null : onEdit,
+          ),
+          const SizedBox(height: 8),
+        ],
         for (final status in next) ...[
           if (status == QuoteStatus.pending)
             AppPrimaryButton(

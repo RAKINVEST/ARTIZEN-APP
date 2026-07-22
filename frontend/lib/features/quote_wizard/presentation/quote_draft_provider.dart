@@ -204,13 +204,51 @@ final wizardAdvanceRequestProvider = StateProvider<int>((ref) => 0);
 /// leaving no longer risks losing anything.
 final createdQuoteProvider = StateProvider<Quote?>((ref) => null);
 
-/// Clears everything the wizard held — draft, open folder, created quote — so
-/// the next "Nouveau devis" starts from a clean slate. Called only after a
-/// full, successful flow (or a confirmed abandon).
+/// The brouillon being *reopened* to edit (its id), or null for a brand-new
+/// quote. A quote has no in-place edit path (décision 2: `QuoteCalculator` has
+/// no recalculation entry point, so nothing may rewrite an existing quote's
+/// lines) — "Modifier" therefore rebuilds it: the wizard creates a fresh
+/// brouillon and, on success, deletes this original. Set by [loadQuoteForEdit].
+final editingQuoteIdProvider = StateProvider<String?>((ref) => null);
+
+/// Load an existing brouillon [quote] into the wizard so the artisan can reopen
+/// and adjust it — "reprendre là où on était". Its client and lines are copied
+/// onto a fresh draft; [editingQuoteIdProvider] remembers the original so the
+/// Créer step can delete it once the edited version is created. [clientLabel]
+/// is the client's display name (the quote carries only the id).
+void loadQuoteForEdit(
+  WidgetRef ref,
+  Quote quote, {
+  required String clientLabel,
+}) {
+  final notifier = ref.read(quoteDraftProvider.notifier);
+  notifier.reset();
+  notifier.selectClient(id: quote.clientId, label: clientLabel);
+  for (final line in quote.lines) {
+    notifier.addArticle(
+      DraftLine(
+        catalogItemId: line.catalogItemId,
+        designation: line.designation,
+        unit: line.unit,
+        quantity: num.tryParse(line.quantity) ?? 1,
+        unitPriceHt: line.unitPriceHt,
+        vatRate: line.vatRate,
+      ),
+    );
+  }
+  ref.read(selectedFolderProvider.notifier).clear();
+  ref.read(createdQuoteProvider.notifier).state = null;
+  ref.read(editingQuoteIdProvider.notifier).state = quote.id;
+}
+
+/// Clears everything the wizard held — draft, open folder, created quote, and
+/// the "editing" marker — so the next "Nouveau devis" starts from a clean
+/// slate. Called only after a full, successful flow (or a confirmed abandon).
 void resetWizardDraft(WidgetRef ref) {
   ref.read(quoteDraftProvider.notifier).reset();
   ref.read(selectedFolderProvider.notifier).clear();
   ref.read(createdQuoteProvider.notifier).state = null;
+  ref.read(editingQuoteIdProvider.notifier).state = null;
 }
 
 /// Whether the artisan may leave [step] — the single place step-completion is

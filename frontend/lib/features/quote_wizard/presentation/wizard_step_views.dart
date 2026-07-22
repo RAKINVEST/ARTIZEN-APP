@@ -1331,6 +1331,22 @@ class _CreerStepState extends ConsumerState<_CreerStep> {
                 ),
             ],
           );
+      // Reopened a brouillon to edit? The edits now live in this fresh quote,
+      // so the original is removed — delete + recreate is how a quote is
+      // corrected (there is no in-place edit). Done after a successful create
+      // so a failure never loses the brouillon being edited; a failed delete
+      // only leaves a harmless extra draft the artisan can remove by hand.
+      final editingId = ref.read(editingQuoteIdProvider);
+      if (editingId != null) {
+        try {
+          await ref
+              .read(quotesNotifierProvider.notifier)
+              .deleteQuote(editingId);
+        } catch (_) {
+          // Non-fatal: the new quote exists; the old brouillon just lingers.
+        }
+        ref.read(editingQuoteIdProvider.notifier).state = null;
+      }
       if (!mounted) return;
       // Publishing it drives the wizard to its Confirmation step.
       ref.read(createdQuoteProvider.notifier).state = quote;
