@@ -114,13 +114,47 @@ class _ItemsTab extends ConsumerWidget {
 
 /// The catalogue browsed **by trade**: each imported métier is a collapsible
 /// group, opening to its folders; opening a folder drills into its articles.
-/// Turns a flat list of a hundred-plus folders into a handful of trades.
-class _CategoriesTab extends ConsumerWidget {
+/// Turns a flat list of a hundred-plus folders into a handful of trades. A
+/// search field at the top filters that tree by métier or dossier name — like
+/// the Articles tab, but client-side: `by-trade` returns the whole tree, so
+/// there is never a truncated page to filter wrongly.
+class _CategoriesTab extends ConsumerStatefulWidget {
   const _CategoriesTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CategoriesTab> createState() => _CategoriesTabState();
+}
+
+class _CategoriesTabState extends ConsumerState<_CategoriesTab> {
+  String _query = '';
+
+  /// A métier whose name matches keeps all its folders; otherwise only the
+  /// folders whose name matches are kept, and a métier with neither is dropped.
+  List<(TradeGroup, List<TradeCategory>)> _filter(
+    List<TradeGroup> groups,
+    String query,
+  ) {
+    if (query.isEmpty) {
+      return [for (final group in groups) (group, group.categories)];
+    }
+    final result = <(TradeGroup, List<TradeCategory>)>[];
+    for (final group in groups) {
+      if (group.label.toLowerCase().contains(query)) {
+        result.add((group, group.categories));
+      } else {
+        final folders = group.categories
+            .where((category) => category.name.toLowerCase().contains(query))
+            .toList();
+        if (folders.isNotEmpty) result.add((group, folders));
+      }
+    }
+    return result;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final groups = ref.watch(catalogByTradeProvider);
+    final query = _query.trim().toLowerCase();
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -134,23 +168,50 @@ class _CategoriesTab extends ConsumerWidget {
         },
         child: const Icon(Icons.add),
       ),
-      body: AsyncListView<TradeGroup>(
-        value: groups,
-        emptyIcon: Icons.category_outlined,
-        emptyMessage:
-            'Aucun dossier pour le moment.\n'
-            'Activez un métier (Tableau de bord → Mes métiers), '
-            'ou créez une catégorie avec le bouton +.',
-        onRetry: () => ref.read(catalogByTradeProvider.notifier).refresh(),
-        itemBuilder: (context, list) => RefreshIndicator(
-          onRefresh: () => ref.read(catalogByTradeProvider.notifier).refresh(),
-          child: ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 88),
-            itemCount: list.length,
-            itemBuilder: (context, index) =>
-                _TradeGroupTile(group: list[index]),
+      body: Column(
+        children: [
+          DebouncedSearchField(
+            hintText: 'Rechercher un métier ou un dossier',
+            onChanged: (value) => setState(() => _query = value),
           ),
-        ),
+          Expanded(
+            child: AsyncListView<TradeGroup>(
+              value: groups,
+              emptyIcon: Icons.category_outlined,
+              emptyMessage:
+                  'Aucun dossier pour le moment.\n'
+                  'Activez un métier (Tableau de bord → Mes métiers), '
+                  'ou créez une catégorie avec le bouton +.',
+              onRetry: () =>
+                  ref.read(catalogByTradeProvider.notifier).refresh(),
+              itemBuilder: (context, list) {
+                final filtered = _filter(list, query);
+                if (query.isNotEmpty && filtered.isEmpty) {
+                  return _NoCategoryMatch(query: _query.trim());
+                }
+                return RefreshIndicator(
+                  onRefresh: () =>
+                      ref.read(catalogByTradeProvider.notifier).refresh(),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 8, bottom: 88),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final (group, folders) = filtered[index];
+                      return _TradeGroupTile(
+                        // Key includes the query so a search recreates the tile
+                        // in its expanded state — results are visible at once.
+                        key: ValueKey('${group.label}|$query'),
+                        label: group.label,
+                        categories: folders,
+                        initiallyExpanded: query.isNotEmpty,
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -159,18 +220,26 @@ class _CategoriesTab extends ConsumerWidget {
 /// One trade (métier), collapsible: its folders sit under it, and opening a
 /// folder drills into its articles.
 class _TradeGroupTile extends StatelessWidget {
-  const _TradeGroupTile({required this.group});
+  const _TradeGroupTile({
+    required this.label,
+    required this.categories,
+    this.initiallyExpanded = false,
+    super.key,
+  });
 
-  final TradeGroup group;
+  final String label;
+  final List<TradeCategory> categories;
+  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
-    final folders = group.categories.length;
+    final folders = categories.length;
     return Card(
       child: ExpansionTile(
+        initiallyExpanded: initiallyExpanded,
         leading: const CircleAvatar(child: Icon(Icons.handyman_outlined)),
         title: Text(
-          group.label,
+          label,
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
@@ -182,7 +251,7 @@ class _TradeGroupTile extends StatelessWidget {
         ),
         childrenPadding: const EdgeInsets.only(bottom: ArtizenSpacing.xs),
         children: [
-          for (final category in group.categories)
+          for (final category in categories)
             ListTile(
               contentPadding: const EdgeInsets.only(left: 28, right: 12),
               leading: const Icon(Icons.folder_outlined),
@@ -201,6 +270,35 @@ class _TradeGroupTile extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Shown when a search matches no métier and no dossier — tells the artisan
+/// their query came back empty rather than leaving a blank tab.
+class _NoCategoryMatch extends StatelessWidget {
+  const _NoCategoryMatch({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(ArtizenSpacing.lg),
+      children: [
+        const SizedBox(height: 40),
+        const Icon(
+          Icons.search_off_outlined,
+          size: 40,
+          color: ArtizenColors.textSecondary,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Aucun métier ni dossier ne correspond à « $query ».',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: ArtizenColors.textSecondary),
+        ),
+      ],
     );
   }
 }
