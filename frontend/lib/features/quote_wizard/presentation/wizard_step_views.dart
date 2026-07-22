@@ -8,6 +8,7 @@ import '../../../core/widgets/error_state.dart';
 import '../../../shared/widgets/debounced_search_field.dart';
 import '../../branding/presentation/branding_providers.dart';
 import '../../catalog/data/catalog_models.dart';
+import '../../catalog/presentation/catalog_providers.dart';
 import '../../clients/data/client_model.dart';
 import '../../clients/presentation/clients_providers.dart';
 import '../../quotes/data/quote_calculation.dart';
@@ -27,16 +28,18 @@ class WizardStepView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The Catalogue step runs its own full-height layout (tabs + lists that
+    // scroll themselves), so it isn't wrapped in the scrolling _StepScaffold.
+    if (step == WizardStep.catalogue) return const _CatalogueStep();
     return _StepScaffold(
       step: step,
       child: switch (step) {
         WizardStep.client => const _ClientStep(),
-        WizardStep.dossier => const _DossierStep(),
-        WizardStep.articles => const _ArticlesStep(),
         WizardStep.personnaliser => const _PersonnaliserStep(),
         WizardStep.recap => const _RecapStep(),
         WizardStep.creer => const _CreerStep(),
         WizardStep.confirmation => const _ConfirmationStep(),
+        WizardStep.catalogue => const SizedBox.shrink(), // handled above
       },
     );
   }
@@ -255,222 +258,110 @@ class _EmptyClients extends StatelessWidget {
   }
 }
 
-// --- Étape 2 : Dossier — quel dossier du catalogue ? (câblé) ---------------
+// --- Étape 2 : Catalogue — quels articles ? (3 onglets) --------------------
 
-class _DossierStep extends ConsumerStatefulWidget {
-  const _DossierStep();
-
-  @override
-  ConsumerState<_DossierStep> createState() => _DossierStepState();
+/// Snapshot [item] onto a draft line (décision 5: its designation, unit and
+/// price travel with the line). Shared by the three catalogue tabs — an article
+/// added from any of them piles onto the same draft.
+void _addToDraft(WidgetRef ref, CatalogItem item, num quantity) {
+  ref
+      .read(quoteDraftProvider.notifier)
+      .addArticle(
+        DraftLine(
+          catalogItemId: item.id,
+          designation: item.designation,
+          unit: item.unit,
+          quantity: quantity,
+          unitPriceHt: item.unitPriceHt,
+          vatRate: item.vatRate,
+        ),
+      );
 }
 
-class _DossierStepState extends ConsumerState<_DossierStep> {
-  Future<void> _activateMetier() async {
-    // The catalog is empty — send the artisan to "Mes métiers", then refresh
-    // the folder list so a métier activated there shows up on return.
-    await context.push('/metiers');
-    if (!mounted) return;
-    ref.invalidate(foldersProvider);
-  }
+/// The Catalogue step: one decision — "what goes on the quote?" — reached three
+/// ways, each an onglet with its own search. **Catalogue** browses by trade
+/// (métier → dossier → articles), **Articles** searches every article flat, and
+/// **Caisse à outils** picks from the artisan's favourites. Replaces the former
+/// two steps (Dossier + Articles). It runs full-height (tabs + self-scrolling
+/// lists), so it isn't wrapped in the standard scrolling step scaffold.
+class _CatalogueStep extends StatelessWidget {
+  const _CatalogueStep();
 
   @override
   Widget build(BuildContext context) {
-    final folders = ref.watch(foldersProvider);
-    final openId = ref.watch(selectedFolderProvider);
-
-    return folders.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.all(ArtizenSpacing.lg),
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, _) => ErrorState(
-        error: error,
-        onRetry: () => ref.invalidate(foldersProvider),
-      ),
-      data: (list) => list.isEmpty
-          ? _EmptyCatalog(onActivate: _activateMetier)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (final folder in list)
-                  _FolderCard(
-                    folder: folder,
-                    open: folder.id == openId,
-                    // The one thing this step does: open a folder — which also
-                    // asks the wizard to move on to the Articles step, so a tap
-                    // is enough (no second click on Suivant). Opening the same
-                    // one again is a harmless no-op that still advances.
-                    onTap: () {
-                      ref.read(selectedFolderProvider.notifier).open(folder.id);
-                      ref.read(wizardAdvanceRequestProvider.notifier).state++;
-                    },
-                  ),
-              ],
-            ),
-    );
-  }
-}
-
-/// One catalog folder, made scannable: its name, how many articles it holds,
-/// and a representative preview of what is inside — so the artisan knows at a
-/// glance what he'll find before opening it. Everything shown comes straight
-/// from `GET /catalog/categories/overview`; nothing is inferred client-side.
-class _FolderCard extends StatelessWidget {
-  const _FolderCard({
-    required this.folder,
-    required this.open,
-    required this.onTap,
-  });
-
-  final CategoryOverview folder;
-  final bool open;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final count = folder.itemCount;
-    final hasPreview = folder.sampleDesignations.isNotEmpty;
-    return Card(
-      color: open ? ArtizenColors.infoSurface : null,
-      child: ListTile(
-        leading: Icon(
-          Icons.folder_outlined,
-          color: open ? ArtizenColors.success : ArtizenColors.nightBlue,
-        ),
-        title: Text(
-          folder.name,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('$count article${count > 1 ? 's' : ''}'),
-            if (hasPreview)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  'Aperçu : ${folder.sampleDesignations.join(', ')}…',
-                  style: const TextStyle(
-                    color: ArtizenColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            if (open)
-              const Padding(
-                padding: EdgeInsets.only(top: 4),
-                child: Text(
-                  'Dossier ouvert',
-                  style: TextStyle(
-                    color: ArtizenColors.success,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        isThreeLine: hasPreview,
-        trailing: open
-            ? const Icon(
-                Icons.check_circle,
-                color: ArtizenColors.success,
-                semanticLabel: 'Dossier ouvert',
-              )
-            : null,
-        selected: open,
-        onTap: onTap,
-      ),
-    );
-  }
-}
-
-/// An actionable empty state: a catalog with no folder is a dead end unless it
-/// points the artisan at where folders come from — activating a métier.
-class _EmptyCatalog extends StatelessWidget {
-  const _EmptyCatalog({required this.onActivate});
-
-  final VoidCallback onActivate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(ArtizenSpacing.md),
-          child: Row(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: DefaultTabController(
+          length: 3,
+          child: Column(
             children: [
-              Icon(
-                Icons.folder_off_outlined,
-                color: ArtizenColors.textSecondary,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  ArtizenSpacing.md,
+                  ArtizenSpacing.md,
+                  ArtizenSpacing.md,
+                  ArtizenSpacing.xs,
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: ArtizenColors.infoSurface,
+                      child: Icon(
+                        WizardStep.catalogue.icon,
+                        color: ArtizenColors.nightBlue,
+                      ),
+                    ),
+                    const SizedBox(width: ArtizenSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        WizardStep.catalogue.question,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(width: ArtizenSpacing.sm),
-              Expanded(
-                child: Text(
-                  "Votre catalogue est vide. Activez un métier pour le remplir "
-                  "de dossiers et d'articles.",
+              const TabBar(
+                labelColor: ArtizenColors.nightBlue,
+                unselectedLabelColor: ArtizenColors.textSecondary,
+                indicatorColor: ArtizenColors.gold,
+                labelStyle: TextStyle(fontWeight: FontWeight.w700),
+                tabs: [
+                  Tab(text: 'Catalogue'),
+                  Tab(text: 'Articles'),
+                  Tab(text: 'Caisse à outils'),
+                ],
+              ),
+              const Expanded(
+                child: TabBarView(
+                  children: [
+                    _CatalogueBrowseTab(),
+                    _CatalogueArticlesTab(),
+                    _CatalogueToolboxTab(),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-        OutlinedButton.icon(
-          onPressed: onActivate,
-          icon: const Icon(Icons.build_outlined),
-          label: const Text('Activer un métier'),
-        ),
-      ],
+      ),
     );
   }
 }
 
-// --- Étape 3 : Articles — quoi ? -------------------------------------------
+/// A scrollable list of articles, each with the − N + / ✔ add control (the
+/// [_ArticleRow] used everywhere in the wizard). The draft is the single source
+/// of each row's quantity. Shared by the three catalogue tabs.
+class _ArticleList extends ConsumerWidget {
+  const _ArticleList({required this.items, required this.emptyMessage});
 
-class _ArticlesStep extends ConsumerStatefulWidget {
-  const _ArticlesStep();
-
-  @override
-  ConsumerState<_ArticlesStep> createState() => _ArticlesStepState();
-}
-
-class _ArticlesStepState extends ConsumerState<_ArticlesStep> {
-  /// Mirrors the search field so the empty state tells "empty folder" from
-  /// "nothing matches this search".
-  String _query = '';
-
-  /// Snapshot the catalog article onto the draft line (décision 5): its
-  /// designation, unit and price travel with the line. No amount is computed
-  /// here — totals come from the backend at the Récap step.
-  void _add(CatalogItem item, num quantity) {
-    ref
-        .read(quoteDraftProvider.notifier)
-        .addArticle(
-          DraftLine(
-            catalogItemId: item.id,
-            designation: item.designation,
-            unit: item.unit,
-            quantity: quantity,
-            unitPriceHt: item.unitPriceHt,
-            vatRate: item.vatRate,
-          ),
-        );
-  }
+  final List<CatalogItem> items;
+  final String emptyMessage;
 
   @override
-  Widget build(BuildContext context) {
-    final openFolder = ref.watch(selectedFolderProvider);
-    if (openFolder == null) {
-      // Reaching this step means a folder is open (gating), but stay safe.
-      return const Padding(
-        padding: EdgeInsets.all(ArtizenSpacing.md),
-        child: Text('Ouvrez d\'abord un dossier à l\'étape précédente.'),
-      );
-    }
-
-    final results = ref.watch(articlePickerProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (items.isEmpty) return _CatalogueEmpty(message: emptyMessage);
     final quantityByItem = ref.watch(
       quoteDraftProvider.select(
         (draft) => {
@@ -478,49 +369,363 @@ class _ArticlesStepState extends ConsumerState<_ArticlesStep> {
         },
       ),
     );
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(
+        ArtizenSpacing.sm,
+        ArtizenSpacing.xs,
+        ArtizenSpacing.sm,
+        ArtizenSpacing.lg,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return _ArticleRow(
+          key: ValueKey(item.id),
+          item: item,
+          quantity: quantityByItem[item.id],
+          onAdd: (qty) => _addToDraft(ref, item, qty),
+          onRemoveOne: () => ref
+              .read(quoteDraftProvider.notifier)
+              .setQuantity(item.id, (quantityByItem[item.id] ?? 1) - 1),
+        );
+      },
+    );
+  }
+}
 
+/// The "Articles" onglet: every active article, flat and server-searched.
+class _CatalogueArticlesTab extends ConsumerWidget {
+  const _CatalogueArticlesTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final results = ref.watch(catalogItemSearchProvider);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DebouncedSearchField(
-          hintText: 'Rechercher un article dans ce dossier',
-          isLoading: results.isLoading,
-          onChanged: (query) {
-            setState(() => _query = query.trim());
-            ref.read(articlePickerProvider.notifier).search(query);
-          },
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ArtizenSpacing.sm),
+          child: DebouncedSearchField(
+            hintText: 'Rechercher un article (désignation, code)',
+            isLoading: results.isLoading,
+            onChanged: (query) =>
+                ref.read(catalogItemSearchProvider.notifier).search(query),
+          ),
         ),
-        const SizedBox(height: ArtizenSpacing.sm),
-        results.when(
-          skipLoadingOnReload: true,
-          skipLoadingOnRefresh: true,
-          loading: () => const Padding(
-            padding: EdgeInsets.all(ArtizenSpacing.lg),
-            child: Center(child: CircularProgressIndicator()),
+        const SizedBox(height: ArtizenSpacing.xs),
+        Expanded(
+          child: results.when(
+            skipLoadingOnReload: true,
+            skipLoadingOnRefresh: true,
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => ErrorState(
+              error: error,
+              onRetry: () => ref.invalidate(catalogItemSearchProvider),
+            ),
+            data: (items) => _ArticleList(
+              items: items,
+              emptyMessage: 'Aucun article ne correspond à cette recherche.',
+            ),
           ),
-          error: (error, _) => ErrorState(
-            error: error,
-            onRetry: () => ref.invalidate(articlePickerProvider),
+        ),
+      ],
+    );
+  }
+}
+
+/// The "Caisse à outils" onglet: the artisan's starred favourites, searched
+/// client-side (a toolbox is a curated handful, not a paged catalogue).
+class _CatalogueToolboxTab extends ConsumerStatefulWidget {
+  const _CatalogueToolboxTab();
+
+  @override
+  ConsumerState<_CatalogueToolboxTab> createState() =>
+      _CatalogueToolboxTabState();
+}
+
+class _CatalogueToolboxTabState extends ConsumerState<_CatalogueToolboxTab> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final favourites = ref.watch(favoriteItemsProvider);
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ArtizenSpacing.sm),
+          child: DebouncedSearchField(
+            hintText: 'Rechercher dans la caisse à outils',
+            onChanged: (query) => setState(() => _query = query.trim()),
           ),
-          data: (items) => items.isEmpty
-              ? _EmptyArticles(query: _query)
-              : Column(
-                  children: [
-                    for (final item in items)
-                      _ArticleRow(
-                        key: ValueKey(item.id),
-                        item: item,
-                        quantity: quantityByItem[item.id],
-                        onAdd: (qty) => _add(item, qty),
-                        onRemoveOne: () => ref
-                            .read(quoteDraftProvider.notifier)
-                            .setQuantity(
-                              item.id,
-                              (quantityByItem[item.id] ?? 1) - 1,
-                            ),
-                      ),
-                  ],
+        ),
+        const SizedBox(height: ArtizenSpacing.xs),
+        Expanded(
+          child: favourites.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => ErrorState(
+              error: error,
+              onRetry: () => ref.invalidate(favoriteItemsProvider),
+            ),
+            data: (items) {
+              final query = _query.toLowerCase();
+              final filtered = query.isEmpty
+                  ? items
+                  : items
+                        .where(
+                          (item) =>
+                              item.designation.toLowerCase().contains(query) ||
+                              (item.code?.toLowerCase().contains(query) ??
+                                  false),
+                        )
+                        .toList();
+              return _ArticleList(
+                items: filtered,
+                emptyMessage: items.isEmpty
+                    ? 'Votre caisse à outils est vide. Ajoutez des favoris (🧰) '
+                          'depuis le catalogue.'
+                    : 'Aucun favori ne correspond à cette recherche.',
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The "Catalogue" onglet: browse by trade (métier → dossier), searchable, then
+/// drill into a folder to add its articles. Reuses the folder-scoped
+/// [articlePickerProvider] once a folder is open.
+class _CatalogueBrowseTab extends ConsumerStatefulWidget {
+  const _CatalogueBrowseTab();
+
+  @override
+  ConsumerState<_CatalogueBrowseTab> createState() =>
+      _CatalogueBrowseTabState();
+}
+
+class _CatalogueBrowseTabState extends ConsumerState<_CatalogueBrowseTab> {
+  String _treeQuery = '';
+
+  /// A métier whose name matches keeps all its folders; otherwise only the
+  /// folders whose name matches (a métier with neither is dropped).
+  List<(TradeGroup, List<TradeCategory>)> _filterTree(
+    List<TradeGroup> groups,
+    String query,
+  ) {
+    if (query.isEmpty) {
+      return [for (final group in groups) (group, group.categories)];
+    }
+    final result = <(TradeGroup, List<TradeCategory>)>[];
+    for (final group in groups) {
+      if (group.label.toLowerCase().contains(query)) {
+        result.add((group, group.categories));
+      } else {
+        final folders = group.categories
+            .where((category) => category.name.toLowerCase().contains(query))
+            .toList();
+        if (folders.isNotEmpty) result.add((group, folders));
+      }
+    }
+    return result;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // A folder is open: show its articles with a way back to the tree.
+    if (ref.watch(selectedFolderProvider) != null) {
+      return _FolderArticles(
+        onBack: () => ref.read(selectedFolderProvider.notifier).clear(),
+      );
+    }
+
+    final groups = ref.watch(catalogByTradeProvider);
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ArtizenSpacing.sm),
+          child: DebouncedSearchField(
+            hintText: 'Rechercher un métier ou un dossier',
+            onChanged: (query) => setState(() => _treeQuery = query.trim()),
+          ),
+        ),
+        const SizedBox(height: ArtizenSpacing.xs),
+        Expanded(
+          child: groups.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => ErrorState(
+              error: error,
+              onRetry: () =>
+                  ref.read(catalogByTradeProvider.notifier).refresh(),
+            ),
+            data: (list) {
+              if (list.isEmpty) {
+                return const _CatalogueEmpty(
+                  message:
+                      'Votre catalogue est vide. Activez un métier '
+                      '(Paramètres → Mes métiers) pour le remplir.',
+                );
+              }
+              final query = _treeQuery.toLowerCase();
+              final filtered = _filterTree(list, query);
+              if (filtered.isEmpty) {
+                return _CatalogueEmpty(
+                  message:
+                      'Aucun métier ni dossier ne correspond à « $_treeQuery ».',
+                );
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(
+                  ArtizenSpacing.sm,
+                  ArtizenSpacing.xs,
+                  ArtizenSpacing.sm,
+                  ArtizenSpacing.lg,
                 ),
+                itemCount: filtered.length,
+                itemBuilder: (context, index) {
+                  final (group, folders) = filtered[index];
+                  return _TradeTile(
+                    key: ValueKey('${group.label}|$query'),
+                    label: group.label,
+                    folders: folders,
+                    initiallyExpanded: query.isNotEmpty,
+                    onOpenFolder: (id) =>
+                        ref.read(selectedFolderProvider.notifier).open(id),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The articles of the folder currently open in the Catalogue onglet, with the
+/// same add control as everywhere else and a "back to folders" affordance.
+class _FolderArticles extends ConsumerWidget {
+  const _FolderArticles({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final results = ref.watch(articlePickerProvider);
+    return Column(
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back, size: 18),
+            label: const Text('Dossiers'),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ArtizenSpacing.sm),
+          child: DebouncedSearchField(
+            hintText: 'Rechercher dans ce dossier',
+            isLoading: results.isLoading,
+            onChanged: (query) =>
+                ref.read(articlePickerProvider.notifier).search(query),
+          ),
+        ),
+        const SizedBox(height: ArtizenSpacing.xs),
+        Expanded(
+          child: results.when(
+            skipLoadingOnReload: true,
+            skipLoadingOnRefresh: true,
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => ErrorState(
+              error: error,
+              onRetry: () => ref.invalidate(articlePickerProvider),
+            ),
+            data: (items) => _ArticleList(
+              items: items,
+              emptyMessage: 'Ce dossier ne contient aucun article.',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One métier in the Catalogue onglet's tree, opening to its folders; tapping a
+/// folder drills into its articles ([onOpenFolder]).
+class _TradeTile extends StatelessWidget {
+  const _TradeTile({
+    required this.label,
+    required this.folders,
+    required this.onOpenFolder,
+    this.initiallyExpanded = false,
+    super.key,
+  });
+
+  final String label;
+  final List<TradeCategory> folders;
+  final ValueChanged<String> onOpenFolder;
+  final bool initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = folders.length;
+    return Card(
+      child: ExpansionTile(
+        initiallyExpanded: initiallyExpanded,
+        leading: const CircleAvatar(child: Icon(Icons.handyman_outlined)),
+        title: Text(
+          label,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          '$count dossier${count > 1 ? 's' : ''}',
+          style: const TextStyle(
+            fontSize: 13,
+            color: ArtizenColors.textSecondary,
+          ),
+        ),
+        childrenPadding: const EdgeInsets.only(bottom: ArtizenSpacing.xs),
+        children: [
+          for (final folder in folders)
+            ListTile(
+              contentPadding: const EdgeInsets.only(left: 24, right: 12),
+              leading: const Icon(Icons.folder_outlined),
+              title: Text(folder.name),
+              trailing: Text(
+                '${folder.itemCount}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              onTap: () => onOpenFolder(folder.id),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A centred empty/placeholder message for a catalogue onglet.
+class _CatalogueEmpty extends StatelessWidget {
+  const _CatalogueEmpty({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(ArtizenSpacing.lg),
+      children: [
+        const SizedBox(height: 32),
+        const Icon(
+          Icons.inventory_2_outlined,
+          size: 40,
+          color: ArtizenColors.textSecondary,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: ArtizenColors.textSecondary),
         ),
       ],
     );
@@ -667,33 +872,6 @@ class _QuantityStepper extends StatelessWidget {
           onPressed: () => onChanged(value + 1),
         ),
       ],
-    );
-  }
-}
-
-/// Tells an empty folder apart from a search that matched nothing.
-class _EmptyArticles extends StatelessWidget {
-  const _EmptyArticles({required this.query});
-
-  final String query;
-
-  @override
-  Widget build(BuildContext context) {
-    final message = query.isEmpty
-        ? 'Ce dossier ne contient aucun article.'
-        : 'Aucun article ne correspond à « $query » dans ce dossier.';
-    return Padding(
-      padding: const EdgeInsets.all(ArtizenSpacing.md),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.search_off_outlined,
-            color: ArtizenColors.textSecondary,
-          ),
-          const SizedBox(width: ArtizenSpacing.sm),
-          Expanded(child: Text(message)),
-        ],
-      ),
     );
   }
 }

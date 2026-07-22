@@ -117,13 +117,13 @@ FilledButton _suivant(WidgetTester tester) =>
     tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Suivant'));
 
 Future<void> _chooseClientAndAdvance(WidgetTester tester) async {
-  // Tapping the client both selects it and advances to the Dossier step.
+  // Tapping the client both selects it and advances to the Catalogue step.
   await tester.tap(find.text('Dubois'));
   await tester.pumpAndSettle();
 }
 
 void main() {
-  testWidgets('opens on the Client step with the progress at 1/7', (
+  testWidgets('opens on the Client step with the progress at 1/6', (
     tester,
   ) async {
     await _pump(tester, clients: [_client('c1', 'Dubois')]);
@@ -132,7 +132,7 @@ void main() {
       find.text('Pour quel client faites-vous ce devis ?'),
       findsOneWidget,
     );
-    expect(find.text('Étape 1 / 7'), findsOneWidget);
+    expect(find.text('Étape 1 / 6'), findsOneWidget);
     expect(find.text('ARTIZEN'), findsOneWidget); // left menu is permanent
   });
 
@@ -150,14 +150,14 @@ void main() {
       await tester.tap(find.text('Dubois'));
       await tester.pumpAndSettle();
 
-      // Tapping the client is the answer — the wizard moves to the Dossier step
-      // without a second press on Suivant.
-      expect(find.text('Étape 2 / 7'), findsOneWidget);
+      // Tapping the client is the answer — the wizard moves to the Catalogue
+      // step without a second press on Suivant.
+      expect(find.text('Étape 2 / 6'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'the Dossier step lists folders with counts; opening one advances',
+    'the Catalogue step: adding an article from the Articles onglet enables Suivant',
     (tester) async {
       await _pump(
         tester,
@@ -168,16 +168,20 @@ void main() {
           _item('i2', 'cat1', 'Lavabo'),
         ],
       );
-      await _chooseClientAndAdvance(tester);
+      await _chooseClientAndAdvance(tester); // → Catalogue step
 
-      expect(find.text('Sanitaires'), findsOneWidget);
-      expect(find.text('2 articles'), findsOneWidget);
+      expect(find.text('Étape 2 / 6'), findsOneWidget);
+      expect(_suivant(tester).onPressed, isNull); // nothing added yet → gated
 
-      // Can't advance until a folder is open; opening one is itself the advance.
-      expect(_suivant(tester).onPressed, isNull);
-      await tester.tap(find.text('Sanitaires'));
+      // The flat "Articles" onglet lists every active article.
+      await tester.tap(find.text('Articles'));
       await tester.pumpAndSettle();
-      expect(find.text('Étape 3 / 7'), findsOneWidget);
+      expect(find.text('WC suspendu'), findsOneWidget);
+
+      // Adding one puts a line on the draft and unlocks Suivant.
+      await tester.tap(find.widgetWithText(FilledButton, 'Ajouter').first);
+      await tester.pumpAndSettle();
+      expect(_suivant(tester).onPressed, isNotNull);
     },
   );
 
@@ -188,7 +192,7 @@ void main() {
     await tester.tap(find.text('Récap'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Étape 1 / 7'), findsOneWidget); // blocked
+    expect(find.text('Étape 1 / 6'), findsOneWidget); // blocked
   });
 
   testWidgets('Précédent is disabled on the first step', (tester) async {
@@ -214,7 +218,7 @@ void main() {
     await tester.tap(find.text('Continuer le devis'));
     await tester.pumpAndSettle();
     // Choosing the client advanced to step 2; cancelling the exit stays there.
-    expect(find.text('Étape 2 / 7'), findsOneWidget); // still in the wizard
+    expect(find.text('Étape 2 / 6'), findsOneWidget); // still in the wizard
     expect(find.text('Ouvrir'), findsNothing);
   });
 
@@ -229,7 +233,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Ouvrir'), findsOneWidget); // back on the home route
-    expect(find.text('Étape 1 / 7'), findsNothing);
+    expect(find.text('Étape 1 / 6'), findsNothing);
   });
 
   testWidgets('leaving an empty draft does not prompt', (tester) async {

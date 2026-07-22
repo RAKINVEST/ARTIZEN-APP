@@ -11,7 +11,11 @@ import '../../../../core/theme/app_theme.dart';
 /// through [onLeave], which confirms before discarding an in-progress quote
 /// (décision 6). The menu never navigates away directly.
 class WizardLeftMenu extends StatelessWidget {
-  const WizardLeftMenu({required this.compact, required this.onLeave, super.key});
+  const WizardLeftMenu({
+    required this.compact,
+    required this.onLeave,
+    super.key,
+  });
 
   final bool compact;
 
@@ -21,9 +25,18 @@ class WizardLeftMenu extends StatelessWidget {
 
   static const _destinations = <_MenuDestination>[
     _MenuDestination('Accueil', Icons.home_outlined, '/dashboard'),
-    _MenuDestination('Devis', Icons.description_outlined, '/quotes', current: true),
+    _MenuDestination(
+      'Devis',
+      Icons.description_outlined,
+      '/quotes',
+      current: true,
+    ),
     _MenuDestination('Clients', Icons.people_outline, '/clients'),
-    _MenuDestination('Factures', Icons.receipt_long_outlined, null), // pas encore
+    _MenuDestination(
+      'Factures',
+      Icons.receipt_long_outlined,
+      null,
+    ), // pas encore
     _MenuDestination('Paramètres', Icons.settings_outlined, '/settings'),
   ];
 
@@ -37,7 +50,9 @@ class WizardLeftMenu extends StatelessWidget {
         children: [
           const SizedBox(height: ArtizenSpacing.md),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: compact ? 0 : ArtizenSpacing.sm),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 0 : ArtizenSpacing.sm,
+            ),
             child: Text(
               compact ? 'A' : 'ARTIZEN',
               textAlign: compact ? TextAlign.center : TextAlign.left,
@@ -51,7 +66,11 @@ class WizardLeftMenu extends StatelessWidget {
           ),
           const SizedBox(height: ArtizenSpacing.md),
           for (final destination in _destinations)
-            _MenuItem(destination: destination, compact: compact, onLeave: onLeave),
+            _MenuItem(
+              destination: destination,
+              compact: compact,
+              onLeave: onLeave,
+            ),
           const Spacer(),
           const Divider(color: Colors.white24, height: 1),
           _MenuItem(
@@ -86,8 +105,8 @@ class _MenuItem extends StatelessWidget {
     final color = destination.current
         ? ArtizenColors.gold
         : enabled
-            ? Colors.white
-            : Colors.white38;
+        ? Colors.white
+        : Colors.white38;
 
     final tile = InkWell(
       onTap: !enabled
@@ -98,9 +117,13 @@ class _MenuItem extends StatelessWidget {
           horizontal: compact ? 0 : ArtizenSpacing.sm,
           vertical: 12,
         ),
-        color: destination.current ? Colors.white.withValues(alpha: 0.06) : null,
+        color: destination.current
+            ? Colors.white.withValues(alpha: 0.06)
+            : null,
         child: Row(
-          mainAxisAlignment: compact ? MainAxisAlignment.center : MainAxisAlignment.start,
+          mainAxisAlignment: compact
+              ? MainAxisAlignment.center
+              : MainAxisAlignment.start,
           children: [
             Icon(destination.icon, color: color, size: 22),
             if (!compact) ...[
@@ -118,14 +141,17 @@ class _MenuItem extends StatelessWidget {
       ),
     );
 
-    return compact
-        ? Tooltip(message: destination.label, child: tile)
-        : tile;
+    return compact ? Tooltip(message: destination.label, child: tile) : tile;
   }
 }
 
 class _MenuDestination {
-  const _MenuDestination(this.label, this.icon, this.route, {this.current = false});
+  const _MenuDestination(
+    this.label,
+    this.icon,
+    this.route, {
+    this.current = false,
+  });
 
   final String label;
   final IconData icon;

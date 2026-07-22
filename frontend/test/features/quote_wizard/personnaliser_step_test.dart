@@ -12,22 +12,23 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../support/fake_repositories.dart';
 
 Client _client(String id, String name) => Client(
-      id: id,
-      companyId: 'co1',
-      lastName: name,
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+  id: id,
+  companyId: 'co1',
+  lastName: name,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
 CatalogCategory _category(String id, String name) => CatalogCategory(
-      id: id,
-      companyId: 'co1',
-      name: name,
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+  id: id,
+  companyId: 'co1',
+  name: name,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
-CatalogItem _item(String id, String categoryId, String designation) => CatalogItem(
+CatalogItem _item(String id, String categoryId, String designation) =>
+    CatalogItem(
       id: id,
       companyId: 'co1',
       categoryId: categoryId,
@@ -45,46 +46,47 @@ FilledButton _suivant(WidgetTester tester) =>
     tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Suivant'));
 
 Finder _addButtonFor(String designation) => find.descendant(
-      of: find.ancestor(of: find.text(designation), matching: find.byType(Card)),
-      matching: find.widgetWithText(FilledButton, 'Ajouter'),
-    );
+  of: find.ancestor(of: find.text(designation), matching: find.byType(Card)),
+  matching: find.widgetWithText(FilledButton, 'Ajouter'),
+);
 
 /// The value cell of a totals row (e.g. the "€" amount next to "Total TTC").
 Finder _totalValue(String label, String value) => find.descendant(
-      of: find.ancestor(of: find.text(label), matching: find.byType(Row)).first,
-      matching: find.text(value),
-    );
+  of: find.ancestor(of: find.text(label), matching: find.byType(Row)).first,
+  matching: find.text(value),
+);
 
-/// Boots the wizard and walks Client → Dossier → Articles → Personnaliser,
-/// adding [add] on the way, then lets the debounced recalculation settle.
+/// Boots the wizard and walks Client → Catalogue (Articles onglet) →
+/// Personnaliser, adding [add] on the way, then lets the debounced
+/// recalculation settle. Articles are added from the flat "Articles" onglet of
+/// the single Catalogue step (which replaced the old Dossier + Articles steps).
 Future<void> _pumpToPersonnaliser(
   WidgetTester tester, {
   required List<CatalogCategory> categories,
   required List<CatalogItem> items,
-  required String open,
   required List<String> add,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         currentCompanyIdProvider.overrideWith((ref) async => 'co1'),
-        clientsRepositoryProvider
-            .overrideWithValue(FakeClientsRepository([_client('c1', 'Dubois')])),
-        catalogRepositoryProvider
-            .overrideWithValue(FakeCatalogRepository([...categories], [...items])),
-        quotesRepositoryProvider.overrideWithValue(FakeQuotesRepository(const [])),
+        clientsRepositoryProvider.overrideWithValue(
+          FakeClientsRepository([_client('c1', 'Dubois')]),
+        ),
+        catalogRepositoryProvider.overrideWithValue(
+          FakeCatalogRepository([...categories], [...items]),
+        ),
+        quotesRepositoryProvider.overrideWithValue(
+          FakeQuotesRepository(const []),
+        ),
       ],
       child: const MaterialApp(home: QuoteWizardScreen()),
     ),
   );
   await tester.pumpAndSettle();
   await tester.tap(find.text('Dubois'));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Suivant')); // Dossier
-  await tester.pumpAndSettle();
-  await tester.tap(find.text(open));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Suivant')); // Articles
+  await tester.pumpAndSettle(); // choosing the client advances to Catalogue
+  await tester.tap(find.text('Articles')); // the flat "Articles" onglet
   await tester.pumpAndSettle();
   for (final designation in add) {
     await tester.tap(_addButtonFor(designation));
@@ -92,18 +94,20 @@ Future<void> _pumpToPersonnaliser(
   }
   await tester.tap(find.text('Suivant')); // Personnaliser
   await tester.pumpAndSettle();
-  await tester.pump(const Duration(milliseconds: 500)); // outlast the recalc debounce
+  await tester.pump(
+    const Duration(milliseconds: 500),
+  ); // outlast the recalc debounce
   await tester.pumpAndSettle();
 }
 
 void main() {
-  testWidgets('shows each line with its quantity and catalog unit price',
-      (tester) async {
+  testWidgets('shows each line with its quantity and catalog unit price', (
+    tester,
+  ) async {
     await _pumpToPersonnaliser(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
       items: [_item('i1', 'cat1', 'WC suspendu')],
-      open: 'Sanitaires',
       add: ['WC suspendu'],
     );
 
@@ -112,12 +116,13 @@ void main() {
     expect(find.text('1'), findsOneWidget); // the quantity stepper
   });
 
-  testWidgets('shows backend totals once the calculation lands', (tester) async {
+  testWidgets('shows backend totals once the calculation lands', (
+    tester,
+  ) async {
     await _pumpToPersonnaliser(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
       items: [_item('i1', 'cat1', 'WC suspendu')],
-      open: 'Sanitaires',
       add: ['WC suspendu'],
     );
 
@@ -126,12 +131,13 @@ void main() {
     expect(_totalValue('Total TTC', '1 €'), findsOneWidget);
   });
 
-  testWidgets('increasing a quantity re-prices via the backend', (tester) async {
+  testWidgets('increasing a quantity re-prices via the backend', (
+    tester,
+  ) async {
     await _pumpToPersonnaliser(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
       items: [_item('i1', 'cat1', 'WC suspendu')],
-      open: 'Sanitaires',
       add: ['WC suspendu'],
     );
 
@@ -140,16 +146,23 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
 
-    expect(find.text('2'), findsOneWidget); // quantity updated (immediate, draft)
-    expect(_totalValue('Total TTC', '2 €'), findsOneWidget); // total re-priced (backend)
+    expect(
+      find.text('2'),
+      findsOneWidget,
+    ); // quantity updated (immediate, draft)
+    expect(
+      _totalValue('Total TTC', '2 €'),
+      findsOneWidget,
+    ); // total re-priced (backend)
   });
 
-  testWidgets('decreasing a quantity re-prices via the backend', (tester) async {
+  testWidgets('decreasing a quantity re-prices via the backend', (
+    tester,
+  ) async {
     await _pumpToPersonnaliser(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
       items: [_item('i1', 'cat1', 'WC suspendu')],
-      open: 'Sanitaires',
       add: ['WC suspendu'],
     );
     await tester.tap(find.byTooltip('Augmenter la quantité')); // to 2
@@ -164,13 +177,13 @@ void main() {
     expect(_totalValue('Total TTC', '1 €'), findsOneWidget);
   });
 
-  testWidgets('removing the last line empties the step and re-gates it',
-      (tester) async {
+  testWidgets('removing the last line empties the step and re-gates it', (
+    tester,
+  ) async {
     await _pumpToPersonnaliser(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
       items: [_item('i1', 'cat1', 'WC suspendu')],
-      open: 'Sanitaires',
       add: ['WC suspendu'],
     );
 
@@ -185,8 +198,10 @@ void main() {
     await _pumpToPersonnaliser(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
-      items: [_item('i1', 'cat1', 'WC suspendu'), _item('i2', 'cat1', 'Lavabo')],
-      open: 'Sanitaires',
+      items: [
+        _item('i1', 'cat1', 'WC suspendu'),
+        _item('i2', 'cat1', 'Lavabo'),
+      ],
       add: ['WC suspendu', 'Lavabo'],
     );
 
@@ -196,18 +211,19 @@ void main() {
     expect(_totalValue('Total TTC', '2 €'), findsOneWidget);
   });
 
-  testWidgets('an adjusted quantity survives leaving and returning', (tester) async {
+  testWidgets('an adjusted quantity survives leaving and returning', (
+    tester,
+  ) async {
     await _pumpToPersonnaliser(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
       items: [_item('i1', 'cat1', 'WC suspendu')],
-      open: 'Sanitaires',
       add: ['WC suspendu'],
     );
     await tester.tap(find.byTooltip('Augmenter la quantité')); // to 2
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Précédent')); // back to Articles
+    await tester.tap(find.text('Précédent')); // back to Catalogue
     await tester.pumpAndSettle();
     await tester.tap(find.text('Suivant')); // forward to Personnaliser
     await tester.pumpAndSettle();

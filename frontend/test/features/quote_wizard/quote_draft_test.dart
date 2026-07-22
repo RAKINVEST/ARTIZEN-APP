@@ -8,18 +8,22 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../support/fake_repositories.dart';
 
 DraftLine _line(String id, {num quantity = 1}) => DraftLine(
-      catalogItemId: id,
-      designation: 'Article $id',
-      unit: 'unité',
-      quantity: quantity,
-      unitPriceHt: '10.00',
-      vatRate: '10.00',
-    );
+  catalogItemId: id,
+  designation: 'Article $id',
+  unit: 'unité',
+  quantity: quantity,
+  unitPriceHt: '10.00',
+  vatRate: '10.00',
+);
 
 void main() {
   ProviderContainer makeContainer() {
     final container = ProviderContainer(
-      overrides: [quotesRepositoryProvider.overrideWithValue(FakeQuotesRepository(const []))],
+      overrides: [
+        quotesRepositoryProvider.overrideWithValue(
+          FakeQuotesRepository(const []),
+        ),
+      ],
     );
     addTearDown(container.dispose);
     return container;
@@ -33,7 +37,9 @@ void main() {
 
   test('selectClient records the chosen client', () {
     final container = makeContainer();
-    container.read(quoteDraftProvider.notifier).selectClient(id: 'cl1', label: 'Martin Dubois');
+    container
+        .read(quoteDraftProvider.notifier)
+        .selectClient(id: 'cl1', label: 'Martin Dubois');
     final draft = container.read(quoteDraftProvider);
     expect(draft.clientId, 'cl1');
     expect(draft.clientLabel, 'Martin Dubois');
@@ -66,24 +72,27 @@ void main() {
     expect(container.read(quoteDraftProvider).lines.single.catalogItemId, 'b');
   });
 
-  test('recalculate stores the server calculation; an empty draft clears it', () async {
-    final container = makeContainer();
-    final draft = container.read(quoteDraftProvider.notifier);
-    draft.addArticle(_line('a'));
-    draft.addArticle(_line('b'));
+  test(
+    'recalculate stores the server calculation; an empty draft clears it',
+    () async {
+      final container = makeContainer();
+      final draft = container.read(quoteDraftProvider.notifier);
+      draft.addArticle(_line('a'));
+      draft.addArticle(_line('b'));
 
-    await draft.recalculate();
+      await draft.recalculate();
 
-    final calculation = container.read(quoteDraftProvider).calculation;
-    expect(calculation, isNotNull);
-    expect(calculation!.lines, hasLength(2));
-    expect(calculation.totalTtc, '2'); // fake echoes the line count
+      final calculation = container.read(quoteDraftProvider).calculation;
+      expect(calculation, isNotNull);
+      expect(calculation!.lines, hasLength(2));
+      expect(calculation.totalTtc, '2'); // fake echoes the line count
 
-    draft.removeLine('a');
-    draft.removeLine('b');
-    await draft.recalculate();
-    expect(container.read(quoteDraftProvider).calculation, isNull);
-  });
+      draft.removeLine('a');
+      draft.removeLine('b');
+      await draft.recalculate();
+      expect(container.read(quoteDraftProvider).calculation, isNull);
+    },
+  );
 
   test('step completion is decided from the draft, not the widgets', () {
     final container = makeContainer();
@@ -94,15 +103,11 @@ void main() {
     draft.selectClient(id: 'cl1', label: 'Martin');
     expect(container.read(stepCompleteProvider(WizardStep.client)), isTrue);
 
-    // Dossier step needs an open folder — navigation state, outside the draft.
-    expect(container.read(stepCompleteProvider(WizardStep.dossier)), isFalse);
-    container.read(selectedFolderProvider.notifier).open('cat1');
-    expect(container.read(stepCompleteProvider(WizardStep.dossier)), isTrue);
-
-    // Articles step needs at least one line.
-    expect(container.read(stepCompleteProvider(WizardStep.articles)), isFalse);
+    // The single Catalogue step (browse / articles / caisse à outils) needs at
+    // least one line on the quote.
+    expect(container.read(stepCompleteProvider(WizardStep.catalogue)), isFalse);
     draft.addArticle(_line('a'));
-    expect(container.read(stepCompleteProvider(WizardStep.articles)), isTrue);
+    expect(container.read(stepCompleteProvider(WizardStep.catalogue)), isTrue);
   });
 
   test('reset clears the client and the lines', () {

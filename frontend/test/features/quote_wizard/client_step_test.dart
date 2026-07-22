@@ -24,14 +24,6 @@ Client _client(String id, String name, {String? email}) => Client(
   updatedAt: DateTime(2026),
 );
 
-CatalogCategory _category(String id, String name) => CatalogCategory(
-  id: id,
-  companyId: 'co1',
-  name: name,
-  createdAt: DateTime(2026),
-  updatedAt: DateTime(2026),
-);
-
 /// A repository whose list always fails — for the network-error state.
 class _ThrowingClientsRepository extends FakeClientsRepository {
   _ThrowingClientsRepository() : super(const []);
@@ -198,7 +190,7 @@ void main() {
 
     // Tapping the client is the answer to "which client?" — the wizard moves
     // on without a second press on Suivant.
-    expect(find.text('Étape 2 / 7'), findsOneWidget);
+    expect(find.text('Étape 2 / 6'), findsOneWidget);
   });
 
   testWidgets('coming back and picking another client changes the selection', (
@@ -259,21 +251,17 @@ void main() {
     await tester.pumpAndSettle();
 
     // A fast double tap chooses the client once and advances once.
-    expect(find.text('Étape 2 / 7'), findsOneWidget);
+    expect(find.text('Étape 2 / 6'), findsOneWidget);
   });
 
   testWidgets('the chosen client survives moving to the next step and back', (
     tester,
   ) async {
-    await _pump(
-      tester,
-      clients: [_client('c1', 'Dubois')],
-      categories: [_category('cat1', 'Sanitaires')],
-    );
+    await _pump(tester, clients: [_client('c1', 'Dubois')]);
 
-    await tester.tap(find.text('Dubois')); // selects + advances to Dossier
+    await tester.tap(find.text('Dubois')); // selects + advances to Catalogue
     await tester.pumpAndSettle();
-    expect(find.text('Sanitaires'), findsOneWidget); // on the Dossier step
+    expect(find.text('Étape 2 / 6'), findsOneWidget); // on the Catalogue step
 
     await tester.tap(find.text('Précédent'));
     await tester.pumpAndSettle();

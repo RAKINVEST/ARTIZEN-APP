@@ -11,12 +11,12 @@ import 'package:go_router/go_router.dart';
 import '../../support/fake_repositories.dart';
 
 Client _client(String id, String name) => Client(
-      id: id,
-      companyId: 'co1',
-      lastName: name,
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+  id: id,
+  companyId: 'co1',
+  lastName: name,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
 /// Reproduces the *exact* mount the web build used: the wizard pushed
 /// full-screen on the ROOT navigator, on top of a `StatefulShellRoute`
@@ -38,7 +38,10 @@ Future<void> _pumpOverShell(WidgetTester tester) async {
             selectedIndex: shell.currentIndex,
             onDestinationSelected: (index) => shell.goBranch(index),
             destinations: const [
-              NavigationDestination(icon: Icon(Icons.description), label: 'Devis'),
+              NavigationDestination(
+                icon: Icon(Icons.description),
+                label: 'Devis',
+              ),
               NavigationDestination(icon: Icon(Icons.people), label: 'Clients'),
             ],
           ),
@@ -82,10 +85,12 @@ Future<void> _pumpOverShell(WidgetTester tester) async {
     ProviderScope(
       overrides: [
         currentCompanyIdProvider.overrideWith((ref) async => 'co1'),
-        clientsRepositoryProvider
-            .overrideWithValue(FakeClientsRepository([_client('c1', 'Dubois')])),
-        catalogRepositoryProvider
-            .overrideWithValue(FakeCatalogRepository(const [], const [])),
+        clientsRepositoryProvider.overrideWithValue(
+          FakeClientsRepository([_client('c1', 'Dubois')]),
+        ),
+        catalogRepositoryProvider.overrideWithValue(
+          FakeCatalogRepository(const [], const []),
+        ),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -96,30 +101,32 @@ Future<void> _pumpOverShell(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('wizard pushed over the shell shows its content, not just chrome',
-      (tester) async {
-    tester.view.physicalSize = const Size(1400, 900);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
+  testWidgets(
+    'wizard pushed over the shell shows its content, not just chrome',
+    (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
 
-    await _pumpOverShell(tester);
+      await _pumpOverShell(tester);
 
-    // The chrome that survived the bug:
-    expect(find.text('ARTIZEN'), findsOneWidget); // left menu
-    expect(find.text('Étape 1 / 7'), findsOneWidget); // progress bar
+      // The chrome that survived the bug:
+      expect(find.text('ARTIZEN'), findsOneWidget); // left menu
+      expect(find.text('Étape 1 / 6'), findsOneWidget); // progress bar
 
-    // The content that VANISHED in the bug — the flexible column collapsed to
-    // zero, so the step (question + client picker) never got any height.
-    expect(
-      find.text('Pour quel client faites-vous ce devis ?'),
-      findsOneWidget,
-      reason: 'the step content must render — this is the "devis vide" bug',
-    );
-    expect(find.text('Nouveau client'), findsOneWidget);
-    expect(find.byType(PageView), findsOneWidget);
+      // The content that VANISHED in the bug — the flexible column collapsed to
+      // zero, so the step (question + client picker) never got any height.
+      expect(
+        find.text('Pour quel client faites-vous ce devis ?'),
+        findsOneWidget,
+        reason: 'the step content must render — this is the "devis vide" bug',
+      );
+      expect(find.text('Nouveau client'), findsOneWidget);
+      expect(find.byType(PageView), findsOneWidget);
 
-    // And the PageView must have real height (the collapse showed as ~0).
-    final pageViewSize = tester.getSize(find.byType(PageView));
-    expect(pageViewSize.height, greaterThan(100));
-  });
+      // And the PageView must have real height (the collapse showed as ~0).
+      final pageViewSize = tester.getSize(find.byType(PageView));
+      expect(pageViewSize.height, greaterThan(100));
+    },
+  );
 }

@@ -222,9 +222,9 @@ final stepCompleteProvider = Provider.family<bool, WizardStep>((ref, step) {
   final draft = ref.watch(quoteDraftProvider);
   return switch (step) {
     WizardStep.client => draft.hasClient,
-    // Navigation state, not the draft: "a folder is open".
-    WizardStep.dossier => ref.watch(selectedFolderProvider) != null,
-    WizardStep.articles => draft.hasLines,
+    // One "Catalogue" step (browse / articles / caisse à outils) — complete
+    // as soon as at least one article is on the quote.
+    WizardStep.catalogue => draft.hasLines,
     WizardStep.personnaliser => draft.hasLines,
     WizardStep.recap => draft.hasValidCalculation,
     // Advancing off Créer means the quote has actually been created — the

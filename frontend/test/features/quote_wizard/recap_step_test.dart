@@ -12,22 +12,23 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../support/fake_repositories.dart';
 
 Client _client(String id, String name) => Client(
-      id: id,
-      companyId: 'co1',
-      lastName: name,
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+  id: id,
+  companyId: 'co1',
+  lastName: name,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
 CatalogCategory _category(String id, String name) => CatalogCategory(
-      id: id,
-      companyId: 'co1',
-      name: name,
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+  id: id,
+  companyId: 'co1',
+  name: name,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
-CatalogItem _item(String id, String categoryId, String designation) => CatalogItem(
+CatalogItem _item(String id, String categoryId, String designation) =>
+    CatalogItem(
       id: id,
       companyId: 'co1',
       categoryId: categoryId,
@@ -45,9 +46,9 @@ FilledButton _suivant(WidgetTester tester) =>
     tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Suivant'));
 
 Finder _addButtonFor(String designation) => find.descendant(
-      of: find.ancestor(of: find.text(designation), matching: find.byType(Card)),
-      matching: find.widgetWithText(FilledButton, 'Ajouter'),
-    );
+  of: find.ancestor(of: find.text(designation), matching: find.byType(Card)),
+  matching: find.widgetWithText(FilledButton, 'Ajouter'),
+);
 
 /// The recap's checklist card — scoped so assertions don't collide with the
 /// (still-mounted) Personnaliser totals behind the current page.
@@ -60,30 +61,29 @@ Future<void> _pumpToRecap(
   WidgetTester tester, {
   required List<CatalogCategory> categories,
   required List<CatalogItem> items,
-  required String open,
   required List<String> add,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         currentCompanyIdProvider.overrideWith((ref) async => 'co1'),
-        clientsRepositoryProvider
-            .overrideWithValue(FakeClientsRepository([_client('c1', 'Dubois')])),
-        catalogRepositoryProvider
-            .overrideWithValue(FakeCatalogRepository([...categories], [...items])),
-        quotesRepositoryProvider.overrideWithValue(FakeQuotesRepository(const [])),
+        clientsRepositoryProvider.overrideWithValue(
+          FakeClientsRepository([_client('c1', 'Dubois')]),
+        ),
+        catalogRepositoryProvider.overrideWithValue(
+          FakeCatalogRepository([...categories], [...items]),
+        ),
+        quotesRepositoryProvider.overrideWithValue(
+          FakeQuotesRepository(const []),
+        ),
       ],
       child: const MaterialApp(home: QuoteWizardScreen()),
     ),
   );
   await tester.pumpAndSettle();
   await tester.tap(find.text('Dubois'));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Suivant')); // Dossier
-  await tester.pumpAndSettle();
-  await tester.tap(find.text(open));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Suivant')); // Articles
+  await tester.pumpAndSettle(); // → Catalogue step
+  await tester.tap(find.text('Articles')); // the flat Articles onglet
   await tester.pumpAndSettle();
   for (final designation in add) {
     await tester.tap(_addButtonFor(designation));
@@ -93,35 +93,57 @@ Future<void> _pumpToRecap(
   await tester.pumpAndSettle();
   await tester.tap(find.text('Suivant')); // Récap
   await tester.pumpAndSettle();
-  await tester.pump(const Duration(milliseconds: 500)); // let the calculation land
+  await tester.pump(
+    const Duration(milliseconds: 500),
+  ); // let the calculation land
   await tester.pumpAndSettle();
 }
 
 void main() {
-  testWidgets('presents a quality-control checklist: client, line count, totals',
-      (tester) async {
+  testWidgets(
+    'presents a quality-control checklist: client, line count, totals',
+    (tester) async {
+      await _pumpToRecap(
+        tester,
+        categories: [_category('cat1', 'Sanitaires')],
+        items: [_item('i1', 'cat1', 'WC suspendu')],
+        add: ['WC suspendu'],
+      );
+
+      final checklist = _checklist();
+      expect(
+        find.descendant(of: checklist, matching: find.text('Dubois')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: checklist, matching: find.text('1 article')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: checklist, matching: find.text('Total HT')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: checklist, matching: find.text('TVA')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: checklist, matching: find.text('Total TTC')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('lists each quote line with its quantity and unit price', (
+    tester,
+  ) async {
     await _pumpToRecap(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
-      items: [_item('i1', 'cat1', 'WC suspendu')],
-      open: 'Sanitaires',
-      add: ['WC suspendu'],
-    );
-
-    final checklist = _checklist();
-    expect(find.descendant(of: checklist, matching: find.text('Dubois')), findsOneWidget);
-    expect(find.descendant(of: checklist, matching: find.text('1 article')), findsOneWidget);
-    expect(find.descendant(of: checklist, matching: find.text('Total HT')), findsOneWidget);
-    expect(find.descendant(of: checklist, matching: find.text('TVA')), findsOneWidget);
-    expect(find.descendant(of: checklist, matching: find.text('Total TTC')), findsOneWidget);
-  });
-
-  testWidgets('lists each quote line with its quantity and unit price', (tester) async {
-    await _pumpToRecap(
-      tester,
-      categories: [_category('cat1', 'Sanitaires')],
-      items: [_item('i1', 'cat1', 'WC suspendu'), _item('i2', 'cat1', 'Lavabo')],
-      open: 'Sanitaires',
+      items: [
+        _item('i1', 'cat1', 'WC suspendu'),
+        _item('i2', 'cat1', 'Lavabo'),
+      ],
       add: ['WC suspendu', 'Lavabo'],
     );
 
@@ -131,29 +153,38 @@ void main() {
     expect(find.textContaining('× 10.00 € HT'), findsNWidgets(2));
   });
 
-  testWidgets('totals are the backend calculation, not computed here',
-      (tester) async {
+  testWidgets('totals are the backend calculation, not computed here', (
+    tester,
+  ) async {
     await _pumpToRecap(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
-      items: [_item('i1', 'cat1', 'WC suspendu'), _item('i2', 'cat1', 'Lavabo')],
-      open: 'Sanitaires',
+      items: [
+        _item('i1', 'cat1', 'WC suspendu'),
+        _item('i2', 'cat1', 'Lavabo'),
+      ],
       add: ['WC suspendu', 'Lavabo'],
     );
 
     final checklist = _checklist();
     // Quantity-aware fake: two lines of quantity 1 total "2".
-    expect(find.descendant(of: checklist, matching: find.text('2 articles')), findsOneWidget);
-    expect(find.descendant(of: checklist, matching: find.text('2 €')), findsWidgets); // HT & TTC
+    expect(
+      find.descendant(of: checklist, matching: find.text('2 articles')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: checklist, matching: find.text('2 €')),
+      findsWidgets,
+    ); // HT & TTC
   });
 
-  testWidgets('with a valid calculation, the create step is reachable',
-      (tester) async {
+  testWidgets('with a valid calculation, the create step is reachable', (
+    tester,
+  ) async {
     await _pumpToRecap(
       tester,
       categories: [_category('cat1', 'Sanitaires')],
       items: [_item('i1', 'cat1', 'WC suspendu')],
-      open: 'Sanitaires',
       add: ['WC suspendu'],
     );
 
