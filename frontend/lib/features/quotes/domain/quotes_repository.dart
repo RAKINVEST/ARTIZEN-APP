@@ -39,6 +39,12 @@ abstract class QuotesRepository {
   /// be refused, never to decide in its place.
   Future<Quote> changeStatus(String id, QuoteStatus status);
 
+  /// Sends the quote to its client by email (the PDF attached) and marks it
+  /// sent — the "Envoyer par e-mail" action. Only a validated ("en attente")
+  /// quote can be sent, and only to a client that carries an email address
+  /// (the backend answers 422 otherwise). Returns the now-sent quote.
+  Future<Quote> sendByEmail(String id);
+
   /// The document the artisan sends. Returns the raw PDF bytes rather than
   /// a URL: the endpoint needs the `Authorization` header, so a plain link
   /// would 403. Fetching through Dio is what makes the interceptor apply.

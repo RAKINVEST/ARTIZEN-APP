@@ -374,3 +374,92 @@ def test_vat_breakdown_keeps_distinct_rates_separate_and_sorted() -> None:
 
 def test_vat_breakdown_of_no_lines_is_empty() -> None:
     assert QuoteCalculator().calculate_vat_breakdown([]) == []
+
+
+async def test_send_quote_emails_the_pdf_and_marks_it_sent(
+    client: AsyncClient, company_id: str, category_id: str
+) -> None:
+    from app.email.providers.mock import MockEmailProvider
+
+    recipient = "envoi-devis@artizen-qa.io"
+    cid = (
+        await client.post(
+            "/api/clients",
+            json={
+                "company_id": company_id,
+                "last_name": "Destinataire",
+                "email": recipient,
+            },
+        )
+    ).json()["id"]
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    created = await client.post(
+        "/api/quotes",
+        json={"client_id": cid, "lines": [{"catalog_item_id": item_id, "quantity": "1"}]},
+    )
+    quote_id = created.json()["id"]
+    number = created.json()["quote_number"]
+
+    # Validate (draft → pending) so it becomes sendable.
+    await client.put(f"/api/quotes/{quote_id}/status", json={"status": "pending"})
+
+    response = await client.post(f"/api/quotes/{quote_id}/send")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "sent"
+    message = MockEmailProvider.last_for(recipient)
+    assert message is not None
+    assert number in message["subject"]
+    assert message["attachments"] == [f"{number}.pdf"]
+
+
+async def test_send_quote_without_client_email_is_422(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    # The shared client fixture carries no email — there is nowhere to send it.
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="10.00", vat_rate="20.00"
+    )
+    quote_id = (
+        await client.post(
+            "/api/quotes",
+            json={
+                "client_id": client_id,
+                "lines": [{"catalog_item_id": item_id, "quantity": "1"}],
+            },
+        )
+    ).json()["id"]
+    await client.put(f"/api/quotes/{quote_id}/status", json={"status": "pending"})
+
+    response = await client.post(f"/api/quotes/{quote_id}/send")
+
+    assert response.status_code == 422
+
+
+async def test_send_quote_requires_validation_first(
+    client: AsyncClient, company_id: str, category_id: str
+) -> None:
+    # A brand-new quote is a draft; it must be validated (→ pending) before it
+    # can be sent, so sending a draft is refused.
+    recipient = "envoi-brouillon@artizen-qa.io"
+    cid = (
+        await client.post(
+            "/api/clients",
+            json={"company_id": company_id, "last_name": "X", "email": recipient},
+        )
+    ).json()["id"]
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="10.00", vat_rate="20.00"
+    )
+    quote_id = (
+        await client.post(
+            "/api/quotes",
+            json={"client_id": cid, "lines": [{"catalog_item_id": item_id, "quantity": "1"}]},
+        )
+    ).json()["id"]
+
+    response = await client.post(f"/api/quotes/{quote_id}/send")
+
+    assert response.status_code == 409  # draft → sent is not allowed

@@ -131,6 +131,16 @@ class QuotesNotifier extends PagedListNotifier<Quote> {
     return quote;
   }
 
+  /// Sends the quote to its client by email (PDF attached) and marks it sent.
+  /// Like [changeStatus], invalidates the single-quote provider so the detail
+  /// screen reflects the new status on return.
+  Future<Quote> sendByEmail(String id) async {
+    final quote = await ref.read(quotesRepositoryProvider).sendByEmail(id);
+    ref.invalidate(quoteByIdProvider(id));
+    await reload();
+    return quote;
+  }
+
   Future<void> deleteQuote(String id) async {
     await ref.read(quotesRepositoryProvider).delete(id);
     await reload();

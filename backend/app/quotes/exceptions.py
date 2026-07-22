@@ -34,3 +34,15 @@ class InvalidQuoteTransitionError(AppException):
 
     status_code = 409
     error_code = "invalid_quote_transition"
+
+
+class QuoteHasNoRecipientError(AppException):
+    """Raised when sending a quote by email but its client has no address.
+
+    422 rather than 409: the request is well-formed and the quote is in a
+    sendable state — the data is simply incomplete (the client is missing an
+    email), which the artisan fixes on the client, then retries.
+    """
+
+    status_code = 422
+    error_code = "quote_no_recipient"

@@ -203,6 +203,28 @@ void main() {
     });
   });
 
+  group('sendByEmail', () {
+    test('POSTs to /send and returns the now-sent quote', () async {
+      when(
+        () => dio.post<Map<String, dynamic>>('/quotes/q1/send'),
+      ).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/quotes/q1/send'),
+          statusCode: 200,
+          // The backend renders the PDF, emails it and flips the status.
+          data: _quoteJson(status: 'sent'),
+        ),
+      );
+
+      final quote = await repository.sendByEmail('q1');
+
+      expect(quote.status, QuoteStatus.sent);
+      verify(
+        () => dio.post<Map<String, dynamic>>('/quotes/q1/send'),
+      ).called(1);
+    });
+  });
+
   group('readiness', () {
     test('GETs /quotes/{id}/readiness and parses the verdict', () async {
       when(

@@ -22,6 +22,7 @@ from app.branding.service import BrandingService
 from app.catalog.repository import CatalogItemRepository
 from app.clients.repository import ClientRepository
 from app.core.exceptions import NotFoundError
+from app.email.base import EmailAttachment, EmailProvider
 from app.pdf.renderer import PdfRenderer
 from app.quotes.document_mapper import quote_to_document, sample_document
 from app.storage import StorageProvider
@@ -29,6 +30,7 @@ from app.quotes.calculator import LineTotals, QuoteCalculator, QuoteTotals
 from app.quotes.exceptions import (
     InactiveCatalogItemError,
     InvalidQuoteTransitionError,
+    QuoteHasNoRecipientError,
     QuoteNotEditableError,
 )
 from app.quotes.models import QUOTE_TRANSITIONS, Quote, QuoteLine, QuoteStatus
@@ -77,15 +79,18 @@ class QuoteService:
         session: AsyncSession,
         branding: BrandingService,
         storage: StorageProvider,
+        email: EmailProvider,
     ) -> None:
-        """``branding`` and ``storage`` are injected rather than built here:
-        rendering a document needs the artisan's identity and their logo
-        bytes, and both are somebody else's to own. quotes -> branding is a
-        one-way dependency, the same shape quote_assistant -> branding
-        already has."""
+        """``branding``, ``storage`` and ``email`` are injected rather than
+        built here: rendering a document needs the artisan's identity and their
+        logo bytes, and sending it needs the mail provider — all somebody else's
+        to own. quotes -> branding / email are one-way dependencies, the same
+        shape quote_assistant -> branding already has (email is infrastructure,
+        like storage)."""
         self._session = session
         self._branding = branding
         self._storage = storage
+        self._email = email
         self._renderer = PdfRenderer()
         self._quotes = QuoteRepository(session)
         self._lines = QuoteLineRepository(session)
@@ -431,6 +436,63 @@ class QuoteService:
             )
 
         quote.status = new_status
+        await self._session.flush()
+        await self._session.refresh(quote)
+        return await self._build_read(quote)
+
+    async def send_quote(self, quote_id: uuid.UUID) -> QuoteRead:
+        """Email the quote's PDF to its client, then mark it sent.
+
+        A quote is *sent* by actually leaving for the customer: this renders
+        the PDF, mails it to the client, and moves the quote to SENT in one
+        step. Only an "en attente" (validated) quote is sendable — a draft has
+        to be validated first, which the transition table enforces. The client
+        needs an email address; without one there is nowhere to send it (422).
+
+        Locked like every status change (read-decide-write): two concurrent
+        sends must not both transition and both mail. The mail goes out before
+        the transition is committed, but the EmailProvider never raises on a
+        delivery failure (its contract) — so a momentarily-down mail server
+        can't leave the quote stuck; operators watch the logs instead.
+        """
+        quote = await self._quotes.get_for_update(quote_id)
+        if quote is None:
+            raise NotFoundError(f"Quote {quote_id} not found.")
+        if quote.status == QuoteStatus.SENT:
+            # Idempotent: a retry of a send that already went through.
+            return await self._build_read(quote)
+        allowed = QUOTE_TRANSITIONS.get(quote.status, frozenset())
+        if QuoteStatus.SENT not in allowed:
+            raise InvalidQuoteTransitionError(
+                f"A quote in '{quote.status.value}' cannot be sent — it must be "
+                "validated first (status 'pending')."
+            )
+
+        client = await self._clients.get(quote.client_id)
+        recipient = ((client.email if client else None) or "").strip()
+        if not recipient:
+            raise QuoteHasNoRecipientError(
+                f"Le client du devis {quote.quote_number} n'a pas d'adresse "
+                "e-mail : ajoutez-en une pour lui envoyer le devis."
+            )
+
+        filename, pdf = await self.render_pdf(quote_id)
+        await self._email.send(
+            to=recipient,
+            subject=f"Votre devis {quote.quote_number}",
+            text_body=(
+                "Bonjour,\n\n"
+                f"Veuillez trouver ci-joint votre devis {quote.quote_number}.\n\n"
+                "Cordialement."
+            ),
+            attachments=[
+                EmailAttachment(
+                    filename=filename, content=pdf, media_type="application/pdf"
+                )
+            ],
+        )
+
+        quote.status = QuoteStatus.SENT
         await self._session.flush()
         await self._session.refresh(quote)
         return await self._build_read(quote)

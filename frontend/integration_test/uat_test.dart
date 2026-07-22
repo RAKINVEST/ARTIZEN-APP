@@ -139,13 +139,21 @@ void main() {
     // Still on the detail screen.
     expect(find.textContaining('DEV-'), findsWidgets);
 
-    debugPrint('UAT-STEP 9: send');
-    // --- Step 9: Envoyé ---
-    await waitFor(tester, find.text('Marquer comme envoyé'));
-    await tester.tap(find.text('Marquer comme envoyé'));
-    // Confirmation dialog.
-    await waitFor(tester, find.text('Marquer ce devis comme envoyé ?'));
-    await tester.tap(find.widgetWithText(FilledButton, 'Marquer comme envoyé').last);
+    debugPrint('UAT-STEP 9a: validate (brouillon → en attente)');
+    // --- Step 9a: Valider le devis (draft freezes into "en attente") ---
+    await waitFor(tester, find.text('Valider le devis'));
+    await tester.tap(find.text('Valider le devis'));
+    await waitFor(tester, find.text('Valider ce devis ?'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Valider').last);
+    await waitFor(tester, find.text('En attente'));
+
+    debugPrint('UAT-STEP 9b: send by email (en attente → envoyé)');
+    // --- Step 9b: Envoyer par e-mail (real email + PDF, marks it sent) ---
+    await waitFor(tester, find.text('Envoyer par e-mail'));
+    await tester.tap(find.text('Envoyer par e-mail'));
+    // Readiness gate passes silently for the seeded quote, then confirmation.
+    await waitFor(tester, find.text('Envoyer ce devis par e-mail ?'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Envoyer').last);
     await waitFor(tester, find.text('Envoyé'));
 
     debugPrint('UAT-STEP 10: accept');

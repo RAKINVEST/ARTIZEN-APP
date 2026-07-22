@@ -60,6 +60,12 @@ class QuotesRepositoryImpl implements QuotesRepository {
   }
 
   @override
+  Future<Quote> sendByEmail(String id) async {
+    final response = await _dio.post<Map<String, dynamic>>('/quotes/$id/send');
+    return Quote.fromJson(response.data!);
+  }
+
+  @override
   Future<Uint8List> downloadPdf(String id) async {
     // responseType: bytes — the default would try to decode the PDF as
     // JSON and hand back a mangled string.

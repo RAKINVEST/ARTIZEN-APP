@@ -239,6 +239,15 @@ class FakeQuotesRepository implements QuotesRepository {
   }
 
   @override
+  Future<Quote> sendByEmail(String id) async {
+    final index = _quotes.indexWhere((quote) => quote.id == id);
+    if (index < 0) throw StateError('quote $id not found');
+    final sent = _quotes[index].copyWith(status: QuoteStatus.sent);
+    _quotes[index] = sent;
+    return sent;
+  }
+
+  @override
   Future<Uint8List> downloadPdf(String id) async {
     throw UnimplementedError();
   }

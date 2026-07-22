@@ -189,6 +189,23 @@ async def change_quote_status(
     return await service.change_status(quote_id, payload.status)
 
 
+@router.post("/{quote_id}/send", response_model=QuoteRead)
+async def send_quote(
+    service: QuoteServiceDep, current_user: CurrentUserDep, quote_id: uuid.UUID
+) -> QuoteRead:
+    """Email the quote's PDF to its client, then mark it sent.
+
+    The "Envoyer par e-mail" action (en attente → envoyé). Only a validated
+    quote can be sent, and only to a client that has an email address (422
+    otherwise). The tenant check runs first — the PDF carries the company's
+    identity and the customer's address, so it must never leave for the wrong
+    tenant.
+    """
+    existing = await service.get(quote_id)
+    ensure_same_company(existing.company_id, quote_id, current_user.company_id)
+    return await service.send_quote(quote_id)
+
+
 @router.delete("/{quote_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_quote(
     service: QuoteServiceDep, current_user: CurrentUserDep, quote_id: uuid.UUID

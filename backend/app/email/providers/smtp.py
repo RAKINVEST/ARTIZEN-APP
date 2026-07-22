@@ -20,7 +20,7 @@ import logging
 import smtplib
 from email.message import EmailMessage
 
-from app.email.base import EmailProvider
+from app.email.base import EmailAttachment, EmailProvider
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,13 @@ class SmtpEmailProvider(EmailProvider):
         self._sender = sender
 
     async def send(
-        self, *, to: str, subject: str, text_body: str, html_body: str | None = None
+        self,
+        *,
+        to: str,
+        subject: str,
+        text_body: str,
+        html_body: str | None = None,
+        attachments: list[EmailAttachment] | None = None,
     ) -> None:
         message = EmailMessage()
         message["From"] = self._sender
@@ -57,6 +63,14 @@ class SmtpEmailProvider(EmailProvider):
         message.set_content(text_body)
         if html_body:
             message.add_alternative(html_body, subtype="html")
+        for attachment in attachments or []:
+            maintype, _, subtype = attachment.media_type.partition("/")
+            message.add_attachment(
+                attachment.content,
+                maintype=maintype or "application",
+                subtype=subtype or "octet-stream",
+                filename=attachment.filename,
+            )
 
         try:
             await asyncio.to_thread(self._deliver, message)

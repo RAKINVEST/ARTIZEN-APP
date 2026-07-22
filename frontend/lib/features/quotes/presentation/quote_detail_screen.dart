@@ -75,9 +75,9 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   Future<void> _changeStatus(Quote quote, QuoteStatus next) => _run(() async {
     // Validating a draft freezes it (no longer editable or deletable), so it
     // asks first — but no conformity check yet: the artisan is finalising, not
-    // emitting. Sending is the irreversible step (nothing ever returns to
-    // draft), so it earns both a conformity check and a confirmation.
-    // Recording the customer's answer afterwards does neither.
+    // emitting. Recording the customer's answer (accepté/refusé) does neither:
+    // it is a fact about a quote already sent. Sending itself is a step of its
+    // own (_send) — it emits a real email.
     if (next == QuoteStatus.pending) {
       final confirmed = await showConfirmDialog(
         context,
@@ -88,28 +88,42 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         confirmLabel: 'Valider',
       );
       if (!confirmed) return;
-    } else if (next == QuoteStatus.sent) {
-      final ready = await QuoteReadinessGate.ensureReady(
-        context: context,
-        ref: ref,
-        quote: quote,
-      );
-      if (!ready) return;
-      if (!mounted) return;
-      final confirmed = await showConfirmDialog(
-        context,
-        title: 'Marquer ce devis comme envoyé ?',
-        message:
-            'Le devis ${quote.quoteNumber} ne sera plus modifiable ni supprimable. '
-            'Vous pourrez ensuite indiquer si le client l\'accepte ou le refuse.',
-        confirmLabel: 'Marquer comme envoyé',
-      );
-      if (!confirmed) return;
     }
     await ref
         .read(quotesNotifierProvider.notifier)
         .changeStatus(quote.id, next);
   }, failureLabel: 'Changement de statut impossible');
+
+  Future<void> _send(Quote quote) => _run(() async {
+    // Sending is the irreversible step (nothing ever returns to draft), so it
+    // earns both a conformity check and a confirmation before the PDF actually
+    // leaves for the customer by email.
+    final ready = await QuoteReadinessGate.ensureReady(
+      context: context,
+      ref: ref,
+      quote: quote,
+    );
+    if (!ready) return;
+    if (!mounted) return;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Envoyer ce devis par e-mail ?',
+      message:
+          'Le devis ${quote.quoteNumber} sera envoyé au client (PDF joint) et '
+          "marqué comme envoyé. Il ne sera plus modifiable ; vous pourrez "
+          "ensuite indiquer si le client l'accepte ou le refuse.",
+      confirmLabel: 'Envoyer',
+    );
+    if (!confirmed) return;
+    await ref.read(quotesNotifierProvider.notifier).sendByEmail(quote.id);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Devis ${quote.quoteNumber} envoyé au client.'),
+        ),
+      );
+    }
+  }, failureLabel: "Envoi impossible");
 
   Future<void> _duplicate(Quote quote) async {
     // No confirmation: duplicating creates a new draft and changes nothing
@@ -258,6 +272,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                 quote: quote,
                 busy: _busy,
                 onChange: (next) => _changeStatus(quote, next),
+                onSend: () => _send(quote),
                 onDuplicate: () => _duplicate(quote),
                 onEdit: () => _edit(quote),
               ),
@@ -280,6 +295,7 @@ class _StatusActions extends StatelessWidget {
     required this.quote,
     required this.busy,
     required this.onChange,
+    required this.onSend,
     required this.onDuplicate,
     required this.onEdit,
   });
@@ -287,6 +303,7 @@ class _StatusActions extends StatelessWidget {
   final Quote quote;
   final bool busy;
   final ValueChanged<QuoteStatus> onChange;
+  final VoidCallback onSend;
   final VoidCallback onDuplicate;
   final VoidCallback onEdit;
 
@@ -336,10 +353,12 @@ class _StatusActions extends StatelessWidget {
               onPressed: busy ? null : () => onChange(status),
             )
           else if (status == QuoteStatus.sent)
+            // Sending is its own action (a real email with the PDF), not a
+            // plain status change — hence [onSend], not [onChange].
             AppPrimaryButton(
-              label: 'Marquer comme envoyé',
+              label: 'Envoyer par e-mail',
               icon: Icons.send_outlined,
-              onPressed: busy ? null : () => onChange(status),
+              onPressed: busy ? null : onSend,
             )
           else
             OutlinedButton.icon(
