@@ -115,34 +115,63 @@ Le dernier critère est le juge de dernier ressort, inscrit aussi dans les
 
 ---
 
-## Ce que ce moteur *n'est pas* — et l'état honnête aujourd'hui
+## Les deux modes — la distinction officielle (ADR-020)
 
-Cette distinction est vitale, sous peine de rompre la promesse en croyant la
-tenir :
+Sous la règle d'or, deux choses très différentes ne doivent **jamais** être
+confondues — ni pour l'artisan, ni pour l'équipe. C'est cette séparation qui rend
+la promesse honnête.
 
-- **Le produit livré aujourd'hui (V1/V2)** *applique* l'identité de l'artisan
-  (couleurs, logo, coordonnées détectées) sur **la mise en page d'ARTIZEN**. C'est
-  « votre identité, notre modèle ». L'« aperçu du rendu » de l'import montre
-  précisément cela. C'est utile et honnête **tant qu'on l'appelle « votre identité
-  appliquée »** — jamais « votre devis restitué ». Faire passer cet aperçu pour une
-  restitution à l'identique serait exactement la rupture de promesse que la règle
-  d'or interdit.
+### Mode 1 — Identité appliquée
+ARTIZEN reprend votre identité graphique (couleurs, logo, coordonnées) **sur son
+propre modèle**. C'est utile. C'est rapide. **Mais ce n'est pas une restitution.**
+→ C'est ce que le produit sait faire aujourd'hui ; l'« aperçu du rendu » de
+l'import en est l'exemple exact.
 
-- **Le moteur de restitution à l'identique** (ce document) est celui qui, à partir
-  du `.artizen` extrait, **redessine la mise en page exacte de l'artisan**. Il est
-  **gelé**, en attente du [Starter Corpus](../../Corpus/README.md) (5 devis réels),
-  et se développe contre lui, jamais sur un PDF maison (ADR-005). Aucune ligne de
-  code de rendu à l'identique n'est écrite sans un document réel qui la justifie.
+### Mode 2 — Restitution fidèle
+ARTIZEN **redessine votre devis à l'identique**, à partir du `.artizen` extrait.
+C'est la promesse ultime, celle que juge la règle d'or.
+→ C'est le moteur de *ce* document. **Gelé**, en attente du
+[Starter Corpus](../../Corpus/README.md) (5 devis réels), développé contre lui et
+jamais sur un PDF maison (ADR-005). Aucune ligne de code de rendu à l'identique
+n'est écrite sans un document réel qui la justifie.
 
-Autrement dit : *la règle d'or est déjà la loi ; le moteur qui la satisfait
+### Les mots réservés au Mode 2
+Ces expressions appartiennent **exclusivement** au Mode 2. Les employer pour
+décrire le Mode 1 est une rupture de promesse :
+
+> **à l'identique · restitution · fidèle · identité retrouvée**
+
+Le Mode 1 se décrit *« votre identité appliquée »*, **jamais** *« votre devis
+restitué »*. Faire passer l'« aperçu du rendu » actuel pour une restitution serait
+exactement la rupture que la règle d'or interdit.
+
+### Le parcours en trois temps
+| Étape | Nom (face à l'artisan) | Moteur |
+|---|---|---|
+| 1 | **Importer votre identité** | Mode 1 — déjà su faire |
+| 2 | **Restituer votre modèle** | Mode 2 — `.artizen` → renderer (gelé) |
+| 3 | **Créer tous vos futurs devis** | le bénéfice quotidien |
+
+Autrement dit : *la règle d'or est déjà la loi ; le Mode 2 qui la satisfait
 pleinement reste à construire, avec la discipline mesurée du reste du programme.*
 
 ---
 
 ## Statut
 
-**v1.0 — figée.** Décision fondatrice consignée en
-[ADR-019](DECISION_LOG.md). Toute évolution des interdits, de la checklist ou des
-critères exige une nouvelle version datée et motivée. Comme pour l'extraction,
-c'est ce qui permet au renderer d'évoluer de façon *contrôlée* sans jamais
-remettre en cause la promesse qu'il sert.
+**v1.0 — figée.** Décisions fondatrices consignées en
+[ADR-019](DECISION_LOG.md) (règle d'or) et [ADR-020](DECISION_LOG.md) (les deux
+modes). Toute évolution des interdits, de la checklist ou des critères exige une
+nouvelle version datée et motivée. Comme pour l'extraction, c'est ce qui permet au
+renderer d'évoluer de façon *contrôlée* sans jamais remettre en cause la promesse
+qu'il sert.
+
+---
+
+<br>
+
+> # Le renderer ne cherche pas à produire un beau devis.
+> # Il cherche à faire disparaître sa propre existence.
+>
+> ### On ne doit jamais reconnaître ARTIZEN.
+> ### On doit reconnaître l'artisan.

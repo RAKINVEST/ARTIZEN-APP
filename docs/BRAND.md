@@ -91,8 +91,12 @@ l'identique », les critères de validation — vit dans la constitution du rend
 
 **ARTIZEN révèle la vôtre.**
 
-Cette partie guide toutes les décisions produit : dès qu'une idée nous pousse à
-*imposer*, *standardiser* ou *générer à notre façon*, elle trahit la promesse.
+> Les autres disent : *« Personnalisez vos devis. »*
+> ARTIZEN dit : *« Nous ne personnalisons pas votre devis — nous retrouvons le vôtre. »*
+
+Cette nuance est tout le produit. Elle guide chaque décision : dès qu'une idée
+nous pousse à *imposer*, *standardiser* ou *générer à notre façon*, elle trahit la
+promesse.
 
 ---
 
@@ -113,6 +117,14 @@ produit, la doc, le site et les présentations :
 Note interne : le format technique `.artizen`, le « moteur » et l'« extraction »
 sont des termes **d'ingénierie**, réservés au code et à la doc technique. Ils ne
 paraissent **jamais** face à l'artisan.
+
+**Mots réservés au Mode 2 (restitution fidèle).** Même parmi les mots justes
+ci-dessus, *« à l'identique »*, *« restitution »*, *« fidèle »* et *« identité
+retrouvée »* ne décrivent **que** le mode où ARTIZEN redessine le devis à
+l'identique — jamais le mode « identité appliquée sur notre modèle » (aujourd'hui
+l'aperçu d'import). Les employer pour ce dernier est une **rupture de promesse**.
+La distinction officielle des deux modes vit dans
+[REPRODUCTION_SPEC](../backend/app/document_clone/REPRODUCTION_SPEC.md).
 
 ---
 
