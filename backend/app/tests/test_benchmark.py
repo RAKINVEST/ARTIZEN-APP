@@ -28,6 +28,7 @@ from app.document_clone.benchmark import (
     run_benchmark,
     to_json,
     to_markdown,
+    verify_replay,
 )
 from app.document_clone.renderer import render_artizen
 
@@ -135,6 +136,44 @@ def test_auto_pass_counts_zero_correction_documents(tmp_path) -> None:
     assert summary.auto_pass == 50.0
     assert summary.avg_validation_seconds is not None
     assert "Auto-pass" in to_markdown(report)
+
+
+def test_benchmark_is_reproducible_replay(tmp_path) -> None:
+    batappli = tmp_path / "Batappli"
+    batappli.mkdir()
+    _gold_standard(batappli, "batappli-001")
+
+    first = run_benchmark(tmp_path, label="v0.7")
+    second = run_benchmark(tmp_path, label="v0.7")
+
+    # Same corpus + same engine → identical fingerprint and identical output.
+    assert first.fingerprint == second.fingerprint
+    assert first.fingerprint  # non-empty
+    assert to_json(first) == to_json(second)
+
+    # Replay against the recorded run confirms exact reproduction…
+    history = append_history(None, first)
+    ok, _ = verify_replay(history, second)
+    assert ok is True
+
+    # …and a tampered fingerprint is caught as drift.
+    history["runs"][-1]["fingerprint"] = "deadbeefdead"
+    drifted, message = verify_replay(history, second)
+    assert drifted is False
+    assert "divergence" in message.lower()
+
+
+def test_run_number_increments_with_history(tmp_path) -> None:
+    batappli = tmp_path / "Batappli"
+    batappli.mkdir()
+    _gold_standard(batappli, "batappli-001")
+
+    r1 = run_benchmark(tmp_path, label="v0.1")
+    history = append_history(None, r1)
+    r2 = run_benchmark(tmp_path, label="v0.2", history=history)
+
+    assert r1.run == 1
+    assert r2.run == 2
 
 
 def test_regression_is_detected_against_history(tmp_path) -> None:

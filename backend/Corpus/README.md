@@ -187,12 +187,27 @@ docker compose exec backend python benchmark.py --label v0.5
 
 — parcourt tout le `Corpus/`, exécute la chaîne mesurable sur chaque document
 (Analyzer sur tous ; rendu + comparateur + certification sur les Gold Standards),
-et produit un rapport consolidé (Markdown + JSON) : les 4 KPIs par logiciel, les
+et produit un rapport consolidé (Markdown + JSON) : les 5 KPIs par logiciel, les
 certifications, et les **régressions** détectées face au run précédent. Chaque run
 s'ajoute à `benchmark_history.json` — le journal des tendances `v0.4 → v0.5 → v0.6`
 par logiciel, versionné. C'est l'instrument qui rend la Brique 4 *pilotable* :
 version après version, on voit objectivement si une modification améliore ou
 dégrade un logiciel donné.
+
+### Replay — des benchmarks reproductibles
+
+Chaque run est **rejouable**. Les octets de chaque document sont épinglés par un
+sha256 (`content_hash`), le moteur est déterministe (pas d'horloge, pas d'aléa,
+tri de sortie canonique), d'où une **empreinte de run** (`fingerprint`) sur les
+scores. Deux runs identiques → même empreinte.
+
+```
+python benchmark.py --label v0.8      # Run #48 · empreinte 1acc8a51e286
+python benchmark.py --replay          # ✓ reproduit à l'identique le run #48
+```
+
+On peut alors affirmer **sans ambiguïté** : « la v0.8 a fait baisser Batappli de
+99,3 à 98,9 » — seule une modif du code ou du corpus peut changer l'empreinte.
 
 Le tableau de bord du benchmark, une fois le corpus rempli, agrégera par source :
 
@@ -215,6 +230,12 @@ PDF à mesurer.)*
 
 Tant que l'étape 1 n'a pas de vrais fichiers, les briques 4 (extraction) et 5
 (enrichissement IA) restent des coquilles non prouvables.
+
+> **Avant d'écrire la Brique 4, lire sa constitution :
+> [`EXTRACTION_SPEC.md`](../app/document_clone/EXTRACTION_SPEC.md) (v1.0, figée).**
+> Elle définit ce qu'est un bloc, l'ordre d'extraction, les invariants, les
+> seuils d'erreur tolérés (coordonnée ≤ 0,1 pt, couleur ΔE < 2,0…) et la mesure
+> par sous-système. C'est le contrat que tout extracteur devra respecter.
 
 ## Évolution naturelle : la mémoire documentaire
 

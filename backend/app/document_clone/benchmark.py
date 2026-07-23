@@ -23,6 +23,7 @@ Brique 4's progress *pilotable*, version after version. The competitive moat is
 the corpus + these measurements, not the format.
 """
 
+import hashlib
 import json
 import statistics
 from dataclasses import asdict, dataclass, field
@@ -57,6 +58,8 @@ class DocResult:
     kind: str
     stars: int
     kpis: DocKpis
+    #: sha256 of the original PDF bytes — pins the exact input for Replay.
+    content_hash: str = ""
     notes: list[str] = field(default_factory=list)
 
 
@@ -81,6 +84,12 @@ class BenchmarkReport:
     total_documents: int
     sources: list[SourceSummary]
     documents: list[DocResult]
+    #: monotonic run number (Run #48) and the fingerprint of the results.
+    run: int = 0
+    #: sha256 over (input hash + KPI scores) of every document — two runs over
+    #: identical inputs and code produce the SAME fingerprint. That equality is
+    #: the Replay guarantee: "Run #48 → exactly the same results".
+    fingerprint: str = ""
     message: str = ""
 
 
@@ -102,6 +111,7 @@ def _load_json(path: Path) -> dict:
 
 def _evaluate(source: str, pdf_path: Path) -> DocResult:
     content = pdf_path.read_bytes()
+    content_hash = hashlib.sha256(content).hexdigest()[:16]
     quality = classify_pdf(content)
     kpis = DocKpis()
     notes: list[str] = []
@@ -151,8 +161,31 @@ def _evaluate(source: str, pdf_path: Path) -> DocResult:
         kind=quality.kind.value,
         stars=quality.stars,
         kpis=kpis,
+        content_hash=content_hash,
         notes=notes,
     )
+
+
+def _fingerprint(documents: list[DocResult]) -> str:
+    """A stable digest of (input hash + KPI scores) per document — identical
+    across runs iff the inputs and the engine are identical. Gap *ordering* and
+    read order are deliberately excluded: only what must be reproducible counts."""
+    payload = sorted(
+        (
+            {
+                "id": f"{d.source}/{d.document}",
+                "hash": d.content_hash,
+                "fidelity": d.kpis.fidelity,
+                "coverage": d.kpis.coverage,
+                "confidence": d.kpis.confidence,
+                "certification": d.kpis.certification,
+            }
+            for d in documents
+        ),
+        key=lambda e: e["id"],
+    )
+    blob = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:12]
 
 
 def _mean(values: list[float]) -> float | None:
@@ -213,10 +246,19 @@ def _last_run_by_source(history: dict | None) -> dict[str, dict]:
     return history["runs"][-1].get("sources", {})
 
 
+def _next_run_number(history: dict | None) -> int:
+    if not history or not history.get("runs"):
+        return 1
+    return int(history["runs"][-1].get("run", len(history["runs"]))) + 1
+
+
 def run_benchmark(
     corpus_dir: Path, *, label: str = "dev", history: dict | None = None
 ) -> BenchmarkReport:
-    """Run the full measurable chain over the corpus and build the report."""
+    """Run the full measurable chain over the corpus and build the report.
+
+    Deterministic by construction: no clock, no randomness, pure render/compare —
+    so re-running over the same corpus yields the same :attr:`fingerprint`."""
     documents = [_evaluate(source, pdf) for source, pdf in _iter_documents(corpus_dir)]
     sources = _summarise(documents, history)
     message = (
@@ -230,6 +272,8 @@ def run_benchmark(
         total_documents=len(documents),
         sources=sources,
         documents=documents,
+        run=_next_run_number(history),
+        fingerprint=_fingerprint(documents),
         message=message,
     )
 
@@ -251,7 +295,8 @@ def to_markdown(report: BenchmarkReport) -> str:
     lines = [
         f"# Benchmark ARTIZEN — {report.label}",
         "",
-        f"**{report.total_documents} document(s)** dans le corpus.",
+        f"**Run #{report.run}** · empreinte `{report.fingerprint}` · "
+        f"{report.total_documents} document(s).",
     ]
     if report.message:
         lines += ["", f"> {report.message}"]
@@ -307,7 +352,9 @@ def append_history(history: dict | None, report: BenchmarkReport) -> dict:
     history = history or {"runs": []}
     history["runs"].append(
         {
+            "run": report.run,
             "label": report.label,
+            "fingerprint": report.fingerprint,
             "sources": {
                 s.source: {
                     "fidelity": s.avg_fidelity,
@@ -320,3 +367,19 @@ def append_history(history: dict | None, report: BenchmarkReport) -> dict:
         }
     )
     return history
+
+
+def verify_replay(history: dict | None, report: BenchmarkReport) -> tuple[bool, str]:
+    """Replay check: does this fresh run reproduce a recorded one exactly? Matches
+    by fingerprint against the most recent stored run — the unambiguous answer to
+    "did anything change since run #N?"."""
+    runs = (history or {}).get("runs", [])
+    if not runs:
+        return False, "Aucun run enregistré — rien à rejouer."
+    last = runs[-1]
+    if last.get("fingerprint") == report.fingerprint:
+        return True, f"Reproduit à l'identique le run #{last.get('run')} ({report.fingerprint})."
+    return False, (
+        f"Divergence vs run #{last.get('run')} : "
+        f"{last.get('fingerprint')} → {report.fingerprint}."
+    )

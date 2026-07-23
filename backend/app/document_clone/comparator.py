@@ -187,8 +187,10 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
     if ref["images"] != cand["images"]:
         gaps.append(Gap("image", f"{ref['images']} → {cand['images']} images"))
 
-    # Worst displacements first, then the rest — the fix list, ordered.
-    gaps.sort(key=lambda g: -g.delta)
+    # Worst displacements first, then a total order (aspect, detail) so the fix
+    # list is byte-identical across processes — a prerequisite for replayable
+    # benchmarks (set iteration order must never leak into the output).
+    gaps.sort(key=lambda g: (-g.delta, g.aspect, g.detail))
 
     categories = {
         "Structure": text_recall,

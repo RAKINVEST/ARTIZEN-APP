@@ -22,6 +22,7 @@ from app.document_clone.benchmark import (
     run_benchmark,
     to_json,
     to_markdown,
+    verify_replay,
 )
 
 _DEFAULT_CORPUS = Path(__file__).parent / "Corpus"
@@ -34,6 +35,11 @@ def main() -> None:
     parser.add_argument(
         "--no-history", action="store_true", help="do not append to the history file"
     )
+    parser.add_argument(
+        "--replay",
+        action="store_true",
+        help="re-run and check it reproduces the last recorded run exactly",
+    )
     args = parser.parse_args()
 
     history_path = args.corpus / "benchmark_history.json"
@@ -44,6 +50,12 @@ def main() -> None:
     )
 
     report = run_benchmark(args.corpus, label=args.label, history=history)
+
+    if args.replay:
+        ok, message = verify_replay(history, report)
+        print(("✓ " if ok else "✗ ") + message)
+        return
+
     markdown = to_markdown(report)
     print(markdown)
 
