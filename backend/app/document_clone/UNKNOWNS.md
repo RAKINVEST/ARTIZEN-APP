@@ -39,3 +39,7 @@ dimensions sont complémentaires.
 
 *(À compléter à chaque expérience du Starter Corpus — la courbe descendante des
 inconnues ouvertes est le vrai tableau de bord de la Phase 3.)*
+
+Le détail de chaque expérience (hypothèse → mesure → décision) est tenu dans
+[EXPERIMENTS.md](EXPERIMENTS.md) — le registre qui ferme la boucle
+inconnue → expérience → ADR.

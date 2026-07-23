@@ -284,7 +284,14 @@ questions** :
 **Métrique phare de la Phase 3 : le nombre d'inconnues éliminées** (et non la
 fidélité). Les KPI disent la *performance* du moteur ; les inconnues disent la
 *compréhension* du problème — le burndown vit dans
-[UNKNOWNS.md](../app/document_clone/UNKNOWNS.md).
+[UNKNOWNS.md](../app/document_clone/UNKNOWNS.md), le détail des expériences
+(hypothèse → mesure → décision) dans
+[EXPERIMENTS.md](../app/document_clone/EXPERIMENTS.md).
+
+**Jalon 1** — le premier succès n'est pas un score de 99 %, c'est *un cycle
+complet mené à son terme* : une inconnue testée sur ~5 documents, tranchée,
+inscrite en ADR, retirée du registre. Prouver que le laboratoire produit de la
+connaissance passe avant prouver que le moteur est bon.
 
 **Critères de sortie** (R&D → Production) — mesurables, vérifiables par
 `python benchmark.py --phase` :
