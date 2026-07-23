@@ -16,7 +16,6 @@ import '../../features/catalog/presentation/toolbox_screen.dart';
 import '../../features/clients/presentation/client_form_screen.dart';
 import '../../features/clients/presentation/clients_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
-import '../../features/landing/presentation/landing_screen.dart';
 import '../../features/metiers/presentation/metiers_screen.dart';
 import '../../features/quote_assistant/presentation/quote_assistant_screen.dart';
 import '../../features/quote_wizard/presentation/quote_wizard_screen.dart';
@@ -31,8 +30,8 @@ import 'app_shell.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Routes reachable while signed out. `/` is the public marketing landing;
-/// `/reset-password` and `/forgot-password` belong here so a logged-out user
+/// Routes reachable while signed out. `/` is the public sign-in (the entry
+/// point); `/reset-password` and `/forgot-password` belong here so a logged-out user
 /// following the reset-email link isn't bounced to `/login` before they can
 /// set a new password.
 const _publicRoutes = {
@@ -50,9 +49,9 @@ const _publicRoutes = {
 const _signedInRedirectRoutes = {'/', '/login', '/register'};
 
 /// The route the app first shows when launched without a deep link (bare
-/// domain on the web, cold start elsewhere). Defaults to the public landing
-/// page; widget tests override it to start straight on `/login` so they can
-/// exercise the authenticated flow without driving the marketing page.
+/// domain on the web, cold start elsewhere). Defaults to `/` — the premium
+/// sign-in; widget tests override it to `/login` (same screen) to exercise the
+/// authenticated flow explicitly.
 final initialLocationProvider = Provider<String>((ref) => '/');
 
 /// Bridges [authNotifierProvider] to GoRouter's `refreshListenable` so a
@@ -88,8 +87,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // Public marketing landing at the site root, outside the tabbed shell.
-      GoRoute(path: '/', builder: (context, state) => const LandingScreen()),
+      // The premium sign-in IS the public entry point: the visitor discovers
+      // ARTIZEN, creates an account and logs in, all here. (The old marketing
+      // landing is retired — the brand story now lives in the sign-in itself.)
+      GoRoute(path: '/', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/register',
