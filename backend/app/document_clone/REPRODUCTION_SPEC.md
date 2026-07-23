@@ -66,6 +66,45 @@ devis futurs.
 
 ---
 
+## Le `.artizen` n'est pas un modèle — c'est une reconstruction paramétrique
+
+Le `.artizen` ne contient **jamais** « voici un modèle de devis ». Il contient
+« **voici la description complète du document original** ». La nuance paraît
+subtile ; elle est immense. On y distingue deux natures d'éléments :
+
+**1. Les éléments figés — reproduits à l'identique, immuables.**
+Coordonnées exactes, polices, couleurs, tableaux, bordures, marges, largeur des
+colonnes, hauteur des lignes, rayons d'arrondis, logo, en-têtes, pieds de page,
+zones de signature, mentions légales.
+
+**2. Les zones variables — uniquement les données métier.**
+Client, adresse, numéro de devis, date, lignes d'articles, quantités, prix, TVA,
+totaux. Elles varient — mais **vivent dans des emplacements fixes**. Le renderer ne
+décide jamais *où* les placer : il les **remplit**.
+
+### Le renderer ne compose jamais
+
+C'est peut-être la phrase la plus importante du document. Le renderer ne se dit
+**jamais** :
+
+- « le tableau est trop petit, je vais l'élargir » ;
+- « le texte déborde, je vais déplacer le total » ;
+- « je vais passer à la page suivante ».
+
+Toutes ces décisions ont **déjà été prises par le devis original**. Le renderer ne
+*compose* pas — il **exécute**.
+
+### Principe de conservation graphique
+
+> Toute propriété graphique extraite du document original est **immuable**. Seules
+> les données métier peuvent évoluer. Tout le reste est figé.
+
+C'est ce principe qui fait d'ARTIZEN un **moteur de conservation graphique**, pas
+un générateur : il ne crée pas une nouvelle identité visuelle, il **préserve**
+fidèlement celle de l'artisan.
+
+---
+
 ## La règle fondamentale — la séparation des rôles
 
 ```
@@ -162,6 +201,22 @@ Un développement du renderer n'est accepté que si **tous** sont vrais :
 
 Le dernier critère est le juge de dernier ressort, inscrit aussi dans les
 [SUCCESS_CRITERIA](SUCCESS_CRITERIA.md).
+
+---
+
+## Ce qui constitue un échec
+
+Même si le benchmark affiche **99,98 %**, que l'oracle est au vert et que le Double
+Gold est validé — **le moteur est en échec** si un artisan ouvre les deux PDF côte
+à côte et dit :
+
+> ### « Là, ce n'est pas mon devis. »
+
+Les métriques **guident** le développement ; elles n'en sont pas le juge. Le juge
+est la perception de l'artisan. Et un écart visible que les indicateurs n'ont pas
+attrapé n'est pas seulement un défaut du rendu — c'est un **défaut des
+indicateurs** : il faut comprendre *pourquoi* l'oracle ne l'a pas vu, et **améliorer
+l'oracle**. La règle d'or est au-dessus des chiffres, toujours.
 
 ---
 
