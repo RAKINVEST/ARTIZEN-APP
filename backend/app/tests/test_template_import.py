@@ -253,6 +253,64 @@ async def test_validate_without_a_logo_leaves_the_brand_logo_untouched(
     assert validate.json()["brand"]["logo_path"] is None
 
 
+async def test_sample_preview_returns_a_pdf_without_persisting_anything(
+    client: AsyncClient, company_id: str
+) -> None:
+    """The "aperçu du rendu" (montrer avant le oui): it must render a real PDF
+    from the proposed identity yet leave the company/brand untouched — the
+    invariant is that nothing is applied before the artisan confirms via
+    /validate."""
+    analysis_id = await _upload_and_process(client, company_id)
+
+    before = await client.get("/api/branding/profile")
+    before_company = before.json()["company"]
+    before_brand = before.json()["brand"]
+
+    response = await client.post(
+        f"/api/template-import/{analysis_id}/sample-preview",
+        json={"legal_name": "Ne Doit Pas Etre Enregistre", "primary_color": "#abcdef"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.content[:4] == b"%PDF"
+
+    after = await client.get("/api/branding/profile")
+    assert after.json()["company"]["legal_name"] == before_company["legal_name"]
+    assert after.json()["brand"]["primary_color"] == before_brand["primary_color"]
+
+
+async def test_sample_preview_requires_completed_analysis(
+    client: AsyncClient, company_id: str
+) -> None:
+    upload_response = await client.post(
+        "/api/document-analysis/upload",
+        data={"company_id": company_id, "document_type": "quote"},
+        files={"file": ("devis.pdf", io.BytesIO(_make_pdf_bytes()), "application/pdf")},
+    )
+    analysis_id = upload_response.json()["id"]
+
+    response = await client.post(
+        f"/api/template-import/{analysis_id}/sample-preview", json={}
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "document_not_processed"
+
+
+async def test_sample_preview_rejects_invoice_document(
+    client: AsyncClient, company_id: str
+) -> None:
+    analysis_id = await _upload_and_process(client, company_id, document_type="invoice")
+
+    response = await client.post(
+        f"/api/template-import/{analysis_id}/sample-preview", json={}
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "invalid_document_type_for_template"
+
+
 async def test_validate_deactivates_previous_active_template(
     client: AsyncClient, company_id: str
 ) -> None:

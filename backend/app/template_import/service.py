@@ -9,10 +9,17 @@ quote ``DocumentTemplate`` via ``branding``.
 No new table, no new extraction logic: every field this module surfaces
 or persists already exists somewhere in ``document_analysis``,
 ``document_detection`` or ``branding`` — this module is pure
-orchestration across three existing, unmodified services/repositories,
-the same one-directional "downstream module" pattern ``quotes`` used on
+orchestration across existing, unmodified services/repositories, the
+same one-directional "downstream module" pattern ``quotes`` used on
 ``catalog``+``clients`` and ``document_detection`` used on
 ``document_analysis``.
+
+It also reads from ``quotes`` (``QuoteService.render_sample_pdf_for_profile``)
+to render the "aperçu du rendu": the detected identity applied to a
+real-looking demo quote so the artisan sees it *before* confirming.
+One-directional (``quotes`` never imports ``template_import``) and
+justified — the preview *is* a quote preview, so it belongs to the quote
+renderer; template_import only feeds it a not-yet-persisted profile.
 """
 
 import uuid
@@ -27,6 +34,7 @@ from app.document_analysis.repository import DocumentAnalysisRepository
 from app.document_analysis.schemas import DocumentAnalysisRead
 from app.document_detection.schemas import DocumentDetectionResultRead
 from app.document_detection.service import DocumentDetectionService
+from app.quotes.service import QuoteService
 from app.template_import.exceptions import InvalidDocumentTypeForTemplateError
 from app.template_import.schemas import TemplateImportPreviewRead, TemplateImportValidateRequest
 
@@ -43,10 +51,12 @@ class TemplateImportService:
         analyses: DocumentAnalysisRepository,
         detection: DocumentDetectionService,
         branding: BrandingService,
+        quotes: QuoteService,
     ) -> None:
         self._analyses = analyses
         self._detection = detection
         self._branding = branding
+        self._quotes = quotes
 
     async def preview(
         self, analysis_id: uuid.UUID, *, company_id: uuid.UUID
@@ -61,6 +71,39 @@ class TemplateImportService:
             current_company=profile.company,
             current_brand=profile.brand,
         )
+
+    async def render_proposed_sample(
+        self, analysis_id: uuid.UUID, data: TemplateImportValidateRequest, *, company_id: uuid.UUID
+    ) -> tuple[str, bytes]:
+        """The "aperçu du rendu": a demo quote drawn with the *proposed*
+        identity (detected values, or what the artisan edited), applied on top
+        of the company's current profile **in memory only**. Persists nothing —
+        the artisan confirms from this preview, and only then does ``validate``
+        save it. Invariant #7 (nothing applied without explicit confirmation)
+        holds: this is the "montrer" that precedes the "oui"."""
+        await self._get_quote_analysis(analysis_id, company_id=company_id)
+        # Same guard as validate: raises if detection never completed.
+        detection = await self._detection.get_or_run(analysis_id, company_id=company_id)
+        profile = await self._branding.get_profile(company_id)
+
+        proposed = profile.model_copy(
+            update={
+                "company": profile.company.model_copy(
+                    update=data.model_dump(include=_COMPANY_FIELDS, exclude_unset=True)
+                ),
+                "brand": profile.brand.model_copy(
+                    update=data.model_dump(include=_BRAND_FIELDS, exclude_unset=True)
+                ),
+            }
+        )
+
+        # The detected logo is drawn but never stored — it only lands in the
+        # company logo when validate() runs, exactly like the other fields.
+        logo = None
+        if detection.logo_detected:
+            logo = await self._detection.extract_logo(analysis_id, company_id=company_id)
+
+        return await self._quotes.render_sample_pdf_for_profile(proposed, logo_override=logo)
 
     async def validate(
         self, analysis_id: uuid.UUID, data: TemplateImportValidateRequest, *, company_id: uuid.UUID

@@ -18,6 +18,7 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.branding.schemas import BrandingProfileRead
 from app.branding.service import BrandingService
 from app.catalog.repository import CatalogItemRepository
 from app.clients.repository import ClientRepository
@@ -432,7 +433,25 @@ class QuoteService:
         faithful to what a real quote will look like, and an artisan can
         confirm their logo, colours and identity landed before creating one."""
         profile = await self._branding.get_profile(company_id)
-        logo = await self._load_asset(profile.brand.logo_path)
+        return await self.render_sample_pdf_for_profile(profile)
+
+    async def render_sample_pdf_for_profile(
+        self, profile: BrandingProfileRead, *, logo_override: bytes | None = None
+    ) -> tuple[str, bytes]:
+        """Render the demo quote for an *arbitrary* branding profile, which may
+        hold values that are not (yet) persisted. This is what lets
+        ``template_import`` show the artisan their detected identity applied to
+        a real-looking quote *before* anything is saved — "montrer plutôt
+        qu'expliquer", without breaking the "nothing applied without explicit
+        confirmation" invariant.
+
+        ``logo_override`` is drawn instead of the profile's stored logo when
+        given (the logo freshly extracted from the imported PDF, held only in
+        memory); otherwise the profile's own stored logo is loaded, so a
+        company that already has one still sees it."""
+        logo = logo_override if logo_override is not None else await self._load_asset(
+            profile.brand.logo_path
+        )
         signature = await self._load_asset(profile.brand.signature_path)
         stamp = await self._load_asset(profile.brand.stamp_path)
         document = sample_document(profile=profile, logo=logo, signature=signature, stamp=stamp)

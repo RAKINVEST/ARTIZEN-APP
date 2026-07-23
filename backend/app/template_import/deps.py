@@ -13,6 +13,7 @@ from app.api.deps import SessionDep
 from app.branding.deps import BrandingServiceDep
 from app.document_analysis.repository import DocumentAnalysisRepository
 from app.document_detection.deps import DocumentDetectionServiceDep
+from app.quotes.deps import QuoteServiceDep
 from app.template_import.service import TemplateImportService
 
 
@@ -20,9 +21,13 @@ def get_template_import_service(
     session: SessionDep,
     branding: BrandingServiceDep,
     detection: DocumentDetectionServiceDep,
+    quotes: QuoteServiceDep,
 ) -> TemplateImportService:
     return TemplateImportService(
-        analyses=DocumentAnalysisRepository(session), detection=detection, branding=branding
+        analyses=DocumentAnalysisRepository(session),
+        detection=detection,
+        branding=branding,
+        quotes=quotes,
     )
 
 
