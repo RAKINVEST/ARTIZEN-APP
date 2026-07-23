@@ -1,8 +1,10 @@
-# L'âme d'ARTIZEN
+# L'âme d'ARTIZEN — la Constitution de la marque
 
-> Ce n'est pas un document marketing. C'est la référence qui empêchera ARTIZEN de
-> devenir un logiciel générique au fil des années. Avant chaque écran, chaque
-> texte, chaque fonctionnalité — on relit ceci.
+> Ce n'est ni un document marketing, ni une charte de ton. C'est la
+> **Constitution de la marque** : les règles fondamentales auxquelles le produit
+> reste fidèle, même lorsque l'équipe, la technologie ou les modèles d'IA
+> évoluent. Avant chaque écran, chaque texte, chaque fonctionnalité — on relit
+> ceci.
 >
 > C'est aujourd'hui **le document le plus important du projet.** La technologie
 > évoluera, les modèles d'IA évolueront, le moteur changera — mais tant que ce
@@ -195,3 +197,31 @@ Avant chaque nouvelle fonctionnalité, une seule question :
 Si la réponse est non, elle n'entre pas dans le produit. C'est cette discipline
 qui fera qu'ARTIZEN ne sera pas seulement un excellent logiciel, mais une marque
 cohérente, reconnaissable et mémorable dans cinq ou dix ans.
+
+---
+
+## Le Serment d'ARTIZEN
+
+> Nous ne demanderons jamais à un artisan d'abandonner son identité pour utiliser
+> notre logiciel.
+>
+> Nous apprendrons d'abord sa manière de travailler.
+>
+> Nous respecterons son histoire, sa présentation, son savoir-faire et sa
+> signature.
+>
+> Chaque amélioration du produit devra préserver cette promesse.
+>
+> Nous pourrons changer de moteur. Changer d'algorithme. Changer d'intelligence
+> artificielle. Changer de technologie.
+>
+> **Mais jamais cette promesse.**
+>
+> Les autres logiciels demandent à l'artisan de s'adapter au logiciel.
+>
+> **ARTIZEN s'adapte à l'artisan.**
+
+*Dans dix ans, personne ne se souviendra de Flutter, de FastAPI, du `.artizen`,
+de l'oracle, du benchmark ou du Double Gold. Mais celui qui rejoint l'équipe et
+lit ce texte en premier comprendra immédiatement pourquoi toutes ces technologies
+existent. La technique est une conséquence. La promesse est la cause.*

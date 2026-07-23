@@ -5,13 +5,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Artizen est un SaaS de devis pour artisans du bâtiment : backend FastAPI + client Flutter.
 La documentation du dépôt est en français, les commentaires de code en anglais — garder cette convention.
 
-> **Âme de la marque : [docs/BRAND.md](docs/BRAND.md).** Promesse figée — *ARTIZEN
-> retrouve votre identité et la restitue dans chacun de vos devis.* Étoile polaire
-> avant toute fonctionnalité : *« aide-t-elle l'artisan à retrouver son identité ? »*
-> (si non, on ne développe pas). Face à l'artisan, vocabulaire d'**identité /
-> signature / empreinte / savoir-faire** — jamais *générer / template / cloner /
-> automatisation / IA*. Les termes techniques (`.artizen`, moteur, extraction,
-> benchmark) restent côté ingénierie, jamais dans l'UI.
+> **Constitution de la marque : [docs/BRAND.md](docs/BRAND.md)** (le document le
+> plus important du projet — stable ; tout le reste peut évoluer). Promesse figée —
+> *ARTIZEN retrouve votre identité et la restitue dans chacun de vos devis.* La
+> vraie différence : *les autres logiciels demandent à l'artisan de s'adapter au
+> logiciel ; ARTIZEN s'adapte à l'artisan.* Avant toute fonctionnalité, 3 portes :
+> **étoile polaire** (« aide-t-elle l'artisan à retrouver son identité ? », sinon
+> on ne développe pas), **test des 5 secondes**, **deux langues** (aucun terme
+> d'ingénierie — `.artizen`, moteur, extraction, benchmark — à l'écran ; face à
+> l'artisan : identité / signature / empreinte / savoir-faire). Montrer plutôt
+> qu'expliquer. Carte des documents fondateurs : [docs/GOVERNANCE.md](docs/GOVERNANCE.md).
 
 Le `README.md` racine (77 Ko) et `frontend/README.md` documentent chaque décision d'architecture
 étape par étape et **justifient** les choix. Les consulter avant de proposer un changement structurel :
