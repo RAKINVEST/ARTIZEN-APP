@@ -15,6 +15,7 @@ import '../../quotes/data/quote_calculation.dart';
 import '../../quotes/data/quote_models.dart';
 import '../../quotes/presentation/quotes_providers.dart';
 import '../data/quote_draft.dart';
+import 'draft_quote_preview_screen.dart';
 import 'quote_draft_provider.dart';
 import 'wizard_step.dart';
 
@@ -323,9 +324,9 @@ class _CatalogueStep extends StatelessWidget {
                 ),
               ),
               const TabBar(
-                labelColor: ArtizenColors.nightBlue,
+                labelColor: kArtizenViolet,
                 unselectedLabelColor: ArtizenColors.textSecondary,
-                indicatorColor: ArtizenColors.gold,
+                indicatorColor: kArtizenViolet,
                 labelStyle: TextStyle(fontWeight: FontWeight.w700),
                 tabs: [
                   Tab(text: 'Catalogue'),
@@ -967,7 +968,33 @@ class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
           calculation: draft.calculation,
           recalculating: _recalculating,
         ),
+        const SizedBox(height: ArtizenSpacing.md),
+        // "Prêt à remplir" : the artisan can see the devis take shape in the
+        // real premium PDF at any point, without creating it.
+        OutlinedButton.icon(
+          icon: const Icon(Icons.visibility_outlined),
+          label: const Text('Aperçu du devis'),
+          onPressed: draft.clientId == null ? null : () => _openPreview(draft),
+        ),
       ],
+    );
+  }
+
+  void _openPreview(QuoteDraft draft) {
+    final clientId = draft.clientId;
+    if (clientId == null || draft.lines.isEmpty) return;
+    final lines = [
+      for (final line in draft.lines)
+        QuoteLineInput(
+          catalogItemId: line.catalogItemId,
+          quantity: line.quantity.toString(),
+        ),
+    ];
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            DraftQuotePreviewScreen(clientId: clientId, lines: lines),
+      ),
     );
   }
 }
@@ -1419,7 +1446,7 @@ class _CreerStepState extends ConsumerState<_CreerStep> {
                   width: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.2,
-                    color: ArtizenColors.onGold,
+                    color: Colors.white,
                   ),
                 )
               : const Icon(Icons.check_circle_outline),
@@ -1430,8 +1457,8 @@ class _CreerStepState extends ConsumerState<_CreerStep> {
           ),
           style: FilledButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
-            backgroundColor: ArtizenColors.gold,
-            foregroundColor: ArtizenColors.onGold,
+            backgroundColor: kArtizenViolet,
+            foregroundColor: Colors.white,
           ),
         ),
         const SizedBox(height: ArtizenSpacing.xs),

@@ -133,6 +133,23 @@ class QuotesRepositoryImpl implements QuotesRepository {
     );
     return QuoteCalculation.fromJson(response.data!);
   }
+
+  @override
+  Future<Uint8List> previewDraftPdf({
+    required String clientId,
+    required List<QuoteLineInput> lines,
+  }) async {
+    // responseType: bytes — the default would try to decode the PDF as JSON.
+    final response = await _dio.post<List<int>>(
+      '/quotes/preview-pdf',
+      data: {
+        'client_id': clientId,
+        'lines': lines.map((line) => line.toJson()).toList(),
+      },
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return Uint8List.fromList(response.data!);
+  }
 }
 
 final quotesRepositoryProvider = Provider<QuotesRepository>((ref) {

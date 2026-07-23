@@ -305,6 +305,15 @@ class FakeQuotesRepository implements QuotesRepository {
       lines: calcLines,
     );
   }
+
+  @override
+  Future<Uint8List> previewDraftPdf({
+    required String clientId,
+    required List<QuoteLineInput> lines,
+  }) async {
+    // A minimal valid PDF header is enough for tests that only check bytes.
+    return Uint8List.fromList('%PDF-1.4 preview'.codeUnits);
+  }
 }
 
 class FakeQuoteAssistantRepository implements QuoteAssistantRepository {

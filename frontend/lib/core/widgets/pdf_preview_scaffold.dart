@@ -31,8 +31,13 @@ class PdfPreviewScaffold extends StatelessWidget {
       body: AsyncValueView(
         value: pdf,
         onRetry: onRetry,
+        // A *copy* of the bytes on every build. On web the printing plugin
+        // transfers the PDF's ArrayBuffer to a worker, which detaches it; a
+        // rebuild (or leaving the screen) then re-posts the detached buffer and
+        // throws "DataCloneError: An ArrayBuffer is detached". Handing out a
+        // fresh copy each time keeps the source intact.
         builder: (context, bytes) => PdfPreview(
-          build: (_) => bytes,
+          build: (_) => Uint8List.fromList(bytes),
           canChangePageFormat: false,
           canChangeOrientation: false,
           canDebug: false,

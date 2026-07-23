@@ -33,6 +33,14 @@ abstract class QuotesRepository {
   /// the amounts; company scoping comes from the JWT, not the payload.
   Future<QuoteCalculation> calculate({required List<QuoteLineInput> lines});
 
+  /// Renders the wizard's "prêt à remplir" preview: the selected client + the
+  /// draft lines, as the exact premium PDF a real quote produces — without
+  /// creating anything or burning a number. Returns the raw PDF bytes.
+  Future<Uint8List> previewDraftPdf({
+    required String clientId,
+    required List<QuoteLineInput> lines,
+  });
+
   /// Moves the quote along its commercial life. The backend refuses an
   /// illegal move with a 409 — this app mirrors the rules in
   /// [QuoteStatus.nextStates] only to avoid *offering* a button that would
