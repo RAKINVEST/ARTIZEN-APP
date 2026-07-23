@@ -5,6 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Artizen est un SaaS de devis pour artisans du bâtiment : backend FastAPI + client Flutter.
 La documentation du dépôt est en français, les commentaires de code en anglais — garder cette convention.
 
+> **Âme de la marque : [docs/BRAND.md](docs/BRAND.md).** Promesse figée — *ARTIZEN
+> retrouve votre identité et la restitue dans chacun de vos devis.* Étoile polaire
+> avant toute fonctionnalité : *« aide-t-elle l'artisan à retrouver son identité ? »*
+> (si non, on ne développe pas). Face à l'artisan, vocabulaire d'**identité /
+> signature / empreinte / savoir-faire** — jamais *générer / template / cloner /
+> automatisation / IA*. Les termes techniques (`.artizen`, moteur, extraction,
+> benchmark) restent côté ingénierie, jamais dans l'UI.
+
 Le `README.md` racine (77 Ko) et `frontend/README.md` documentent chaque décision d'architecture
 étape par étape et **justifient** les choix. Les consulter avant de proposer un changement structurel :
 la plupart des « anomalies » apparentes y sont des choix assumés et expliqués.
