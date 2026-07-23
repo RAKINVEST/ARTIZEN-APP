@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/web_file_input.dart';
 import '../../../core/widgets/app_components.dart';
 import '../data/template_import_models.dart';
 import 'template_import_providers.dart';
@@ -22,6 +23,19 @@ class TemplateImportScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(templateImportNotifierProvider);
+
+    // On success, show the produced devis model straight away — a real quote
+    // rendered in the artisan's freshly-applied identity — instead of a text
+    // confirmation. On return, reset so the screen starts fresh next time.
+    ref.listen(templateImportNotifierProvider, (previous, next) {
+      if (next is TemplateImportDone) {
+        context.push('/branding/sample-preview').then((_) {
+          if (context.mounted) {
+            ref.read(templateImportNotifierProvider.notifier).reset();
+          }
+        });
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('Importer un ancien devis')),
@@ -55,6 +69,9 @@ class TemplateImportScreen extends ConsumerWidget {
       allowedExtensions: ['pdf'],
       withData: true,
     );
+    // file_picker leaves an invisible <input> in the DOM on web that swallows
+    // every click afterwards — remove it before we render the next screen.
+    removeLingeringFileInputs();
     final file = result?.files.single;
     if (file == null || file.bytes == null) return;
 

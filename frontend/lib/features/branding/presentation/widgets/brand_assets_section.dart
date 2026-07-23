@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/web_file_input.dart';
 import '../../../../core/widgets/app_components.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
 import '../../data/branding_models.dart';
@@ -80,6 +81,7 @@ class _BrandAssetTileState extends ConsumerState<_BrandAssetTile> {
       allowedExtensions: const ['png', 'jpg', 'jpeg'],
       withData: true,
     );
+    removeLingeringFileInputs(); // web: clear the leftover <input> that eats clicks
     final file = result?.files.single;
     if (file == null || file.bytes == null) return;
 
