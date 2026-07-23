@@ -7,6 +7,7 @@ import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_surfaces.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../shared/providers/current_company_provider.dart';
+import '../../branding/presentation/branding_providers.dart';
 import '../../quotes/data/quote_models.dart';
 import '../../quotes/presentation/quotes_providers.dart';
 import '../../quotes/presentation/widgets/quote_status_chip.dart';
@@ -48,6 +49,11 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(dashboardSummaryProvider);
+    // The artisan's own name — the welcome greets them personally. Read from
+    // the already-loaded branding profile (the sidebar uses the same notifier),
+    // so it's null only briefly on cold start (the banner falls back gracefully).
+    final companyName =
+        ref.watch(brandingProfileNotifierProvider).valueOrNull?.company.name;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -74,8 +80,12 @@ class DashboardScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
-              // Headline actions first — "reproduire mon devis" is the core
-              // onboarding promise and must be reachable without Settings.
+              // A warm, branded welcome — the dashboard must tell the same story
+              // as the sign-in: your devis carry your identity, ready in minutes.
+              _WelcomeBanner(companyName: companyName),
+              const SizedBox(height: ArtizenSpacing.md),
+              // Headline actions — "reproduire mon devis" is the core promise and
+              // must be reachable without Settings.
               const PrimaryActionsCard(),
               const SizedBox(height: ArtizenSpacing.md),
               const QuickAccessCard(),
@@ -159,6 +169,96 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The branded welcome — greets the artisan by name and states the promise
+/// (identity + speed) in one glance, so the dashboard passes the "5-second test"
+/// just like the sign-in. A violet gradient echoes the premium identity while
+/// staying within the app's light surface.
+class _WelcomeBanner extends StatelessWidget {
+  const _WelcomeBanner({this.companyName});
+
+  final String? companyName;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (companyName != null && companyName!.trim().isNotEmpty)
+        ? companyName!.trim()
+        : 'Votre atelier';
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: ArtizenGradients.button,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(ArtizenRadii.card),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF603AF6).withValues(alpha: 0.30),
+            blurRadius: 24,
+            spreadRadius: -6,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'BIENVENUE DANS VOTRE ATELIER',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Vos devis portent votre identité — à votre image, '
+                  'prêts en quelques minutes.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.92),
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.fingerprint, color: Colors.white, size: 30),
+          ),
+        ],
       ),
     );
   }
