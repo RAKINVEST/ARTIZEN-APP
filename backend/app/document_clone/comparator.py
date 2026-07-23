@@ -28,6 +28,17 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
+class Gap:
+    """One concrete discrepancy between the original and the generated PDF —
+    what the extraction still has to fix. The detailed report the artisan (and
+    the extraction dev loop) reads, beyond the single score."""
+
+    aspect: str    # texte_manquant | position | couleur | forme | image | pagination
+    detail: str    # the text / colour / value concerned
+    delta: float = 0.0  # magnitude (e.g. points of displacement)
+
+
+@dataclass(frozen=True)
 class FidelityReport:
     overall: float          # 0..100
     text_recall: float      # % of the original's texts found in the candidate
@@ -38,6 +49,7 @@ class FidelityReport:
     page_score: float       # same page count?
     reference_texts: int
     matched_texts: int
+    gaps: tuple[Gap, ...] = ()   # the detailed list of discrepancies
 
 
 _WS = re.compile(r"\s+")
@@ -97,6 +109,8 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
     ref = _read(reference)
     cand = _read(candidate)
 
+    gaps: list[Gap] = []
+
     # --- text recall + position: match each reference text to the nearest
     # candidate text with the same content, unmatched candidates can't be reused.
     cand_texts = list(cand["texts"])
@@ -115,6 +129,10 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
             used[best_i] = True
             matched += 1
             position_sum += max(0.0, 1.0 - best_d / ref["diag"])
+            if best_d is not None and best_d > 3.0:  # noticeably displaced
+                gaps.append(Gap("position", t[:40], round(best_d, 1)))
+        else:
+            gaps.append(Gap("texte_manquant", t[:40]))
 
     n_ref_text = len(ref["texts"])
     text_recall = matched / n_ref_text if n_ref_text else 1.0
@@ -127,6 +145,18 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
     page_score = 1.0 if ref["pages"] == cand["pages"] else max(
         0.0, 1.0 - abs(ref["pages"] - cand["pages"]) / max(1, ref["pages"])
     )
+
+    for col in ref["text_colors"] - cand["text_colors"]:
+        gaps.append(Gap("couleur", "#%02x%02x%02x" % col))
+    for col in ref["fills"] - cand["fills"]:
+        gaps.append(Gap("forme", "#%02x%02x%02x" % col))
+    if ref["pages"] != cand["pages"]:
+        gaps.append(Gap("pagination", f"{ref['pages']} → {cand['pages']} pages"))
+    if ref["images"] != cand["images"]:
+        gaps.append(Gap("image", f"{ref['images']} → {cand['images']} images"))
+
+    # Worst displacements first, then the rest — the fix list, ordered.
+    gaps.sort(key=lambda g: -g.delta)
 
     overall = (
         0.30 * text_recall
@@ -147,6 +177,7 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
         page_score=round(page_score * 100, 1),
         reference_texts=n_ref_text,
         matched_texts=matched,
+        gaps=tuple(gaps),
     )
 
 

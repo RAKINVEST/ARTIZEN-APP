@@ -49,6 +49,7 @@ def test_identical_pdf_scores_near_100() -> None:
     assert report.position_score >= 99.0
     assert report.color_score == 100.0
     assert report.shape_score == 100.0
+    assert report.gaps == ()  # nothing to fix
 
 
 def test_shifted_content_loses_on_position_not_recall() -> None:
@@ -61,6 +62,10 @@ def test_shifted_content_loses_on_position_not_recall() -> None:
     assert report.text_recall == 100.0
     assert report.position_score < 95.0
     assert report.overall < compare_pdfs(a, a).overall
+    # The detailed report pinpoints the displaced elements, worst first.
+    position_gaps = [g for g in report.gaps if g.aspect == "position"]
+    assert position_gaps
+    assert position_gaps[0].delta >= 60.0
 
 
 def test_different_content_loses_on_recall() -> None:
@@ -77,6 +82,8 @@ def test_different_content_loses_on_recall() -> None:
 
     assert report.text_recall < 40.0
     assert report.overall < 55.0
+    # Every missing label is listed by name.
+    assert any(g.aspect == "texte_manquant" for g in report.gaps)
 
 
 def test_report_counts_texts() -> None:
