@@ -106,27 +106,53 @@ chaque rendu sur une échelle :
 Une source n'est déclarée « supportée » que lorsqu'un échantillon représentatif
 de son dossier atteint le badge visé.
 
-## Les 3 KPIs : Fidélité + Couverture + Confiance
+## Les 4 KPIs : Fidélité + Couverture + Confiance + Temps
 
 La certification ci-dessus mesure la **fidélité** : *ce qu'on a reproduit est-il
 conforme ?* Mais un rendu peut être fidèle à 99,8 % sur le cinquième du document
 qu'il a compris, et ignorer la signature, l'adresse de chantier et les mentions
-légales. Trois axes, donc, qui doivent progresser **ensemble** :
+légales. Quatre axes, donc, qui doivent progresser **ensemble** :
 
 | Indicateur | Question | Où il est mesuré |
 |---|---|---|
 | **Fidélité** | Le document est-il reproduit fidèlement ? | [`comparator.py`](../app/document_clone/comparator.py) |
 | **Couverture** | Quelle proportion des éléments ARTIZEN reconnaît-elle vraiment ? | [`extract_report.py`](../app/document_clone/extract_report.py) |
 | **Confiance** | Le moteur est-il *sûr* de chaque élément reconnu ? | [`extract_report.py`](../app/document_clone/extract_report.py) |
+| **Temps de validation** | Combien de temps / de corrections l'artisan doit-il fournir ? | `.meta.json` (Template Studio) → [`benchmark.py`](../app/document_clone/benchmark.py) |
 
 La couverture et la confiance se lisent sur le **rapport d'extraction** de chaque
 document (✓ détecté 99 % / ⚠ absent / ⚠ inconnu). Un élément *confirmé absent*
 sort du dénominateur de couverture (il est N/A) ; un élément *inconnu* y reste
 (c'est le travail qui manque). La confiance, par élément, permet au **Template
 Studio** de ne demander une validation humaine que sur le douteux (Signature 43 %
-→ « à valider »), jamais sur tout le document. L'argument commercial se lit alors :
-« ARTIZEN reproduit votre devis à 99 %, en reconnaît 96 % des éléments, et sait
-lesquels vous montrer pour relecture ».
+→ « à valider »), jamais sur tout le document.
+
+Le **temps de validation** est le KPI commercial décisif : si ARTIZEN fait passer
+la correction d'un premier import de 5 minutes à 20 secondes, c'est un argument
+énorme. Il se mesure côté Studio (secondes, nombre de corrections, nombre de
+clics) et se dépose dans un sidecar `<radical>.meta.json` que le benchmark agrège.
+
+L'argument commercial se lit alors : « ARTIZEN reproduit votre devis à 99 %, en
+reconnaît 96 % des éléments, sait lesquels vous montrer pour relecture, et vous
+fait valider en 20 secondes ».
+
+## Benchmark permanent — Brique Q1
+
+Une brique *qualité*, pas technique : [`benchmark.py`](../app/document_clone/benchmark.py)
++ la CLI [`../benchmark.py`](../benchmark.py). Une commande —
+
+```
+docker compose exec backend python benchmark.py --label v0.5
+```
+
+— parcourt tout le `Corpus/`, exécute la chaîne mesurable sur chaque document
+(Analyzer sur tous ; rendu + comparateur + certification sur les Gold Standards),
+et produit un rapport consolidé (Markdown + JSON) : les 4 KPIs par logiciel, les
+certifications, et les **régressions** détectées face au run précédent. Chaque run
+s'ajoute à `benchmark_history.json` — le journal des tendances `v0.4 → v0.5 → v0.6`
+par logiciel, versionné. C'est l'instrument qui rend la Brique 4 *pilotable* :
+version après version, on voit objectivement si une modification améliore ou
+dégrade un logiciel donné.
 
 Le tableau de bord du benchmark, une fois le corpus rempli, agrégera par source :
 
