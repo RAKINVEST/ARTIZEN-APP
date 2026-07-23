@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_components.dart';
 import '../../../core/widgets/app_surfaces.dart';
 import '../../../core/widgets/paged_list_view.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
@@ -32,6 +33,22 @@ class ClientsListScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
+          // A clear, labelled way to add a client — the primary action of this
+          // screen, so it lives here (moved off the dashboard) and is visible
+          // without hunting for the floating "+".
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              ArtizenSpacing.sm,
+              ArtizenSpacing.xs,
+              ArtizenSpacing.sm,
+              ArtizenSpacing.xs,
+            ),
+            child: AppPrimaryButton(
+              label: 'Ajouter un nouveau client',
+              icon: Icons.person_add_alt_1,
+              onPressed: () => context.push('/clients/new'),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               ArtizenSpacing.sm,

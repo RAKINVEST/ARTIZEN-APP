@@ -47,12 +47,6 @@ class QuickAccessCard extends ConsumerWidget {
         accent: ArtizenAccents.amber,
         onTap: () => context.push('/toolbox'),
       ),
-      _QuickTileData(
-        icon: Icons.person_add_alt_1_outlined,
-        label: 'Ajouter un client',
-        accent: ArtizenAccents.green,
-        onTap: () => pushThenRefresh('/clients/new'),
-      ),
     ];
 
     return AppCard(

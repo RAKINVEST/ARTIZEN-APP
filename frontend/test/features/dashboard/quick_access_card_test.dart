@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('is a permanent "Bienvenue" panel with four clickable tiles',
+  testWidgets('is a permanent "Bienvenue" panel with three clickable tiles',
       (tester) async {
     await tester.pumpWidget(
       const ProviderScope(
@@ -20,19 +20,18 @@ void main() {
     expect(find.textContaining('Voici comment démarrer'), findsNothing);
     expect(find.text('Masquer'), findsNothing);
 
-    // Every tile is present and stays clickable — including the ones that used
-    // to grey out once "done" (configure company, add client). Each pastel
-    // chip is an InkWell carrying the tap.
+    // Every tile is present and stays clickable. "Ajouter un client" moved out
+    // of here to the Clients screen, so it is no longer one of these tiles.
     for (final label in const [
       'Configurer mon entreprise',
       'Mes catalogues',
       'Ma caisse à outils',
-      'Ajouter un client',
     ]) {
       final inkWell = tester.widget<InkWell>(
         find.ancestor(of: find.text(label), matching: find.byType(InkWell)),
       );
       expect(inkWell.onTap, isNotNull, reason: '"$label" must be clickable');
     }
+    expect(find.text('Ajouter un client'), findsNothing);
   });
 }
