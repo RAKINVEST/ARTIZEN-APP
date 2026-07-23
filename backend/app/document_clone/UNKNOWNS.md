@@ -37,6 +37,11 @@ dimensions sont complémentaires.
 |---|---|---|
 | S0 (départ, corpus vide) | 9 | 0 |
 
+U-001..009 sont toutes **ouvertes en 2026-07** (S0). Cette date d'ouverture est la
+base du **KPI du laboratoire** — le délai moyen *inconnue → décision* (cf
+[EXPERIMENTS.md](EXPERIMENTS.md)) : il mesure la santé du *laboratoire* (Produit
+B), pas la performance du moteur (Produit A).
+
 *(À compléter à chaque expérience du Starter Corpus — la courbe descendante des
 inconnues ouvertes est le vrai tableau de bord de la Phase 3.)*
 

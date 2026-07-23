@@ -34,6 +34,7 @@ décision remplacée est toujours en vigueur.
 | ADR-015 | **Périmètre gelé aux devis** jusqu'à maîtrise complète de la boucle | Risque de succès : un moteur générique ne le devient qu'après robustesse prouvée sur un domaine restreint (pas de factures/avoirs/contrats/bons avant) | 2026-07 | Active |
 | ADR-016 | **Objectif = réduire l'incertitude** (registre UNKNOWNS), plus ajouter des briques | La plateforme est complète ; désormais la vérité vient des données, pas de la réflexion | 2026-07 | Active |
 | ADR-017 | « Brique 4 » renommée **Programme expérimental d'extraction** ; cycle *Hypothèse→Expérience→Mesure→Décision→ADR/spec* | Ce n'est plus « développer une fonctionnalité » mais transformer des inconnues en connaissances validées ; la fin est actée par [SUCCESS_CRITERIA.md](SUCCESS_CRITERIA.md) | 2026-07 | Active |
+| ADR-018 | **Deux produits** : A = le moteur (KPI de performance) ; B = le laboratoire (confiance dans les conclusions). B a son propre KPI : **délai moyen inconnue → décision** | Le laboratoire — reproductibilité, hypothèses explicites, décisions traçables, conclusions généralisables — est l'avantage concurrentiel le plus dur à copier, et peut lui-même se gripper : il faut le mesurer | 2026-07 | Active |
 
 ## Décisions volontairement **différées** (à trancher avec des données)
 

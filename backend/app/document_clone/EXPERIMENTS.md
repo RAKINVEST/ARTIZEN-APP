@@ -30,6 +30,67 @@ avant que le moteur soit « bon ».
 6. **Merger** dans `main` **seulement si** le benchmark valide (gouvernance
    [ADR-011](DECISION_LOG.md)).
 
+## Structure obligatoire d'une fiche d'expérience
+
+Le laboratoire vaut par sa capacité à **séparer les faits des décisions**. Chaque
+expérience suit donc, sans exception, cette chaîne — et ne mélange jamais ses
+maillons :
+
+```
+Question → Hypothèse → Protocole → Résultats → Interprétation → Décision → ADR (si besoin)
+```
+
+**Résultat**, **Interprétation** et **Décision** ne sont **pas interchangeables** :
+
+| Maillon | Nature | Exemple |
+|---|---|---|
+| Résultat | *fait mesuré* | « 12 des 15 tableaux reconstruits correctement. » |
+| Interprétation | *lecture du fait* | « La géométrie seule *semble* suffisante pour cette famille. » |
+| Décision | *choix engagé* | « Conserver l'approche géométrique pour Word. » |
+
+Un résultat ne se discute pas ; une interprétation se challenge ; une décision
+s'assume. Les confondre est la première source de conclusions trop rapides.
+
+### Gabarit d'une fiche (à recopier par expérience)
+
+```
+### E-NNN — <titre>  (inconnue : U-xxx)
+Question      : la question précise à laquelle on répond
+Hypothèse     : énoncé falsifiable
+Protocole     : corpus utilisé (ids), heuristique testée, commande benchmark
+Résultats     : chiffres PRODUITS par le benchmark (KPI par sous-système)
+Biais observés: ce qui pourrait fausser la lecture (famille unique, N trop petit…)
+Interprétation: ce que les résultats suggèrent — pas plus
+Décision      : confirmée / infirmée / reportée
+ADR / spec    : ADR-xxx ou amendement, si la décision engage l'architecture
+Ouverte le / Décidée le : <dates>  (→ alimente le KPI du laboratoire)
+```
+
+## Quand une expérience *réussit* — redoubler de méfiance
+
+Une expérience qui échoue est facile à analyser. Une expérience qui réussit est
+plus dangereuse. Pour **chaque succès**, la fiche doit répondre à deux questions,
+sous peine d'être incomplète :
+
+1. **Pourquoi cela fonctionne-t-il ?** (le mécanisme, pas la coïncidence)
+2. **Dans quels cas cela cessera-t-il de fonctionner ?** (les limites)
+
+La réponse à la seconde question est, le plus souvent, la **prochaine expérience**.
+
+## KPI du laboratoire — temps « inconnue → décision »
+
+Un seul indicateur, et ce n'est **pas** un KPI du moteur : le **délai moyen entre
+l'ouverture d'une inconnue et la décision qui la clôt** (ADR ou amendement).
+
+```
+UNKNOWNS (ouverte le) ──▶ Expérience ──▶ Décision / ADR (le)   =   N jours
+```
+
+Il mesure la santé du **laboratoire** (Produit B), pas la performance du moteur.
+Signal d'alerte : une inconnue ouverte depuis longtemps *sans protocole
+d'expérience* — le labo se grippe. Chaque fiche porte donc ses dates
+`Ouverte le / Décidée le`, et la moyenne se lit sur le registre.
+
 ## Registre
 
 Aucune expérience à ce jour — **en attente des 5 premiers PDF natifs**. On ne
