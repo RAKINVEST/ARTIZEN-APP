@@ -27,6 +27,7 @@ from app.document_detection.legal_notice_detector import LegalNoticeDetector
 from app.document_detection.logo_detector import LogoDetector
 from app.document_detection.siret_detector import SiretDetector
 from app.document_detection.table_detector import TableDetector
+from app.document_detection.text_normalizer import collapse_letter_spacing
 from app.document_detection.vat_detector import VatDetector
 
 logger = logging.getLogger(__name__)
@@ -58,13 +59,20 @@ class DetectionAggregator:
         self._table_detector = table_detector
 
     async def aggregate(self, *, text: str, content: bytes) -> dict[str, object]:
+        # Field regexes (contact/siret/vat) match on contiguous characters and
+        # so miss everything on glyph-by-glyph exports like Mediabat's (E-001).
+        # The position detectors (header/footer/table/legal_notice) rely on the
+        # raw line structure instead, so only the field detectors get the
+        # de-spaced text — a document that never letter-spaces is unchanged.
+        field_text = collapse_letter_spacing(text)
+
         logo = await self._run("logo", self._logo_detector.detect, content)
         color = await self._run("color", self._color_detector.detect, content)
         header = await self._run("header", self._header_detector.detect, text)
         footer = await self._run("footer", self._footer_detector.detect, text)
-        contact = await self._run("contact", self._contact_detector.detect, text)
-        siret = await self._run("siret", self._siret_detector.detect, text)
-        vat = await self._run("vat", self._vat_detector.detect, text)
+        contact = await self._run("contact", self._contact_detector.detect, field_text)
+        siret = await self._run("siret", self._siret_detector.detect, field_text)
+        vat = await self._run("vat", self._vat_detector.detect, field_text)
         legal_notice = await self._run(
             "legal_notice", self._legal_notice_detector.detect, text
         )

@@ -98,18 +98,42 @@ Premières données réelles (2 devis natifs, via le module existant
 
 | Exp | Inconnue | Résultat mesuré | Observation | Statut |
 |---|---|---|---|---|
-| **E-001** | U-001 (tableaux) | **Chapot / Mediabat — confiance 54 %** ; tableau **détecté** (19 lignes, conf 1.0), couleurs réelles `#4ca549`/`#365e92`, logo/en-tête/pied ✓ | Champs SIRET/tél/email/entreprise **KO** : Mediabat écrit le texte **lettre par lettre espacée** (« S A R L », « 0 6  5 9 ») → les regex échouent → **U-010** | Ouverte |
+| **E-001** | U-010 (texte lettre-espacé) | **Chapot / Mediabat — confiance 54 %** ; tableau **détecté** (19 lignes, conf 1.0), couleurs réelles `#4ca549`/`#365e92`, logo/en-tête/pied ✓ | Champs SIRET/tél/email/entreprise **KO** : Mediabat écrit le texte **lettre par lettre espacée** (« S A R L », « 0 6  5 9 ») → les regex échouent → **U-010** | Résolue → **E-003** |
 | **E-002** | U-001 (tableaux) | **SJE / Solabaie — confiance 76 %** ; SIRET, TVA, tél, email, logo, en-tête, pied ✓ | **Tableau NON détecté** (conf 0) sur ce format | Ouverte |
 
 **Interprétation croisée (avec méfiance) :** la détection **varie fortement par
 source** — Mediabat = *tableau OK / champs KO* ; SJE = *champs OK / tableau KO*.
 Aucune source n'est « résolue ». Deux chantiers concrets, indépendants :
 1. **Normaliser le texte lettre-espacé** avant les regex (corrige E-001, sans
-   risque pour les autres) → décision probable : amendement du détecteur.
+   risque pour les autres) → **fait, voir E-003**.
 2. **Fiabiliser la détection de tableau** par famille (corrige E-002) → à creuser.
 
 Ces 2 devis deviennent les **2 premiers du Starter Corpus** (Mediabat, Solabaie).
 Il en manque 3 (styles/logiciels différents) pour l'amorce complète.
+
+### E-003 — normalisation du texte lettre-espacé  (inconnue : U-010)
+
+| Maillon | Contenu |
+|---|---|
+| **Question** | Peut-on récupérer les champs (SIRET, tél, email, adresse) sur un export lettre-espacé (Mediabat) **sans casser** un export propre (Solabaie) ? |
+| **Hypothèse** | *falsifiable* — dans un export lettre-espacé, **1 espace colle les glyphes d'un mot, 2 espaces séparent les mots**. En n'appliquant cette règle qu'aux lignes lettre-espacées, on répare Chapot et on laisse SJE intact. |
+| **Protocole** | `text_normalizer.collapse_letter_spacing` appliqué **aux seuls** détecteurs de champs (`contact`/`siret`/`vat`) dans l'`aggregator` ; les détecteurs de position gardent le texte brut. Mesuré par les **vrais** détecteurs sur les 2 PDF réels + agrégat complet. |
+| **Résultats** | **Chapot** : champs 2/6 → **5/6** (SIRET `94808180700018`, tél `0659192595`, email, adresse corrigée) ; confiance **0.54 → 0.70**. **SJE** : 6/6 → **6/6**, confiance **0.76 → 0.76** (**aucune régression**). 7 tests unitaires + 26 tests détection existants : **33 passent**. |
+| **Interprétation** | La règle « 1 espace = colle / 2 espaces = frontière » tient sur toute la source Mediabat. Le garde-fou *par ligne* (≥ 60 % de tokens ≤ 2 caractères) protège la prose normale : SJE, qui ne lettre-espace pas ses lignes de champs, passe inchangé — la non-régression n'est pas un espoir, elle est **mesurée**. |
+| **Décision** | **Confirmée → mergée.** U-010 close. |
+| **ADR / spec** | Correctif d'un module V1 livré (`document_detection`), pas une heuristique de la Brique 4 → pas d'ADR ; consigné ici. |
+| **Ouverte / Décidée** | 2026-07-23 / 2026-07-23 (délai inconnue → décision : **0 j**) |
+
+**Pourquoi ça marche ?** L'information est intégralement présente dans le texte
+extrait ; seule sa *segmentation* est cassée. On ne devine rien — on répare un
+espacement, réversible et local.
+
+**Quand ça cessera de marcher ?** (1) Un logiciel qui sépare aussi les mots par
+**un seul** espace (pas deux) : la règle collerait les mots — non observé à ce
+jour, à surveiller. (2) Les champs **VAT** et **nom d'entreprise** de Chapot
+restent KO, mais pour une **autre** cause (regex VAT exigeant 9 chiffres
+contigus ; `_guess_company_name` prend la 1re ligne = l'adresse) → **U-011**,
+distincte, à ne pas confondre avec U-010. C'est la prochaine expérience.
 
 | Exp | Inconnue | Hypothèse | N docs | Résultat (mesuré) | Décision | Statut |
 |---|---|---|---|---|---|---|
