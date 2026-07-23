@@ -267,9 +267,12 @@ class _PreviewFormState extends ConsumerState<_PreviewForm> {
     final detection = widget.preview.detection;
     final confidencePercent = (detection.confidenceScore * 100).round();
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return Column(
       children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            children: [
         if (widget.errorMessage != null) ...[
           Card(
             color: theme.colorScheme.errorContainer,
@@ -338,27 +341,44 @@ class _PreviewFormState extends ConsumerState<_PreviewForm> {
           label: 'Couleur secondaire (hex)',
           controller: _secondaryColor,
         ),
-        const SizedBox(height: 24),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: widget.submitting
-                    ? null
-                    : () => ref.read(templateImportNotifierProvider.notifier).reset(),
-                child: const Text('Annuler'),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+        // Actions in a FIXED footer, OUTSIDE the scroll view. Widgets rendered
+        // inside this text-field-heavy ListView did not receive taps on web
+        // (the AppBar and scrolling worked, the in-list buttons did not); a
+        // fixed footer — like the AppBar — is reliably tappable.
+        Material(
+          elevation: 8,
+          color: theme.colorScheme.surface,
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: widget.submitting
+                          ? null
+                          : () => ref.read(templateImportNotifierProvider.notifier).reset(),
+                      child: const Text('Annuler'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AppPrimaryButton(
+                      label: 'Valider ce modèle',
+                      icon: Icons.check_circle_outline,
+                      loading: widget.submitting,
+                      onPressed: _submit,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: AppPrimaryButton(
-                label: 'Valider ce modèle',
-                icon: Icons.check_circle_outline,
-                loading: widget.submitting,
-                onPressed: _submit,
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
