@@ -74,6 +74,37 @@ chaque rendu sur une échelle :
 Une source n'est déclarée « supportée » que lorsqu'un échantillon représentatif
 de son dossier atteint le badge visé.
 
+## Le KPI double : Fidélité + Couverture
+
+La certification ci-dessus mesure la **fidélité** : *ce qu'on a reproduit est-il
+conforme ?* Mais un rendu peut être fidèle à 99,8 % sur le cinquième du document
+qu'il a compris, et ignorer la signature, l'adresse de chantier et les mentions
+légales. Il faut donc un **second axe** :
+
+| Indicateur | Question | Où il est mesuré |
+|---|---|---|
+| **Fidélité** | Le document est-il reproduit fidèlement ? | [`comparator.py`](../app/document_clone/comparator.py) |
+| **Couverture** | Quelle proportion des éléments ARTIZEN reconnaît-elle vraiment ? | [`extract_report.py`](../app/document_clone/extract_report.py) |
+
+La couverture se lit sur le **rapport d'extraction** de chaque document (✓ détecté /
+⚠ absent / ⚠ inconnu). Un élément *confirmé absent* sort du dénominateur (il est
+N/A) ; un élément *inconnu* y reste (c'est le travail qui manque). Les deux
+indicateurs doivent progresser **ensemble** — c'est leur combinaison qui fait le
+vrai KPI technique, et l'argument commercial : « ARTIZEN reproduit votre devis à
+99 % **et** en reconnaît 96 % des éléments ».
+
+Le tableau de bord du benchmark, une fois le corpus rempli, agrégera par source :
+
+| Logiciel | Documents testés | Fidélité moyenne | Couverture |
+|---|---|---|---|
+| Batappli | 28 | 99,2 % | 96 % |
+| EBP | 15 | 98,7 % | 91 % |
+| Sage | 12 | 97,9 % | 89 % |
+| Tolteck | 10 | 99,5 % | 98 % |
+
+*(valeurs d'illustration — le benchmark reste gelé tant qu'il n'y a pas de vrais
+PDF à mesurer.)*
+
 ## Comment contribuer un cas
 
 1. Déposer le `.pdf` réel dans le bon dossier (radical `source-NNN.pdf`).
