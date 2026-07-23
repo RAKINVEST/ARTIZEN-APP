@@ -20,6 +20,7 @@ des briques.
 | U-007 | Sur les PDF **hybrides**, quel pipeline gagne (structurel vs OCR) ? | Comparer les deux sur un sous-corpus `Hybrides/` | Ouverte |
 | U-008 | La convention d'arrondi **par ligne** (française) est-elle respectée par tous les logiciels ? | Comparer les totaux reconstruits aux originaux réels | Ouverte |
 | U-009 | La quantification couleur 16 niveaux suffit-elle, ou faut-il un vrai **ΔE\*ab** ? | Mesurer les faux positifs/négatifs couleur sur le corpus | Ouverte |
+| U-010 | Combien de logiciels écrivent le texte **lettre par lettre espacée** (« S A R L »), cassant les regex de champs ? | Observé sur Mediabat (E-001). Normaliser le texte avant regex, mesurer le gain sur le corpus | **Ouverte (observée)** |
 
 Convention : `U-NNN` immuable. Une inconnue résolue passe en `Résolue → ADR-xxx`
 (la réponse devient une décision) ou `Résolue → sans impact`. On ne supprime pas

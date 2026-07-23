@@ -93,12 +93,27 @@ d'expérience* — le labo se grippe. Chaque fiche porte donc ses dates
 
 ## Registre
 
-Aucune expérience à ce jour — **en attente des 5 premiers PDF natifs**. On ne
-raisonnera sur des faits qu'à partir de leur entrée dans le corpus.
+Premières données réelles (2 devis natifs, via le module existant
+`document_detection`, pas encore la Brique 4). Ouvertes le 2026-07-23.
+
+| Exp | Inconnue | Résultat mesuré | Observation | Statut |
+|---|---|---|---|---|
+| **E-001** | U-001 (tableaux) | **Chapot / Mediabat — confiance 54 %** ; tableau **détecté** (19 lignes, conf 1.0), couleurs réelles `#4ca549`/`#365e92`, logo/en-tête/pied ✓ | Champs SIRET/tél/email/entreprise **KO** : Mediabat écrit le texte **lettre par lettre espacée** (« S A R L », « 0 6  5 9 ») → les regex échouent → **U-010** | Ouverte |
+| **E-002** | U-001 (tableaux) | **SJE / Solabaie — confiance 76 %** ; SIRET, TVA, tél, email, logo, en-tête, pied ✓ | **Tableau NON détecté** (conf 0) sur ce format | Ouverte |
+
+**Interprétation croisée (avec méfiance) :** la détection **varie fortement par
+source** — Mediabat = *tableau OK / champs KO* ; SJE = *champs OK / tableau KO*.
+Aucune source n'est « résolue ». Deux chantiers concrets, indépendants :
+1. **Normaliser le texte lettre-espacé** avant les regex (corrige E-001, sans
+   risque pour les autres) → décision probable : amendement du détecteur.
+2. **Fiabiliser la détection de tableau** par famille (corrige E-002) → à creuser.
+
+Ces 2 devis deviennent les **2 premiers du Starter Corpus** (Mediabat, Solabaie).
+Il en manque 3 (styles/logiciels différents) pour l'amorce complète.
 
 | Exp | Inconnue | Hypothèse | N docs | Résultat (mesuré) | Décision | Statut |
 |---|---|---|---|---|---|---|
-| _(exemple de format — non réel)_ | U-001 | Tableaux EBP détectables géométriquement | 5 | — | — | — |
+| _(gabarit — expériences futures ici)_ | U-xxx | … | N | — | — | — |
 
 > **Anti-biais (règle du registre).** (1) Aucun chiffre n'est inscrit s'il n'est
 > pas **produit par le benchmark** — pas d'estimation, pas de « à peu près ».
