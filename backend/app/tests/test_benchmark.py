@@ -25,6 +25,8 @@ from app.document_clone.artizen_format import (
 )
 from app.document_clone.benchmark import (
     append_history,
+    format_phase_status,
+    phase_rd_status,
     regression_gate,
     run_benchmark,
     to_json,
@@ -223,6 +225,24 @@ def test_regression_gate_blocks_a_family_dropping_beyond_threshold(tmp_path) -> 
     passed_same, none = regression_gate(same, report)
     assert passed_same is True
     assert none == []
+
+
+def test_phase_rd_scorecard_reads_met_failed_pending(tmp_path) -> None:
+    batappli = tmp_path / "Batappli"
+    batappli.mkdir()
+    _gold_standard(batappli, "batappli-001")
+    report = run_benchmark(tmp_path, label="v0.4")
+    manifest = {"documents": [{"id": "batappli-001", "software": "Batappli",
+                               "gold_status": "certified", "layout_family": "batappli-A"}]}
+
+    status = phase_rd_status(report, history=None, manifest=manifest)
+    by_name = {c["criterion"]: c for c in status}
+
+    # Fidelity is met (~100), certified count fails (1/50), stability pending (<3 runs).
+    assert by_name["Fidélité moyenne ≥ 99 %"]["status"] == "met"
+    assert by_name["50 références certifiées"]["status"] == "failed"
+    assert by_name["0 régression sur 3 versions"]["status"] == "pending"
+    assert "critère(s) restant(s)" in format_phase_status(status)
 
 
 def test_run_number_increments_with_history(tmp_path) -> None:

@@ -12,12 +12,15 @@ l'artisan. C'est la moitié « données » de la plateforme d'évaluation ; la m
 > devis *synthétiques* (un rendu parfait sur un PDF maison ne prouve presque
 > rien). Il faut de **vrais devis natifs** exportés par les logiciels du marché.
 
-> 🚦 **Phase R&D lancée.** L'infrastructure est complète et gelée — on ne
-> construit plus de brique. La boucle est désormais : *constituer le Starter
-> Corpus → première extraction réelle → mesurer → corriger → mesurer*. **Le
-> benchmark pilote le développement.** Cadre : [constitution d'extraction](../app/document_clone/EXTRACTION_SPEC.md),
-> [protocole Gold Standard](../app/document_clone/GOLD_STANDARD_PROTOCOL.md),
-> [journal des décisions](../app/document_clone/DECISION_LOG.md).
+> 🚦 **Phase R&D — phase d'architecture close.** L'infrastructure est complète et
+> gelée ; on ne construit plus de brique et on n'ouvre plus de discussion sur de
+> nouvelles briques avant d'avoir des résultats du Starter Corpus. Objectif
+> désormais : **réduire l'incertitude**, pas ajouter du code. Cadre :
+> [constitution](../app/document_clone/EXTRACTION_SPEC.md) ·
+> [protocole Gold Standard](../app/document_clone/GOLD_STANDARD_PROTOCOL.md) ·
+> [décisions](../app/document_clone/DECISION_LOG.md) ·
+> [inconnues](../app/document_clone/UNKNOWNS.md) ·
+> [zone expérimentale](../app/document_clone/extraction/).
 
 ## Starter Corpus — 5 documents, pas 1, pas 100
 
@@ -257,6 +260,35 @@ PDF à mesurer.)*
 
 Tant que l'étape 1 n'a pas de vrais fichiers, les briques 4 (extraction) et 5
 (enrichissement IA) restent des coquilles non prouvables.
+
+## Phase R&D — cadence et sortie
+
+La boucle est fixe : **constituer le Starter Corpus → première extraction réelle
+→ mesurer → corriger → mesurer.** Le benchmark pilote le développement ; on ne
+développe plus « au feeling ». Chaque point de suivi ne répond qu'à **quatre
+questions** :
+
+1. Qu'avons-nous appris grâce aux nouveaux documents ?
+2. Quel KPI a progressé (ou régressé) ?
+3. Quelle hypothèse ([UNKNOWNS](../app/document_clone/UNKNOWNS.md)) est confirmée ou infirmée ?
+4. Quelle est la prochaine expérience à mener ?
+
+**Critères de sortie** (R&D → Production) — mesurables, vérifiables par
+`python benchmark.py --phase` :
+
+- Starter Corpus complet ;
+- **50 références certifiées** ;
+- Fidélité moyenne **≥ 99 %** · Couverture **≥ 95 %** · Auto-pass **≥ 90 %** ;
+- Temps moyen de validation **≤ 20 s** ;
+- **aucune régression sur trois versions consécutives**.
+
+Quand tous sont atteints, la Brique 4 passe de *R&D* à *Production*.
+
+**Discipline de périmètre (ADR-015).** Si le moteur réussit vite sur les 5 premiers
+logiciels, la tentation sera d'ajouter factures, avoirs, contrats, bons
+d'intervention. **On résiste** : le périmètre reste **les devis** jusqu'à ce que
+la boucle soit complètement maîtrisée. Un moteur générique ne devient réellement
+générique qu'après avoir prouvé sa robustesse sur un domaine restreint.
 
 > **Avant d'écrire la Brique 4, lire sa constitution :
 > [`EXTRACTION_SPEC.md`](../app/document_clone/EXTRACTION_SPEC.md) (v1.0, figée).**

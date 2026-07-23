@@ -19,12 +19,15 @@ from pathlib import Path
 
 from app.document_clone.benchmark import (
     append_history,
+    format_phase_status,
+    phase_rd_status,
     regression_gate,
     run_benchmark,
     to_json,
     to_markdown,
     verify_replay,
 )
+from app.document_clone.ingest import load_manifest
 
 _DEFAULT_CORPUS = Path(__file__).parent / "Corpus"
 
@@ -51,6 +54,11 @@ def main() -> None:
         action="store_true",
         help="fail if any family regressed beyond the allowed drop vs the last run",
     )
+    parser.add_argument(
+        "--phase",
+        action="store_true",
+        help="print the Phase R&D exit-criteria scorecard",
+    )
     args = parser.parse_args()
 
     history_path = args.corpus / "benchmark_history.json"
@@ -67,6 +75,10 @@ def main() -> None:
     if args.replay:
         ok, message = verify_replay(history, report)
         print(("✓ " if ok else "✗ ") + message)
+        return
+
+    if args.phase:
+        print(format_phase_status(phase_rd_status(report, history, load_manifest(args.corpus))))
         return
 
     if args.gate:

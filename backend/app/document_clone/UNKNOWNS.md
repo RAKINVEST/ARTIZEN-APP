@@ -1,0 +1,26 @@
+# Registre des inconnues — UNKNOWNS
+
+Le pendant des [ADR](DECISION_LOG.md). Un ADR enregistre une **décision** ; ce
+registre enregistre une **question à laquelle le projet ne sait pas encore
+répondre**. La règle de la Phase R&D : *chaque inconnue devient une expérience,
+jamais une opinion.* On ne tranche une inconnue qu'avec une mesure sur le corpus
+réel — pas par la réflexion.
+
+Objectif du projet à partir de maintenant : **réduire cette liste**, pas ajouter
+des briques.
+
+| ID | Inconnue | Comment la résoudre ? | Statut |
+|---|---|---|---|
+| U-001 | Les tableaux EBP sont-ils toujours détectables *géométriquement* (lignes/rectangles) ? | Tester la détection sur 20 PDF EBP réels | Ouverte |
+| U-002 | Le seuil d'accord de **99 %** est-il réaliste ? | Mesurer l'accord de deux annotateurs indépendants sur le Starter Corpus | Ouverte |
+| U-003 | Quelle **couverture** moyenne obtient-on sur des **scans** ? | Construire un sous-corpus `Scan/`, mesurer Analyzer + extraction OCR | Ouverte |
+| U-004 | Combien de **familles de mise en page** existe-t-il par logiciel ? | Cataloguer `layout_family` au fil de l'ingest | Ouverte |
+| U-005 | Les polices sont-elles **embarquées** dans les exports réels, ou substituées ? | Mesurer `embedded_font_count` sur tout le corpus | Ouverte |
+| U-006 | L'anonymiseur **laisse-t-il passer** de la PII (noms, adresses) sur de vrais devis ? | Relecture manuelle d'un échantillon, taux de PII résiduelle | Ouverte |
+| U-007 | Sur les PDF **hybrides**, quel pipeline gagne (structurel vs OCR) ? | Comparer les deux sur un sous-corpus `Hybrides/` | Ouverte |
+| U-008 | La convention d'arrondi **par ligne** (française) est-elle respectée par tous les logiciels ? | Comparer les totaux reconstruits aux originaux réels | Ouverte |
+| U-009 | La quantification couleur 16 niveaux suffit-elle, ou faut-il un vrai **ΔE\*ab** ? | Mesurer les faux positifs/négatifs couleur sur le corpus | Ouverte |
+
+Convention : `U-NNN` immuable. Une inconnue résolue passe en `Résolue → ADR-xxx`
+(la réponse devient une décision) ou `Résolue → sans impact`. On ne supprime pas
+une ligne : on garde la trace de ce qu'on ignorait et de comment on l'a levé.

@@ -432,6 +432,67 @@ def regression_gate(
     return (not offenders), offenders
 
 
+#: The measurable criteria that end Phase R&D — when all are met, Brique 4 goes
+#: from R&D to Production. Empirical targets, revisable as an amendment.
+def _agg(sources: list[SourceSummary], attr: str) -> float | None:
+    vals = [getattr(s, attr) for s in sources if getattr(s, attr) is not None]
+    return round(statistics.fmean(vals), 1) if vals else None
+
+
+def _stable_over_three_runs(history: dict | None) -> bool | None:
+    runs = (history or {}).get("runs", [])
+    if len(runs) < 3:
+        return None  # not enough history to judge stability yet
+    for before, after in zip(runs[-3:], runs[-3:][1:]):
+        for src, cur in after.get("sources", {}).items():
+            prev = before.get("sources", {}).get(src, {}).get("fidelity")
+            now = cur.get("fidelity")
+            if prev is not None and now is not None and now < prev - _MAX_FAMILY_DROP:
+                return False
+    return True
+
+
+def phase_rd_status(
+    report: BenchmarkReport, history: dict | None = None, manifest: dict | None = None
+) -> list[dict]:
+    """The Phase R&D scorecard: each exit criterion as met / failed / pending
+    (pending = no data yet). This makes "when does R&D end?" measurable, not an
+    opinion — the answer comes from the corpus, not the meeting room."""
+    docs = (manifest or {}).get("documents", [])
+    certified = sum(1 for d in docs if d.get("gold_status") == "certified")
+    families = {d.get("layout_family") for d in docs if d.get("layout_family")}
+    fid, cov = _agg(report.sources, "avg_fidelity"), _agg(report.sources, "avg_coverage")
+    ap, val = _agg(report.sources, "auto_pass"), _agg(report.sources, "avg_validation_seconds")
+    stable = _stable_over_three_runs(history)
+
+    def crit(name: str, ok: bool | None, detail: str) -> dict:
+        status = "pending" if ok is None else ("met" if ok else "failed")
+        return {"criterion": name, "status": status, "detail": detail}
+
+    return [
+        crit("Starter Corpus (≥ 5 docs)", (len(docs) >= 5) if docs else None,
+             f"{len(docs)} docs, {len(families)} familles"),
+        crit("50 références certifiées", (certified >= 50) if docs else None, f"{certified}/50"),
+        crit("Fidélité moyenne ≥ 99 %", (fid >= 99) if fid is not None else None, _fmt(fid)),
+        crit("Couverture ≥ 95 %", (cov >= 95) if cov is not None else None, _fmt(cov)),
+        crit("Auto-pass ≥ 90 %", (ap >= 90) if ap is not None else None, _fmt(ap)),
+        crit("Validation ≤ 20 s", (val <= 20) if val is not None else None, _fmt(val, " s")),
+        crit("0 régression sur 3 versions", stable,
+             "≥ 3 runs requis" if stable is None else ("stable" if stable else "régression détectée")),
+    ]
+
+
+def format_phase_status(status: list[dict]) -> str:
+    glyph = {"met": "✓", "failed": "✗", "pending": "·"}
+    lines = ["Phase R&D — critères de sortie vers Production :", ""]
+    for c in status:
+        lines.append(f"  {glyph[c['status']]} {c['criterion']:<28} {c['detail']}")
+    remaining = sum(1 for c in status if c["status"] != "met")
+    lines += ["", f"{remaining} critère(s) restant(s) avant le statut Production." if remaining
+              else "Tous les critères atteints → Brique 4 prête pour la Production."]
+    return "\n".join(lines)
+
+
 def verify_replay(history: dict | None, report: BenchmarkReport) -> tuple[bool, str]:
     """Replay check: does this fresh run reproduce a recorded one exactly? Matches
     by fingerprint against the most recent stored run — the unambiguous answer to
