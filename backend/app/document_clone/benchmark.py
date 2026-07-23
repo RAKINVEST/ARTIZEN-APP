@@ -68,6 +68,8 @@ class SourceSummary:
     avg_coverage: float | None
     avg_confidence: float | None
     avg_validation_seconds: float | None
+    #: % of measured documents that needed **zero** correction — the R&D KPI.
+    auto_pass: float | None
     certifications: dict[str, int]
     #: kpi -> delta vs the previous run for this source (+ = improved).
     regression: dict[str, float]
@@ -86,7 +88,7 @@ def _iter_documents(corpus_dir: Path):
     """Yield ``(source, pdf_path)`` for every original PDF in the corpus —
     skipping the ``.expected.pdf`` renders and the output directory."""
     for source_dir in sorted(p for p in corpus_dir.iterdir() if p.is_dir()):
-        if source_dir.name == _OUTPUT_DIRNAME:
+        if source_dir.name == _OUTPUT_DIRNAME or source_dir.name.startswith("_"):
             continue
         for pdf in sorted(source_dir.glob("*.pdf")):
             if pdf.name.endswith(_EXPECTED_SUFFIX):
@@ -182,6 +184,13 @@ def _summarise(documents: list[DocResult], history: dict | None) -> list[SourceS
             if value is not None and prev.get(kpi) is not None:
                 regression[kpi] = round(value - prev[kpi], 2)
 
+        corrected = [d.kpis.corrections for d in docs if d.kpis.corrections is not None]
+        auto_pass = (
+            round(100 * sum(1 for c in corrected if c == 0) / len(corrected), 1)
+            if corrected
+            else None
+        )
+
         summaries.append(
             SourceSummary(
                 source=source,
@@ -190,6 +199,7 @@ def _summarise(documents: list[DocResult], history: dict | None) -> list[SourceS
                 avg_coverage=avg["coverage"],
                 avg_confidence=avg["confidence"],
                 avg_validation_seconds=_mean([d.kpis.validation_seconds for d in docs]),
+                auto_pass=auto_pass,
                 certifications=certs,
                 regression=regression,
             )
@@ -251,8 +261,8 @@ def to_markdown(report: BenchmarkReport) -> str:
         "",
         "## Par logiciel",
         "",
-        "| Logiciel | Docs | Fidélité | Couverture | Confiance | Validation | Certifications |",
-        "|---|---|---|---|---|---|---|",
+        "| Logiciel | Docs | Fidélité | Couverture | Confiance | Validation | Auto-pass | Certifications |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for s in report.sources:
         certs = ", ".join(f"{n}×{k}" for k, n in s.certifications.items()) or "—"
@@ -261,7 +271,7 @@ def to_markdown(report: BenchmarkReport) -> str:
             f"| {_fmt(s.avg_fidelity)}{_fmt_delta(s.regression, 'fidelity')} "
             f"| {_fmt(s.avg_coverage)}{_fmt_delta(s.regression, 'coverage')} "
             f"| {_fmt(s.avg_confidence)}{_fmt_delta(s.regression, 'confidence')} "
-            f"| {_fmt(s.avg_validation_seconds, ' s')} | {certs} |"
+            f"| {_fmt(s.avg_validation_seconds, ' s')} | {_fmt(s.auto_pass)} | {certs} |"
         )
 
     regressed = [
@@ -303,6 +313,7 @@ def append_history(history: dict | None, report: BenchmarkReport) -> dict:
                     "fidelity": s.avg_fidelity,
                     "coverage": s.avg_coverage,
                     "confidence": s.avg_confidence,
+                    "auto_pass": s.auto_pass,
                 }
                 for s in report.sources
             },

@@ -117,6 +117,26 @@ def test_missing_data_json_skips_fidelity_but_keeps_coverage(tmp_path) -> None:
     assert any("data.json" in n for n in doc.notes)
 
 
+def test_auto_pass_counts_zero_correction_documents(tmp_path) -> None:
+    batappli = tmp_path / "Batappli"
+    batappli.mkdir()
+    _gold_standard(batappli, "batappli-001")
+    _gold_standard(batappli, "batappli-002")
+    # One needed no correction, the other needed three (from Template Studio).
+    (batappli / "batappli-001.meta.json").write_text(
+        json.dumps({"corrections": 0, "validation_seconds": 12}), encoding="utf-8")
+    (batappli / "batappli-002.meta.json").write_text(
+        json.dumps({"corrections": 3, "validation_seconds": 95}), encoding="utf-8")
+
+    report = run_benchmark(tmp_path, label="v0.5")
+    summary = next(s for s in report.sources if s.source == "Batappli")
+
+    # 1 of 2 measured documents passed with zero correction → 50 %.
+    assert summary.auto_pass == 50.0
+    assert summary.avg_validation_seconds is not None
+    assert "Auto-pass" in to_markdown(report)
+
+
 def test_regression_is_detected_against_history(tmp_path) -> None:
     batappli = tmp_path / "Batappli"
     batappli.mkdir()

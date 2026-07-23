@@ -28,21 +28,56 @@ collecte progresse vers **100–200 documents** répartis par logiciel et par st
 — l'actif long terme qui fera du Document Intelligence Engine un avantage
 concurrentiel. Court terme : 5 pour développer. Long terme : 200 pour durcir.
 
-## Ingest : anonymisation obligatoire
+## Ingest — le pipeline d'entrée dans le corpus
 
-Le risque n°1 du corpus n'est plus technique, il est **juridique** (noms,
-adresses, SIRET, téléphones, IBAN, signatures). Tout document passe donc par
-l'anonymiseur **avant** d'être stocké :
+Aucun fichier n'entre à la main. [`ingest.py`](../ingest.py) (CLI) +
+[`app/document_clone/ingest.py`](../app/document_clone/ingest.py) automatisent
+l'entrée, sans jamais supposer quoi que ce soit du contenu :
 
 ```
-PDF original  ->  Anonymiseur  ->  Corpus ARTIZEN
+PDF original
+   ↓  Validation      lisible ? au moins une page ?
+   ↓  Analyzer        natif / hybride / image + ★
+   ↓  Anonymiseur     PII structurée retirée (email/IBAN/tél/SIRET)
+   ↓  Classement      Corpus/<logiciel>/<id>.pdf   (version anonymisée)
+   ↓  Manifeste       manifest.json — statut pending_extraction
 ```
 
-[`anonymizer.py`](../app/document_clone/anonymizer.py) retire déterministement
-email / IBAN / téléphone / SIRET-SIREN en préservant la mise en page (seule chose
-que le moteur étudie). Les noms, adresses, BIC et signatures ne sont **pas**
-auto-anonymisés (ils nécessitent la passe sémantique ou une relecture humaine) :
-ils sont *signalés*, jamais silencieusement manqués.
+```
+docker compose exec backend python ingest.py mon-devis.pdf --software Batappli
+docker compose exec backend python ingest.py --list
+docker compose exec backend python ingest.py --promote batappli-001
+```
+
+Le risque n°1 du corpus est **juridique**. [`anonymizer.py`](../app/document_clone/anonymizer.py)
+retire déterministement email / IBAN / téléphone / SIRET-SIREN en préservant la
+mise en page (seule chose que le moteur étudie). Noms, adresses, BIC et signatures
+ne sont **pas** auto-anonymisés — ils sont *signalés* (`manual_review_required`),
+jamais silencieusement manqués.
+
+### Le manifeste — source de vérité du corpus
+
+`Corpus/manifest.json` référence chaque document et son avancement :
+
+```json
+{
+  "id": "batappli-001", "software": "Batappli", "document_type": "devis",
+  "pages": 2, "native_pdf": true, "anonymized": true,
+  "gold_standard": false, "status": "pending_extraction"
+}
+```
+
+Cycle de vie : `pending_extraction → extracted → pending_validation →
+gold_standard` (ou `rejected`).
+
+### Gouvernance : le Gold Standard exige une validation humaine
+
+**Un document n'entre au Gold Standard qu'après validation humaine.** L'ingest
+écrit *toujours* `gold_standard: false`. Seul `python ingest.py --promote <id>` —
+un geste humain explicite, qui **exige le triplet complet** (`.pdf` +
+`.artizen.json` + `.expected.pdf`) sur le disque — bascule le drapeau. Une
+promotion sur triplet incomplet est refusée. Cette discipline empêche une
+référence erronée de fausser tous les benchmarks suivants.
 
 ## Arborescence
 
@@ -106,7 +141,7 @@ chaque rendu sur une échelle :
 Une source n'est déclarée « supportée » que lorsqu'un échantillon représentatif
 de son dossier atteint le badge visé.
 
-## Les 4 KPIs : Fidélité + Couverture + Confiance + Temps
+## Les 5 KPIs : Fidélité + Couverture + Confiance + Temps + Auto-pass
 
 La certification ci-dessus mesure la **fidélité** : *ce qu'on a reproduit est-il
 conforme ?* Mais un rendu peut être fidèle à 99,8 % sur le cinquième du document
@@ -119,6 +154,7 @@ légales. Quatre axes, donc, qui doivent progresser **ensemble** :
 | **Couverture** | Quelle proportion des éléments ARTIZEN reconnaît-elle vraiment ? | [`extract_report.py`](../app/document_clone/extract_report.py) |
 | **Confiance** | Le moteur est-il *sûr* de chaque élément reconnu ? | [`extract_report.py`](../app/document_clone/extract_report.py) |
 | **Temps de validation** | Combien de temps / de corrections l'artisan doit-il fournir ? | `.meta.json` (Template Studio) → [`benchmark.py`](../app/document_clone/benchmark.py) |
+| **Auto-pass** | Quelle part des documents n'a demandé **aucune** correction ? | [`benchmark.py`](../app/document_clone/benchmark.py) |
 
 La couverture et la confiance se lisent sur le **rapport d'extraction** de chaque
 document (✓ détecté 99 % / ⚠ absent / ⚠ inconnu). Un élément *confirmé absent*
@@ -132,9 +168,13 @@ la correction d'un premier import de 5 minutes à 20 secondes, c'est un argument
 énorme. Il se mesure côté Studio (secondes, nombre de corrections, nombre de
 clics) et se dépose dans un sidecar `<radical>.meta.json` que le benchmark agrège.
 
+L'**auto-pass** est le KPI R&D qui suit les progrès du moteur : sur 200 documents,
+172 sans aucune correction → 86 %. C'est la mesure la plus parlante de « le moteur
+s'améliore-t-il ? » entre deux versions.
+
 L'argument commercial se lit alors : « ARTIZEN reproduit votre devis à 99 %, en
-reconnaît 96 % des éléments, sait lesquels vous montrer pour relecture, et vous
-fait valider en 20 secondes ».
+reconnaît 96 % des éléments, sait lesquels vous montrer pour relecture, vous fait
+valider en 20 secondes, et passe 86 % des devis sans retouche ».
 
 ## Benchmark permanent — Brique Q1
 
