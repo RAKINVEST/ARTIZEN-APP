@@ -11,6 +11,7 @@ import '../../quotes/data/quote_models.dart';
 import '../../quotes/presentation/quotes_providers.dart';
 import '../../quotes/presentation/widgets/quote_status_chip.dart';
 import 'dashboard_providers.dart';
+import 'widgets/primary_actions_card.dart';
 import 'widgets/quick_access_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -73,6 +74,10 @@ class DashboardScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
+              // Headline actions first — "reproduire mon devis" is the core
+              // onboarding promise and must be reachable without Settings.
+              const PrimaryActionsCard(),
+              const SizedBox(height: ArtizenSpacing.md),
               const QuickAccessCard(),
               const SizedBox(height: ArtizenSpacing.md),
               // Two headline resource cards.
