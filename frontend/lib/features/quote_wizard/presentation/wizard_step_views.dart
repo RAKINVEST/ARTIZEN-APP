@@ -16,6 +16,7 @@ import '../../quotes/data/quote_models.dart';
 import '../../quotes/presentation/quotes_providers.dart';
 import '../data/quote_draft.dart';
 import 'draft_quote_preview_screen.dart';
+import 'live_devis_preview.dart';
 import 'quote_draft_provider.dart';
 import 'wizard_step.dart';
 
@@ -32,15 +33,19 @@ class WizardStepView extends StatelessWidget {
     // The Catalogue step runs its own full-height layout (tabs + lists that
     // scroll themselves), so it isn't wrapped in the scrolling _StepScaffold.
     if (step == WizardStep.catalogue) return const _CatalogueStep();
+    // Personnaliser too: on a wide screen it splits into editing + a live
+    // preview pane, which has to escape the scrolling scaffold to give the PDF
+    // a bounded height.
+    if (step == WizardStep.personnaliser) return const _PersonnaliserStep();
     return _StepScaffold(
       step: step,
       child: switch (step) {
         WizardStep.client => const _ClientStep(),
-        WizardStep.personnaliser => const _PersonnaliserStep(),
         WizardStep.recap => const _RecapStep(),
         WizardStep.creer => const _CreerStep(),
         WizardStep.confirmation => const _ConfirmationStep(),
         WizardStep.catalogue => const SizedBox.shrink(), // handled above
+        WizardStep.personnaliser => const SizedBox.shrink(), // handled above
       },
     );
   }
@@ -929,55 +934,123 @@ class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
     );
 
     final draft = ref.watch(quoteDraftProvider);
-    if (draft.lines.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(ArtizenSpacing.md),
-        child: Text(
-          "Ajoutez des articles à l'étape précédente pour les personnaliser.",
+    final wide = MediaQuery.sizeOf(context).width >= 980;
+
+    if (wide) {
+      // Two panes: editing on the left, the live premium preview on the right.
+      // The preview pane is an Expanded, so the PDF fills a *bounded* height —
+      // never the unbounded one that blanked the web build before.
+      return Padding(
+        padding: const EdgeInsets.all(ArtizenSpacing.md),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 5,
+              child: ListView(
+                children: [
+                  _header(context),
+                  const SizedBox(height: ArtizenSpacing.md),
+                  // A Column (not spread children): it builds all the lines and
+                  // the totals eagerly, so they exist off-screen too.
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: _editing(draft),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: ArtizenSpacing.md),
+            const Expanded(flex: 4, child: LiveDevisPreview()),
+          ],
         ),
       );
     }
 
+    // Narrow: the classic scrolling column + a full-screen preview button.
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: ListView(
+          padding: const EdgeInsets.all(ArtizenSpacing.md),
+          children: [
+            _header(context),
+            const SizedBox(height: ArtizenSpacing.md),
+            // A Column (not spread children): it builds the lines and the
+            // totals eagerly, so they exist off-screen too.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: _editing(draft),
+            ),
+            const SizedBox(height: ArtizenSpacing.md),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.visibility_outlined),
+              label: const Text('Aperçu du devis'),
+              onPressed:
+                  draft.clientId == null ? null : () => _openPreview(draft),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _header(BuildContext context) {
+    return Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: ArtizenColors.infoSurface,
+          child: Icon(
+            WizardStep.personnaliser.icon,
+            color: ArtizenColors.nightBlue,
+          ),
+        ),
+        const SizedBox(width: ArtizenSpacing.sm),
+        Expanded(
+          child: Text(
+            WizardStep.personnaliser.question,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _editing(QuoteDraft draft) {
+    if (draft.lines.isEmpty) {
+      return const [
+        Text(
+          "Ajoutez des articles à l'étape précédente pour les personnaliser.",
+        ),
+      ];
+    }
+    // The line total is the backend's, matched by article — null (shown as "—")
+    // until the first calculation lands.
     final totalByItem = {
       for (final line
           in draft.calculation?.lines ?? const <QuoteCalculationLine>[])
         line.catalogItemId: line.totalHt,
     };
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final line in draft.lines)
-          _EditableLine(
-            line: line,
-            // The line total is the backend's, matched by article — null (shown
-            // as "—") until the first calculation lands.
-            totalHt: totalByItem[line.catalogItemId],
-            onIncrement: () => ref
-                .read(quoteDraftProvider.notifier)
-                .setQuantity(line.catalogItemId, line.quantity + 1),
-            onDecrement: () => ref
-                .read(quoteDraftProvider.notifier)
-                .setQuantity(line.catalogItemId, line.quantity - 1),
-            onRemove: () => ref
-                .read(quoteDraftProvider.notifier)
-                .removeLine(line.catalogItemId),
-          ),
-        const SizedBox(height: ArtizenSpacing.sm),
-        _TotalsCard(
-          calculation: draft.calculation,
-          recalculating: _recalculating,
+    return [
+      for (final line in draft.lines)
+        _EditableLine(
+          line: line,
+          totalHt: totalByItem[line.catalogItemId],
+          onIncrement: () => ref
+              .read(quoteDraftProvider.notifier)
+              .setQuantity(line.catalogItemId, line.quantity + 1),
+          onDecrement: () => ref
+              .read(quoteDraftProvider.notifier)
+              .setQuantity(line.catalogItemId, line.quantity - 1),
+          onRemove: () => ref
+              .read(quoteDraftProvider.notifier)
+              .removeLine(line.catalogItemId),
         ),
-        const SizedBox(height: ArtizenSpacing.md),
-        // "Prêt à remplir" : the artisan can see the devis take shape in the
-        // real premium PDF at any point, without creating it.
-        OutlinedButton.icon(
-          icon: const Icon(Icons.visibility_outlined),
-          label: const Text('Aperçu du devis'),
-          onPressed: draft.clientId == null ? null : () => _openPreview(draft),
-        ),
-      ],
-    );
+      const SizedBox(height: ArtizenSpacing.sm),
+      _TotalsCard(calculation: draft.calculation, recalculating: _recalculating),
+    ];
   }
 
   void _openPreview(QuoteDraft draft) {
