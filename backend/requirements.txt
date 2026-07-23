@@ -14,6 +14,11 @@ Pillow==11.0.0
 # still build on it) — quotes move to the HTML renderer.
 reportlab==4.2.5
 weasyprint==63.1
+# PyMuPDF (fitz): reads a PDF's *structure* — text runs with position/font/
+# size/colour, vector shapes, embedded fonts, images. The basis of the
+# documentary-clone pipeline: a native PDF is a plan to be read, not an image
+# to be scanned. Self-contained wheel (bundles MuPDF), no apt packages.
+pymupdf==1.28.0
 pydantic==2.10.4
 pydantic-settings==2.7.0
 # JWT: PyJWT replaces the unmaintained python-jose (last release 2021). Same
