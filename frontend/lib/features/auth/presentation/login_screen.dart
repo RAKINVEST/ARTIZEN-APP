@@ -9,13 +9,10 @@ import '../../../core/api/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import 'auth_providers.dart';
 
-/// The ARTIZEN premium sign-in — a dark, living page whose whole job is a brand
-/// promise, not a feature list: **ARTIZEN ne fabrique pas des devis, il restitue
-/// l'identité de chaque artisan.** A single full-width demonstration (mon ancien
-/// devis → ARTIZEN analyse → mon nouveau modèle, à l'identique) sits beside a
-/// glass sign-in card. One shared animation drives the demo *and* lights the
-/// "A" of the wordmark as the identity is recovered. Auth behaviour is
-/// unchanged — only the look.
+/// The ARTIZEN premium sign-in. Its job is not to explain a feature but to make
+/// the visitor *witness*, in a few seconds, the **rebirth of their own graphic
+/// identity**: a real (fictional) devis is scanned and rebuilt, live, into their
+/// own model. Auth behaviour is unchanged — only the experience.
 class _Lux {
   static const nightBlue = Color(0xFF0A0B2E);
   static const deepBlue = Color(0xFF151845);
@@ -31,6 +28,10 @@ class _Lux {
   static const button = [violet, violetLight, gold];
 }
 
+//: The devis the demo scans and rebuilds — a name the eye can hold onto, so the
+//: visitor thinks "it's rebuilding *my* devis", not an abstract shape.
+const _company = 'SARL Dupont Chauffage';
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -39,18 +40,22 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _pointer = ValueNotifier<Offset>(Offset.zero);
   late final List<_Star> _stars = _buildStars();
 
-  // One micro-loop (~3.6 s, à la Apple/Stripe/Linear) drives both the demo and
-  // the wordmark's glow, so they stay perfectly in sync.
+  // The story loop (~3.6 s) drives the demo and the wordmark's "A".
   late final AnimationController _demo = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 3600),
+  )..repeat();
+  // A slow ambient loop (~7 s) drives the logo's breathing halo + rare shimmer.
+  late final AnimationController _ambient = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 7000),
   )..repeat();
 
   bool _loading = false;
@@ -62,6 +67,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _password.dispose();
     _pointer.dispose();
     _demo.dispose();
+    _ambient.dispose();
     super.dispose();
   }
 
@@ -72,7 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         Offset(rng.nextDouble(), rng.nextDouble()),
         rng.nextDouble() * 1.1 + 0.5,
         rng.nextDouble() * 0.35 + 0.08,
-        rng.nextDouble() * 26 + 6, // parallax depth
+        rng.nextDouble() * 26 + 6,
       );
     });
   }
@@ -143,8 +149,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
             SafeArea(
               child: wide
-                  ? _WideLayout(hero: _Hero(pulse: _demo), card: card)
-                  : _NarrowLayout(card: card, pulse: _demo),
+                  ? _WideLayout(
+                      hero: _Hero(pulse: _demo, ambient: _ambient),
+                      card: card,
+                    )
+                  : _NarrowLayout(card: card, pulse: _demo, ambient: _ambient),
             ),
           ],
         ),
@@ -182,10 +191,11 @@ class _WideLayout extends StatelessWidget {
 }
 
 class _NarrowLayout extends StatelessWidget {
-  const _NarrowLayout({required this.card, required this.pulse});
+  const _NarrowLayout({required this.card, required this.pulse, required this.ambient});
 
   final Widget card;
   final Animation<double> pulse;
+  final Animation<double> ambient;
 
   @override
   Widget build(BuildContext context) {
@@ -193,7 +203,7 @@ class _NarrowLayout extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
       child: Column(
         children: [
-          _BrandMark(pulse: pulse),
+          _BrandMark(pulse: pulse, ambient: ambient),
           const SizedBox(height: 24),
           _Appear(child: card),
           const SizedBox(height: 30),
@@ -206,9 +216,10 @@ class _NarrowLayout extends StatelessWidget {
 
 // ------------------------------------------------------------------------ hero
 class _Hero extends StatelessWidget {
-  const _Hero({required this.pulse});
+  const _Hero({required this.pulse, required this.ambient});
 
   final Animation<double> pulse;
+  final Animation<double> ambient;
 
   @override
   Widget build(BuildContext context) {
@@ -216,9 +227,8 @@ class _Hero extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _BrandMark(pulse: pulse),
+        _BrandMark(pulse: pulse, ambient: ambient),
         const SizedBox(height: 30),
-        // Three impacts, no explanation.
         const Text(
           'Vos devis.',
           style: TextStyle(
@@ -236,25 +246,25 @@ class _Hero extends StatelessWidget {
           fontWeight: FontWeight.w800,
         ),
         const SizedBox(height: 20),
-        // The emotional core — an artisan doesn't sell a PDF, he leaves an
-        // impression. The devis is often the first contact with his company.
         const Text(
           'Chaque devis laisse une empreinte.',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 21,
-            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
             height: 1.25,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
+        // THE phrase — larger, luminous. What must stay in mind.
         const Text(
           'ARTIZEN restitue la vôtre.',
           style: TextStyle(
             color: _Lux.goldLight,
-            fontSize: 21,
+            fontSize: 27,
             fontWeight: FontWeight.w800,
-            height: 1.25,
+            height: 1.15,
+            shadows: [Shadow(color: _Lux.gold, blurRadius: 22)],
           ),
         ),
         const SizedBox(height: 28),
@@ -276,13 +286,15 @@ class _Hero extends StatelessWidget {
   }
 }
 
-/// The wordmark, with the brand signature and a living detail: the **A** lights
-/// up (gold, glowing) as [pulse] runs through the detection window — as if the
-/// software were rebuilding the artisan's identity, letter by letter.
+/// The wordmark. Three living details, kept discreet: a breathing gold **halo**
+/// on the mark, a rare **shimmer** sweeping the letters (~every 7 s), and the
+/// **A** that lights up gold as [pulse] runs the detection — the identity being
+/// recovered, letter by letter.
 class _BrandMark extends StatelessWidget {
-  const _BrandMark({this.pulse});
+  const _BrandMark({required this.pulse, required this.ambient});
 
-  final Animation<double>? pulse;
+  final Animation<double> pulse;
+  final Animation<double> ambient;
 
   static const _wordmark = TextStyle(
     fontFamily: AppTheme.displayFontFamily,
@@ -294,7 +306,6 @@ class _BrandMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p = pulse;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,57 +313,86 @@ class _BrandMark extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [_Lux.gold, _Lux.goldLight]),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: _Lux.gold.withValues(alpha: 0.4),
-                    blurRadius: 22,
-                    spreadRadius: -4,
+            AnimatedBuilder(
+              animation: ambient,
+              builder: (context, _) {
+                final breath = 0.5 + 0.5 * math.sin(ambient.value * math.pi * 2);
+                return Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [_Lux.gold, _Lux.goldLight]),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _Lux.gold.withValues(alpha: 0.35 + 0.30 * breath),
+                        blurRadius: 20 + 14 * breath,
+                        spreadRadius: -2,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: const Icon(Icons.handyman, color: _Lux.nightBlue, size: 26),
+                  child: const Icon(Icons.handyman, color: _Lux.nightBlue, size: 26),
+                );
+              },
             ),
             const SizedBox(width: 14),
-            // Base wordmark stays a single 'ARTIZEN' Text; a gold 'A' fades in on
-            // top of its first glyph (same font/size, left-aligned → aligned).
             Stack(
               alignment: Alignment.centerLeft,
               children: [
-                const Text('ARTIZEN', style: _wordmark),
-                if (p != null)
-                  AnimatedBuilder(
-                    animation: p,
-                    builder: (context, _) {
-                      final g = ((p.value - 0.08) / 0.55).clamp(0.0, 1.0);
-                      return Opacity(
-                        opacity: g,
-                        child: Text(
-                          'A',
-                          style: _wordmark.copyWith(
-                            color: _Lux.goldLight,
-                            shadows: [
-                              Shadow(
-                                color: _Lux.gold.withValues(alpha: 0.85),
-                                blurRadius: 4 + 16 * g,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                // Base wordmark + rare shimmer sheen sweeping across it.
+                AnimatedBuilder(
+                  animation: ambient,
+                  builder: (context, _) {
+                    final s = ambient.value;
+                    if (s <= 0.86) return const Text('ARTIZEN', style: _wordmark);
+                    final sheen = (s - 0.86) / 0.14; // 0 → 1 sweep
+                    return ShaderMask(
+                      blendMode: BlendMode.srcIn,
+                      shaderCallback: (bounds) => LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: const [
+                          Colors.white,
+                          Colors.white,
+                          _Lux.goldLight,
+                          Colors.white,
+                          Colors.white,
+                        ],
+                        stops: [
+                          (sheen - 0.20).clamp(0.0, 1.0),
+                          (sheen - 0.06).clamp(0.0, 1.0),
+                          sheen.clamp(0.0, 1.0),
+                          (sheen + 0.06).clamp(0.0, 1.0),
+                          (sheen + 0.20).clamp(0.0, 1.0),
+                        ],
+                      ).createShader(bounds),
+                      child: const Text('ARTIZEN', style: _wordmark),
+                    );
+                  },
+                ),
+                // The gold 'A' fading in over the first glyph.
+                AnimatedBuilder(
+                  animation: pulse,
+                  builder: (context, _) {
+                    final g = ((pulse.value - 0.05) / 0.5).clamp(0.0, 1.0);
+                    if (g <= 0) return const SizedBox.shrink();
+                    return Text(
+                      'A',
+                      style: _wordmark.copyWith(
+                        color: Color.lerp(Colors.white, _Lux.goldLight, g),
+                        shadows: [
+                          Shadow(color: _Lux.gold.withValues(alpha: 0.9 * g), blurRadius: 6 + 22 * g),
+                          Shadow(color: _Lux.goldLight.withValues(alpha: 0.5 * g), blurRadius: 2),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ],
         ),
         const SizedBox(height: 8),
-        // The brand signature — a line meant to stick.
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -383,10 +423,11 @@ class _BrandMark extends StatelessWidget {
 }
 
 // ----------------------------------------------- the transformation demo (WOW)
-/// One full-width demonstration — the whole promise in ~3.6 s:
-/// *mon ancien devis → ARTIZEN analyse → mon nouveau modèle, à l'identique.*
-/// Left-to-right on purpose: the Western eye reads *avant → après* instantly.
-/// Driven by the shared [progress] so it owns no controller of its own.
+/// The heart of the page: a real devis (left, grey — the plain import) is
+/// **scanned** (a gold beam sweeps the three panels), understood (center), and
+/// **rebuilt element by element** into the artisan's own model (right). The same
+/// « SARL Dupont Chauffage » appears left and right, so the visitor sees his own
+/// devis reborn — not an abstract animation. ~3.6 s, then it starts again.
 class _TransformDemo extends StatelessWidget {
   const _TransformDemo({required this.progress});
 
@@ -399,39 +440,88 @@ class _TransformDemo extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth >= 620) {
-          // A bounded height lets `stretch` give equal-height panels cheaply.
           return SizedBox(
-            height: 210,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: _oldDevis()),
-                _arrow(horizontal: true),
-                Expanded(child: _analyse()),
-                _arrow(horizontal: true),
-                Expanded(child: _newModel()),
-              ],
+            height: 238,
+            child: AnimatedBuilder(
+              animation: progress,
+              builder: (context, _) {
+                final v = progress.value;
+                return Stack(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: _oldDevis()),
+                        _arrow(horizontal: true),
+                        Expanded(child: _analyse(v)),
+                        _arrow(horizontal: true),
+                        Expanded(child: _newModel(v)),
+                      ],
+                    ),
+                    _scanBeam(constraints.maxWidth, v),
+                  ],
+                );
+              },
             ),
           );
         }
-        return Column(
-          children: [
-            _oldDevis(),
-            _arrow(horizontal: false),
-            _analyse(),
-            _arrow(horizontal: false),
-            _newModel(),
-          ],
+        return AnimatedBuilder(
+          animation: progress,
+          builder: (context, _) {
+            final v = progress.value;
+            return Column(
+              children: [
+                _oldDevis(),
+                _arrow(horizontal: false),
+                _analyse(v),
+                _arrow(horizontal: false),
+                _newModel(v),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  Widget _arrow({required bool horizontal}) => Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontal ? 8 : 0,
-          vertical: horizontal ? 0 : 6,
+  // The gold beam sweeping left → right across all three panels.
+  Widget _scanBeam(double width, double v) {
+    if (v < 0.04 || v > 0.66) return const SizedBox.shrink();
+    final sweep = ((v - 0.06) / 0.54).clamp(0.0, 1.0);
+    final fade = v < 0.10 ? (v - 0.04) / 0.06 : (v > 0.60 ? (0.66 - v) / 0.06 : 1.0);
+    return Positioned(
+      left: width * sweep - 16,
+      top: 0,
+      bottom: 0,
+      child: IgnorePointer(
+        child: Opacity(
+          opacity: fade.clamp(0.0, 1.0),
+          child: Container(
+            width: 32,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  _Lux.gold.withValues(alpha: 0.0),
+                  _Lux.gold.withValues(alpha: 0.25),
+                  _Lux.goldLight,
+                  _Lux.gold.withValues(alpha: 0.0),
+                ],
+                stops: const [0.0, 0.55, 0.62, 1.0],
+              ),
+              boxShadow: [
+                BoxShadow(color: _Lux.gold.withValues(alpha: 0.6), blurRadius: 18, spreadRadius: 1),
+              ],
+            ),
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _arrow({required bool horizontal}) => Padding(
+        padding: EdgeInsets.symmetric(horizontal: horizontal ? 8 : 0, vertical: horizontal ? 0 : 6),
         child: Center(
           child: Icon(
             horizontal ? Icons.arrow_forward_rounded : Icons.arrow_downward_rounded,
@@ -441,14 +531,9 @@ class _TransformDemo extends StatelessWidget {
         ),
       );
 
-  Widget _panel({
-    required Widget child,
-    Color? fill,
-    Color? border,
-    List<BoxShadow>? shadow,
-  }) =>
+  Widget _panel({required Widget child, Color? fill, Color? border, List<BoxShadow>? shadow}) =>
       Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: fill ?? Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(18),
@@ -458,30 +543,63 @@ class _TransformDemo extends StatelessWidget {
         child: child,
       );
 
-  Widget _stageLabel(String text, Color color) => Text(
+  Widget _label(String text, Color color) => Text(
         text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.2,
+        style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 1.1),
+      );
+
+  Widget _bar(double w, {Color? color, double h = 6}) => FractionallySizedBox(
+        alignment: Alignment.centerLeft,
+        widthFactor: w,
+        child: Container(
+          height: h,
+          decoration: BoxDecoration(
+            color: color ?? Colors.white.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(3),
+          ),
         ),
       );
 
-  Widget _bar(double widthFactor, {Color? color}) => Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: FractionallySizedBox(
-          alignment: Alignment.centerLeft,
-          widthFactor: widthFactor,
-          child: Container(
-            height: 7,
+  // A schematic devis header: a small logo square + the company name.
+  Widget _devisHeader({required bool premium}) => Row(
+        children: [
+          Container(
+            width: 20,
+            height: 20,
             decoration: BoxDecoration(
-              color: color ?? Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(4),
+              color: premium ? null : Colors.white.withValues(alpha: 0.18),
+              gradient: premium ? const LinearGradient(colors: [_Lux.gold, _Lux.goldLight]) : null,
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: premium ? const Icon(Icons.handyman, color: _Lux.nightBlue, size: 12) : null,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              _company,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: premium ? _Lux.goldLight : Colors.white70,
+                fontWeight: FontWeight.w700,
+                fontSize: 11.5,
+              ),
             ),
           ),
+        ],
+      );
+
+  // One table line: a wide "designation" bar + a short right-aligned "price".
+  Widget _tableRow(double designation, {Color? color}) => Padding(
+        padding: const EdgeInsets.only(top: 7),
+        child: Row(
+          children: [
+            Expanded(child: _bar(designation, color: color)),
+            const SizedBox(width: 10),
+            SizedBox(width: 34, child: _bar(1, color: color)),
+          ],
         ),
       );
 
@@ -490,163 +608,139 @@ class _TransformDemo extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _stageLabel('MON ANCIEN DEVIS', _Lux.textDim),
+            _label('MON ANCIEN DEVIS', _Lux.textDim),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.picture_as_pdf_outlined,
-                    color: Colors.white.withValues(alpha: 0.55), size: 20),
-                const SizedBox(width: 8),
-                const Flexible(
-                  child: Text(
-                    'devis.pdf',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700, fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
-            _bar(0.95),
-            _bar(0.8),
-            _bar(0.88),
-            _bar(0.6),
+            _devisHeader(premium: false),
+            const SizedBox(height: 12),
+            _tableRow(0.9),
+            _tableRow(0.75),
+            _tableRow(0.85),
+            const SizedBox(height: 10),
+            Text('TVA 20 %', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
           ],
         ),
       );
 
-  Widget _analyse() => AnimatedBuilder(
-        animation: progress,
-        builder: (context, _) {
-          final revealed =
-              ((progress.value - 0.10) / 0.5).clamp(0.0, 1.0) * _checks.length;
-          final done = revealed >= _checks.length;
-          return _panel(
-            border: _Lux.violet.withValues(alpha: 0.5),
-            shadow: [
-              BoxShadow(
-                color: _Lux.violet.withValues(alpha: 0.22),
-                blurRadius: 30,
-                spreadRadius: -12,
-              ),
-            ],
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    if (done)
-                      const Icon(Icons.check_circle, color: _Lux.success, size: 16)
-                    else
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: const AlwaysStoppedAnimation(_Lux.violetLight),
-                          backgroundColor: Colors.white.withValues(alpha: 0.12),
-                        ),
-                      ),
-                    const SizedBox(width: 8),
-                    Flexible(child: _stageLabel('ARTIZEN ANALYSE', _Lux.violetLight)),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                for (var i = 0; i < _checks.length; i++)
-                  _check(_checks[i], (revealed - i).clamp(0.0, 1.0)),
-              ],
-            ),
-          );
-        },
-      );
-
-  Widget _check(String label, double t) {
-    if (t <= 0) return const SizedBox(height: 24);
-    return Opacity(
-      opacity: t,
-      child: Transform.translate(
-        offset: Offset(0, (1 - t) * 6),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(
+  Widget _analyse(double v) {
+    final revealed = ((v - 0.10) / 0.5).clamp(0.0, 1.0) * _checks.length;
+    final done = revealed >= _checks.length;
+    return _panel(
+      border: _Lux.violet.withValues(alpha: 0.5),
+      shadow: [BoxShadow(color: _Lux.violet.withValues(alpha: 0.22), blurRadius: 30, spreadRadius: -12)],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
             children: [
-              const Icon(Icons.check_circle, color: _Lux.success, size: 15),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+              if (done)
+                const Icon(Icons.check_circle, color: _Lux.success, size: 16)
+              else
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: const AlwaysStoppedAnimation(_Lux.violetLight),
+                    backgroundColor: Colors.white.withValues(alpha: 0.12),
+                  ),
                 ),
-              ),
+              const SizedBox(width: 8),
+              Flexible(child: _label('ARTIZEN ANALYSE', _Lux.violetLight)),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          for (var i = 0; i < _checks.length; i++)
+            _reveal(
+              (revealed - i).clamp(0.0, 1.0),
+              _row(const Icon(Icons.check_circle, color: _Lux.success, size: 15), _checks[i], Colors.white),
+            ),
+        ],
       ),
     );
   }
 
-  Widget _newModel() => AnimatedBuilder(
-        animation: progress,
-        builder: (context, _) {
-          final t = ((progress.value - 0.62) / 0.18).clamp(0.0, 1.0);
-          return Opacity(
-            opacity: t,
-            child: Transform.scale(
-              scale: 0.92 + 0.08 * t,
-              child: _panel(
-                fill: _Lux.violet.withValues(alpha: 0.10),
-                border: _Lux.gold.withValues(alpha: 0.55),
-                shadow: [
-                  BoxShadow(
-                    color: _Lux.gold.withValues(alpha: 0.25),
-                    blurRadius: 30,
-                    spreadRadius: -8,
-                  ),
-                ],
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _stageLabel('VOTRE NOUVEAU MODÈLE', _Lux.goldLight),
-                    const SizedBox(height: 12),
-                    Container(
-                      height: 14,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [_Lux.gold, _Lux.goldLight]),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    _bar(0.9, color: _Lux.violetLight.withValues(alpha: 0.5)),
-                    _bar(0.72, color: Colors.white.withValues(alpha: 0.25)),
-                    const SizedBox(height: 12),
-                    const Row(
-                      children: [
-                        Icon(Icons.auto_awesome, color: _Lux.gold, size: 15),
-                        SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            "Votre signature, retrouvée",
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: _Lux.goldLight,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+  // The right panel builds element by element as [v] runs the later phase.
+  Widget _newModel(double v) {
+    final bp = ((v - 0.58) / 0.36).clamp(0.0, 1.0); // build progress
+    const n = 6.0;
+    double step(int i) => (bp * n - i).clamp(0.0, 1.0);
+    final appeared = bp > 0.02;
+    return _panel(
+      fill: _Lux.violet.withValues(alpha: 0.10),
+      border: _Lux.gold.withValues(alpha: appeared ? 0.6 : 0.2),
+      shadow: appeared
+          ? [BoxShadow(color: _Lux.gold.withValues(alpha: 0.28 * bp), blurRadius: 30, spreadRadius: -8)]
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _label('VOTRE NOUVEAU MODÈLE', _Lux.goldLight),
+          const SizedBox(height: 12),
+          _reveal(step(0), _devisHeader(premium: true)),
+          _reveal(
+            step(1),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Container(
+                height: 11,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [_Lux.gold, _Lux.goldLight]),
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
             ),
-          );
-        },
+          ),
+          _reveal(step(2), _tableRow(0.9, color: _Lux.violetLight.withValues(alpha: 0.5))),
+          _reveal(step(3), _tableRow(0.8, color: Colors.white.withValues(alpha: 0.3))),
+          _reveal(
+            step(4),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: _row(
+                const Icon(Icons.auto_awesome, color: _Lux.gold, size: 14),
+                'Votre signature, retrouvée',
+                _Lux.goldLight,
+                bold: true,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(Widget leading, String label, Color color, {bool bold = false}) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          children: [
+            leading,
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12.5,
+                  fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+                ),
+              ),
+            ),
+          ],
+        ),
       );
+
+  // Fade + slide up as [t] goes 0 → 1; keeps its slot while hidden (stable layout).
+  Widget _reveal(double t, Widget child) {
+    if (t <= 0) return Opacity(opacity: 0, child: child);
+    return Opacity(
+      opacity: t,
+      child: Transform.translate(offset: Offset(0, (1 - t) * 6), child: child),
+    );
+  }
 }
 
 class _StatChips extends StatelessWidget {
@@ -655,10 +749,10 @@ class _StatChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const chips = [
-      _StatChip(icon: Icons.fingerprint, value: 'Votre', label: 'identité', hint: 'dans chaque devis', accent: _Lux.gold),
-      _StatChip(icon: Icons.task_alt, value: '100%', label: 'à votre image', hint: 'logo, couleurs, mise en page', accent: _Lux.violetLight),
-      _StatChip(icon: Icons.bolt, value: 'Quelques', label: 'secondes', hint: "à l'import, une seule fois", accent: _Lux.goldLight),
-      _StatChip(icon: Icons.shield_outlined, value: 'Sécurisé', label: 'vos données', hint: 'protégées', accent: _Lux.success),
+      _StatChip(icon: Icons.fingerprint, title: 'Votre identité', sub: 'préservée', accent: _Lux.gold),
+      _StatChip(icon: Icons.auto_fix_high, title: 'Votre style', sub: 'retrouvé', accent: _Lux.violetLight),
+      _StatChip(icon: Icons.file_upload_outlined, title: 'Import unique', sub: 'une seule fois', accent: _Lux.goldLight),
+      _StatChip(icon: Icons.shield_outlined, title: 'Vos données', sub: 'protégées', accent: _Lux.success),
     ];
     return Wrap(
       spacing: 12,
@@ -672,18 +766,11 @@ class _StatChips extends StatelessWidget {
 }
 
 class _StatChip extends StatelessWidget {
-  const _StatChip({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.hint,
-    required this.accent,
-  });
+  const _StatChip({required this.icon, required this.title, required this.sub, required this.accent});
 
   final IconData icon;
-  final String value;
-  final String label;
-  final String hint;
+  final String title;
+  final String sub;
   final Color accent;
 
   @override
@@ -701,9 +788,11 @@ class _StatChip extends StatelessWidget {
         children: [
           Icon(icon, color: accent, size: 20),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-          Text(hint, style: const TextStyle(color: _Lux.textDim, fontSize: 11)),
+          Text(title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+          Text(sub, style: const TextStyle(color: _Lux.textDim, fontSize: 12)),
         ],
       ),
     );
@@ -1143,10 +1232,10 @@ class _AppearState extends State<_Appear> with SingleTickerProviderStateMixin {
 class _Star {
   const _Star(this.pos, this.radius, this.alpha, this.depth);
 
-  final Offset pos; // fractional 0..1
+  final Offset pos;
   final double radius;
   final double alpha;
-  final double depth; // parallax amplitude in px
+  final double depth;
 }
 
 class _LivingBackgroundPainter extends CustomPainter {
