@@ -21,6 +21,11 @@ une barre **mesurable**, franchie par les données, pas déclarée par une opini
 4. **Toutes les inconnues *critiques* sont résolues ou explicitement acceptées**
    ([UNKNOWNS.md](UNKNOWNS.md)) — aucune question critique ne reste ouverte sans
    décision assumée.
+5. **Indistinguable à l'œil** — original et rendu posés **côte à côte**, un artisan
+   ne peut pas désigner lequel est le sien. C'est le juge de dernier ressort de la
+   [règle d'or](../../../docs/BRAND.md) : les KPI attrapent les écarts locaux, l'œil
+   attrape ce qu'ils manquent. Un chiffre au vert **et** une différence visible =
+   échec. La loi détaillée vit dans la [REPRODUCTION_SPEC](REPRODUCTION_SPEC.md).
 
 ## Ce que ce document n'est pas
 

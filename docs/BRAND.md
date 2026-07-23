@@ -52,6 +52,37 @@ Cette phrase ne change plus. Jamais.
 
 ---
 
+## La règle d'or — « Je ne vois pas la différence avec le mien »
+
+La promesse ci-dessus a **un test**, un seul, et il est impitoyable. Le plus beau
+compliment qu'un artisan puisse faire à ARTIZEN n'est pas :
+
+> « Le devis est plus beau. »
+
+C'est :
+
+> ### « Je ne vois pas la différence avec le mien. »
+
+Posez le devis original de l'artisan et celui restitué par ARTIZEN **côte à
+côte**. S'il peut désigner lequel est le sien, **la promesse est rompue.** « Plus
+beau », « plus lisible », « plus moderne » ne sont pas des compliments : ce sont
+des **ruptures de promesse**. L'artisan ne veut pas *un plus beau devis* — il veut
+*son devis*.
+
+Cette règle est **supérieure à toute considération esthétique et à toute décision
+technique**. La restitution **n'interprète jamais, elle redessine** : moderniser,
+réorganiser, harmoniser, « refaire dans le même esprit » sont des **régressions**,
+pas des améliorations. Avant chaque évolution du moteur, une seule question :
+
+> *Un artisan reconnaîtrait-il lequel est l'original ?* — si oui, le travail
+> n'est pas terminé.
+
+Le détail technique de cette loi — la liste des interdits, la checklist « à
+l'identique », les critères de validation — vit dans la constitution du renderer
+([REPRODUCTION_SPEC](../backend/app/document_clone/REPRODUCTION_SPEC.md)).
+
+---
+
 ## 3. Ce que nous ne sommes pas
 
 - ARTIZEN **n'est pas** un générateur de devis.

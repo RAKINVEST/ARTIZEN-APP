@@ -9,9 +9,9 @@ montrent que la technique est une *conséquence*, la promesse une *cause*.
                       │
       ┌───────────────┴───────────────┐
       │                               │
-  BRAND.md                    EXTRACTION_SPEC.md
-   (la cause)                         │
-      │                     GOLD_STANDARD_PROTOCOL.md
+  BRAND.md          EXTRACTION_SPEC.md · REPRODUCTION_SPEC.md
+   (la cause)                     │
+      │                 GOLD_STANDARD_PROTOCOL.md
       │                               │
       └───────────────┬───────────────┘
                       │
@@ -28,8 +28,9 @@ montrent que la technique est une *conséquence*, la promesse une *cause*.
 
 | Document | Répond à |
 |---|---|
-| [BRAND.md](BRAND.md) | **Pourquoi existons-nous ?** |
-| [EXTRACTION_SPEC.md](../backend/app/document_clone/EXTRACTION_SPEC.md) | Comment fonctionne le moteur ? |
+| [BRAND.md](BRAND.md) | **Pourquoi existons-nous ?** (et sa règle d'or : *« Je ne vois pas la différence avec le mien. »*) |
+| [EXTRACTION_SPEC.md](../backend/app/document_clone/EXTRACTION_SPEC.md) | Comment le moteur **décrit**-il le document ? |
+| [REPRODUCTION_SPEC.md](../backend/app/document_clone/REPRODUCTION_SPEC.md) | Comment le renderer **redessine**-t-il à l'identique ? |
 | [GOLD_STANDARD_PROTOCOL.md](../backend/app/document_clone/GOLD_STANDARD_PROTOCOL.md) | Comment garantir que nos références sont fiables ? |
 | [DECISION_LOG.md](../backend/app/document_clone/DECISION_LOG.md) | Pourquoi avons-nous fait ce choix ? |
 | [UNKNOWNS.md](../backend/app/document_clone/UNKNOWNS.md) | Que ne savons-nous pas encore ? |
