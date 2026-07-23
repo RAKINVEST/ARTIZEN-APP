@@ -162,6 +162,26 @@ sans aucune interprétation.
 typographie (16 %) et le multi-page (pagination 7 % + contenu des pages suivantes)
 deviennent bloquants. Ce sont les deux prochaines inconnues à lever (U-013, U-012).
 
+### E-005 — embarquer les polices exactes  (inconnue : U-013) — **INFIRMÉE**
+
+| Maillon | Contenu |
+|---|---|
+| **Question** | Embarquer la police exacte du PDF source (au lieu du repli) fait-il monter la Typographie sans régression ? |
+| **Hypothèse** | En extrayant les fontes TrueType/OpenType (`fitz.extract_font`) et en les enregistrant dans `assets`+`FontRef`, la Typographie monte vers ~95 %. |
+| **Protocole** | Ajout de `_extract_fonts` à l'extracteur ; `render → compare` sur Chapot + SJE. |
+| **Résultats** | **Chapot : 87,3 % → 72,1 %** (RÉGRESSION). Structure **100 % → 53,8 %**, Typographie **inchangée à 42,9 %**. 3 polices embarquées. SJE **inchangé** (0 police embarquée : ses fontes sont CFF/Type1, non enregistrables par reportlab). |
+| **Interprétation** | Les polices sont **sous-ensemblées** : réencodées, leur `cmap` ne fait pas l'aller-retour → `fitz` relit un **texte différent** du PDF reproduit → le rappel texte (Structure) s'effondre. Et le nom de la police re-embarquée ne matche pas l'original → Typographie non améliorée. Embarquer la fonte subsettée **telle quelle** est contre-productif ici. |
+| **Décision** | **Infirmée → revert.** E-004 (87,3 %) reste la meilleure base. **U-013 reste ouverte**, mais la voie « embarquer la fonte subsettée telle quelle » est **fermée**. |
+| **Ouverte / Décidée** | 2026-07-24 / 2026-07-24 (délai 0 j) |
+
+**Ce que l'échec révèle (le plus précieux) :** l'oracle compare les **noms** de
+police. Une police visuellement identique mais renommée (ou re-subsettée) est
+pénalisée **à tort** — exactement le cas « [ce qui constitue un échec](REPRODUCTION_SPEC.md#ce-qui-constitue-un-échec) :
+un écart que les indicateurs voient alors que l'œil ne le verrait pas ». Deux vraies
+pistes pour U-013, à trancher sur plus de familles : (a) **améliorer l'oracle** —
+comparer des **métriques** de police, pas le nom ; (b) reconstruire une fonte
+**complète** (non subsettée) avant de l'embarquer.
+
 | Exp | Inconnue | Hypothèse | N docs | Résultat (mesuré) | Décision | Statut |
 |---|---|---|---|---|---|---|
 | _(gabarit — expériences futures ici)_ | U-xxx | … | N | — | — | — |
