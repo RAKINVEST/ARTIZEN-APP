@@ -68,22 +68,25 @@ void main() {
         child: const ArtizenApp(),
       ),
     );
-    await tester.pumpAndSettle();
+    // The premium login hero runs a perpetual "detection" showcase animation,
+    // so we pump a fixed slice instead of pumpAndSettle (a loop never settles).
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
 
-    // The wordmark stays uppercase; the CTA is sentence case in the web identity.
+    // The wordmark; the CTA is now the emotional "Entrer dans mon atelier".
     expect(find.text('ARTIZEN'), findsOneWidget);
-    expect(find.text('Se connecter'), findsOneWidget);
+    expect(find.text('Entrer dans mon atelier'), findsOneWidget);
 
     await tester.enterText(
       find.byType(TextFormField).at(0),
       'demo@artizen-qa.io',
     );
     await tester.enterText(find.byType(TextFormField).at(1), 'Password123!');
-    // The premium login now leads with a brand banner, so the button can sit
-    // below the fold on a small test surface — scroll it into view first.
-    await tester.ensureVisible(find.text('Se connecter'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Se connecter'));
+    await tester.ensureVisible(find.text('Entrer dans mon atelier'));
+    await tester.pump();
+    await tester.tap(find.text('Entrer dans mon atelier'));
+    // Login navigates to the dashboard; once the login screen is gone its
+    // looping animation is disposed, so the dashboard settles normally.
     await tester.pumpAndSettle();
 
     // Appears twice: the AppBar title and the bottom-nav label.
