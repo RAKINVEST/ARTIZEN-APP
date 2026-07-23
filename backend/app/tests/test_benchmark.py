@@ -163,6 +163,46 @@ def test_benchmark_is_reproducible_replay(tmp_path) -> None:
     assert "divergence" in message.lower()
 
 
+def test_agreement_kpi_when_a_second_gold_exists(tmp_path) -> None:
+    batappli = tmp_path / "Batappli"
+    batappli.mkdir()
+    _gold_standard(batappli, "batappli-001")
+    # A second, equivalent Gold → agreement measured near 100.
+    (batappli / "batappli-001.gold-b.artizen.json").write_text(
+        _template().model_dump_json(), encoding="utf-8")
+    (batappli / "batappli-001.gold-b.data.json").write_text(
+        json.dumps({"fields": {"company.name": "ARTIZEN PLOMBERIE"},
+                    "rows": [{"designation": "1 - Chauffe-eau", "total_ht": "617,50"}]}),
+        encoding="utf-8")
+
+    report = run_benchmark(tmp_path, label="v0.9")
+    summary = next(s for s in report.sources if s.source == "Batappli")
+
+    assert report.documents[0].kpis.agreement is not None
+    assert report.documents[0].kpis.agreement >= 99.0
+    assert summary.avg_agreement is not None
+    assert "Accord A/B" in to_markdown(report)
+
+
+def test_official_run_includes_only_certified_references(tmp_path) -> None:
+    batappli = tmp_path / "Batappli"
+    batappli.mkdir()
+    _gold_standard(batappli, "batappli-001")
+    _gold_standard(batappli, "batappli-002")
+    # Manifest: only 001 is certified.
+    (tmp_path / "manifest.json").write_text(json.dumps({"documents": [
+        {"id": "batappli-001", "software": "Batappli", "gold_status": "certified"},
+        {"id": "batappli-002", "software": "Batappli", "gold_status": "draft"},
+    ]}), encoding="utf-8")
+
+    full = run_benchmark(tmp_path)
+    official = run_benchmark(tmp_path, official_only=True)
+
+    assert full.total_documents == 2
+    assert official.total_documents == 1
+    assert official.documents[0].document == "batappli-001.pdf"
+
+
 def test_run_number_increments_with_history(tmp_path) -> None:
     batappli = tmp_path / "Batappli"
     batappli.mkdir()

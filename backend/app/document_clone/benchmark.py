@@ -41,13 +41,15 @@ _OUTPUT_DIRNAME = "benchmark"  # skipped during discovery, holds the reports
 
 @dataclass
 class DocKpis:
-    """The 4 KPIs for one document (``None`` = not measurable yet)."""
+    """The KPIs for one document (``None`` = not measurable yet)."""
 
     fidelity: float | None = None
     coverage: float | None = None
     confidence: float | None = None
     validation_seconds: float | None = None
     corrections: int | None = None
+    #: inter-annotator agreement (Gold A vs Gold B) — the reference's credibility.
+    agreement: float | None = None
     certification: str | None = None
 
 
@@ -73,6 +75,8 @@ class SourceSummary:
     avg_validation_seconds: float | None
     #: % of measured documents that needed **zero** correction — the R&D KPI.
     auto_pass: float | None
+    #: mean inter-annotator agreement — how credible this source's references are.
+    avg_agreement: float | None
     certifications: dict[str, int]
     #: kpi -> delta vs the previous run for this source (+ = improved).
     regression: dict[str, float]
@@ -142,6 +146,19 @@ def _evaluate(source: str, pdf_path: Path) -> DocResult:
                 fidelity = compare_pdfs(content, rendered)
                 kpis.fidelity = fidelity.overall
                 kpis.certification = fidelity.certification
+
+                # 6th KPI: if a second, independent Gold exists, measure agreement.
+                b_tpl = pdf_path.with_name(radical + ".gold-b.artizen.json")
+                b_data = pdf_path.with_name(radical + ".gold-b.data.json")
+                if b_tpl.exists() and b_data.exists():
+                    template_b = ArtizenTemplate.model_validate_json(
+                        b_tpl.read_text(encoding="utf-8")
+                    )
+                    data_b = _load_json(b_data)
+                    rendered_b = render_artizen(
+                        template_b, fields=data_b.get("fields", {}), rows=data_b.get("rows", [])
+                    )
+                    kpis.agreement = compare_pdfs(rendered, rendered_b).overall
             except Exception as exc:  # a broken template must not kill the run
                 notes.append(f"rendu/comparaison échoués : {exc}")
         else:
@@ -178,6 +195,7 @@ def _fingerprint(documents: list[DocResult]) -> str:
                 "fidelity": d.kpis.fidelity,
                 "coverage": d.kpis.coverage,
                 "confidence": d.kpis.confidence,
+                "agreement": d.kpis.agreement,
                 "certification": d.kpis.certification,
             }
             for d in documents
@@ -233,6 +251,7 @@ def _summarise(documents: list[DocResult], history: dict | None) -> list[SourceS
                 avg_confidence=avg["confidence"],
                 avg_validation_seconds=_mean([d.kpis.validation_seconds for d in docs]),
                 auto_pass=auto_pass,
+                avg_agreement=_mean([d.kpis.agreement for d in docs]),
                 certifications=certs,
                 regression=regression,
             )
@@ -252,14 +271,33 @@ def _next_run_number(history: dict | None) -> int:
     return int(history["runs"][-1].get("run", len(history["runs"]))) + 1
 
 
+def _certified_ids(corpus_dir: Path) -> set[str]:
+    from app.document_clone.ingest import load_manifest  # local: avoid import cycle risk
+
+    manifest = load_manifest(corpus_dir)
+    return {d["id"] for d in manifest.get("documents", []) if d.get("gold_status") == "certified"}
+
+
 def run_benchmark(
-    corpus_dir: Path, *, label: str = "dev", history: dict | None = None
+    corpus_dir: Path,
+    *,
+    label: str = "dev",
+    history: dict | None = None,
+    official_only: bool = False,
 ) -> BenchmarkReport:
     """Run the full measurable chain over the corpus and build the report.
 
     Deterministic by construction: no clock, no randomness, pure render/compare —
-    so re-running over the same corpus yields the same :attr:`fingerprint`."""
-    documents = [_evaluate(source, pdf) for source, pdf in _iter_documents(corpus_dir)]
+    so re-running over the same corpus yields the same :attr:`fingerprint`.
+
+    ``official_only`` restricts the run to **certified** references (per the
+    manifest) — the only documents allowed in an official benchmark."""
+    allowed = _certified_ids(corpus_dir) if official_only else None
+    documents = [
+        _evaluate(source, pdf)
+        for source, pdf in _iter_documents(corpus_dir)
+        if allowed is None or pdf.name[: -len(".pdf")] in allowed
+    ]
     sources = _summarise(documents, history)
     message = (
         ""
@@ -306,8 +344,8 @@ def to_markdown(report: BenchmarkReport) -> str:
         "",
         "## Par logiciel",
         "",
-        "| Logiciel | Docs | Fidélité | Couverture | Confiance | Validation | Auto-pass | Certifications |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Logiciel | Docs | Fidélité | Couverture | Confiance | Accord A/B | Validation | Auto-pass | Certifications |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for s in report.sources:
         certs = ", ".join(f"{n}×{k}" for k, n in s.certifications.items()) or "—"
@@ -316,6 +354,7 @@ def to_markdown(report: BenchmarkReport) -> str:
             f"| {_fmt(s.avg_fidelity)}{_fmt_delta(s.regression, 'fidelity')} "
             f"| {_fmt(s.avg_coverage)}{_fmt_delta(s.regression, 'coverage')} "
             f"| {_fmt(s.avg_confidence)}{_fmt_delta(s.regression, 'confidence')} "
+            f"| {_fmt(s.avg_agreement)} "
             f"| {_fmt(s.avg_validation_seconds, ' s')} | {_fmt(s.auto_pass)} | {certs} |"
         )
 

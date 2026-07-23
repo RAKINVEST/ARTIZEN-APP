@@ -7,9 +7,9 @@ extracteur sera jugé. Le modifier, c'est amender la constitution — cela exige
 nouvelle version numérotée et justifiée.
 
 > ARTIZEN ne clone pas un document parce qu'une IA « devine ». Il applique un
-> **protocole déterministe**, mesuré par **cinq KPI**, validé sur un **corpus de
-> référence** et certifié par un **benchmark reproductible**. L'extracteur en est
-> la première étape — et la plus strictement disciplinée.
+> **protocole déterministe**, mesuré par **six KPI**, validé sur un **corpus de
+> référence certifié et reproductible**. L'extracteur en est la première étape —
+> et la plus strictement disciplinée.
 
 ---
 

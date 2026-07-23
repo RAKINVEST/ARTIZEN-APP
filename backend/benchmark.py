@@ -40,6 +40,11 @@ def main() -> None:
         action="store_true",
         help="re-run and check it reproduces the last recorded run exactly",
     )
+    parser.add_argument(
+        "--official",
+        action="store_true",
+        help="restrict to certified references only (the official benchmark)",
+    )
     args = parser.parse_args()
 
     history_path = args.corpus / "benchmark_history.json"
@@ -49,7 +54,9 @@ def main() -> None:
         else None
     )
 
-    report = run_benchmark(args.corpus, label=args.label, history=history)
+    report = run_benchmark(
+        args.corpus, label=args.label, history=history, official_only=args.official
+    )
 
     if args.replay:
         ok, message = verify_replay(history, report)

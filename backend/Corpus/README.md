@@ -70,14 +70,27 @@ jamais silencieusement manqués.
 Cycle de vie : `pending_extraction → extracted → pending_validation →
 gold_standard` (ou `rejected`).
 
-### Gouvernance : le Gold Standard exige une validation humaine
+### Gouvernance : le Double Gold, et trois états
 
-**Un document n'entre au Gold Standard qu'après validation humaine.** L'ingest
-écrit *toujours* `gold_standard: false`. Seul `python ingest.py --promote <id>` —
-un geste humain explicite, qui **exige le triplet complet** (`.pdf` +
-`.artizen.json` + `.expected.pdf`) sur le disque — bascule le drapeau. Une
-promotion sur triplet incomplet est refusée. Cette discipline empêche une
-référence erronée de fausser tous les benchmarks suivants.
+L'oracle prouve que le moteur est fidèle *au Gold Standard*. Mais qui prouve que
+le Gold Standard est correct ? Réponse : **une référence n'est jamais la
+reconstruction d'une seule personne.** Deux annotateurs produisent
+*indépendamment* **Gold A** et **Gold B** ; on compare leurs rendus (le **6ᵉ
+KPI**, accord inter-annotateurs). S'ils s'accordent ≥ 99 % → certifié ; sinon →
+révision. Détail complet :
+[`GOLD_STANDARD_PROTOCOL.md`](../app/document_clone/GOLD_STANDARD_PROTOCOL.md).
+
+Trois états au manifeste (`gold_status`) : **Draft → Reviewed → Certified**.
+`certified` ne se **déclare pas** — il s'obtient via `certify_gold_standard` (un
+accord A/B mesuré) ; le poser à la main est refusé. **Seuls les documents
+`certified` entrent dans le benchmark officiel** :
+
+```
+docker compose exec backend python benchmark.py --official
+```
+
+Ainsi aucune référence erronée — ni non validée — ne peut fausser un chiffre
+officiel.
 
 ## Arborescence
 
@@ -141,7 +154,7 @@ chaque rendu sur une échelle :
 Une source n'est déclarée « supportée » que lorsqu'un échantillon représentatif
 de son dossier atteint le badge visé.
 
-## Les 5 KPIs : Fidélité + Couverture + Confiance + Temps + Auto-pass
+## Les 6 KPIs : Fidélité + Couverture + Confiance + Temps + Auto-pass + Accord
 
 La certification ci-dessus mesure la **fidélité** : *ce qu'on a reproduit est-il
 conforme ?* Mais un rendu peut être fidèle à 99,8 % sur le cinquième du document
@@ -155,6 +168,7 @@ légales. Quatre axes, donc, qui doivent progresser **ensemble** :
 | **Confiance** | Le moteur est-il *sûr* de chaque élément reconnu ? | [`extract_report.py`](../app/document_clone/extract_report.py) |
 | **Temps de validation** | Combien de temps / de corrections l'artisan doit-il fournir ? | `.meta.json` (Template Studio) → [`benchmark.py`](../app/document_clone/benchmark.py) |
 | **Auto-pass** | Quelle part des documents n'a demandé **aucune** correction ? | [`benchmark.py`](../app/document_clone/benchmark.py) |
+| **Accord inter-annotateurs** | Deux annotateurs indépendants voient-ils la même chose ? | [`gold_standard.py`](../app/document_clone/gold_standard.py) |
 
 La couverture et la confiance se lisent sur le **rapport d'extraction** de chaque
 document (✓ détecté 99 % / ⚠ absent / ⚠ inconnu). Un élément *confirmé absent*
