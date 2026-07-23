@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_exception.dart';
@@ -51,7 +53,10 @@ class TemplateImportNotifier extends Notifier<TemplateImportState> {
   @override
   TemplateImportState build() => const TemplateImportIdle();
 
-  Future<void> importFile({required String filename, required List<int> bytes}) async {
+  Future<void> importFile({
+    required String filename,
+    required List<int> bytes,
+  }) async {
     state = const TemplateImportUploading();
     try {
       final companyId = await ref.read(currentCompanyIdProvider.future);
@@ -95,9 +100,60 @@ class TemplateImportNotifier extends Notifier<TemplateImportState> {
 
   void reset() => state = const TemplateImportIdle();
 
-  String _describe(Object error) =>
-      error is ApiException ? error.displayMessage : 'Une erreur inattendue est survenue.';
+  String _describe(Object error) => error is ApiException
+      ? error.displayMessage
+      : 'Une erreur inattendue est survenue.';
 }
 
 final templateImportNotifierProvider =
-    NotifierProvider<TemplateImportNotifier, TemplateImportState>(TemplateImportNotifier.new);
+    NotifierProvider<TemplateImportNotifier, TemplateImportState>(
+      TemplateImportNotifier.new,
+    );
+
+String? _trimToNull(String? value) {
+  final trimmed = value?.trim();
+  return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+}
+
+/// The identity we render the "aperçu du rendu" from, and apply verbatim if the
+/// artisan taps "je garde" — each field defaults to the detected value, falling
+/// back to the company's current one, *exactly* like the editable form's
+/// initial values. Computing it once here keeps the preview and the one-tap
+/// confirmation guaranteed identical.
+TemplateImportValidateInput proposedInputFromPreview(
+  TemplateImportPreview preview,
+) {
+  final detection = preview.detection;
+  final company = preview.currentCompany;
+  final brand = preview.currentBrand;
+  final colors = detection.dominantColors;
+
+  return TemplateImportValidateInput(
+    legalName: _trimToNull(detection.companyName ?? company.legalName),
+    siret: _trimToNull(detection.siret ?? company.siret),
+    vatNumber: _trimToNull(detection.vatNumber ?? company.vatNumber),
+    phone: _trimToNull(detection.phone ?? company.phone),
+    email: _trimToNull(detection.email ?? company.email),
+    website: _trimToNull(detection.website ?? company.website),
+    addressLine: _trimToNull(detection.address ?? company.addressLine),
+    primaryColor: _trimToNull(
+      colors.isNotEmpty ? colors[0] : brand.primaryColor,
+    ),
+    secondaryColor: _trimToNull(
+      colors.length > 1 ? colors[1] : brand.secondaryColor,
+    ),
+  );
+}
+
+/// The demo quote PDF rendered with the proposed identity (see
+/// [proposedInputFromPreview]). `autoDispose` so leaving the screen drops the
+/// bytes; `family` keyed by the preview so a new import re-fetches.
+final proposedSamplePdfProvider = FutureProvider.autoDispose
+    .family<Uint8List, TemplateImportPreview>((ref, preview) {
+      return ref
+          .watch(templateImportRepositoryProvider)
+          .renderProposedSample(
+            preview.analysis.id,
+            proposedInputFromPreview(preview),
+          );
+    });

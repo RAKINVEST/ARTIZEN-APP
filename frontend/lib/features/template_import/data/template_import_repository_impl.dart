@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http_parser/http_parser.dart';
@@ -55,6 +57,19 @@ class TemplateImportRepositoryImpl implements TemplateImportRepository {
   }
 
   @override
+  Future<Uint8List> renderProposedSample(
+    String analysisId,
+    TemplateImportValidateInput input,
+  ) async {
+    final response = await _dio.post<List<int>>(
+      '/template-import/$analysisId/sample-preview',
+      data: input.toJson(),
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return Uint8List.fromList(response.data!);
+  }
+
+  @override
   Future<BrandingProfile> validate(
     String analysisId,
     TemplateImportValidateInput input,
@@ -67,6 +82,8 @@ class TemplateImportRepositoryImpl implements TemplateImportRepository {
   }
 }
 
-final templateImportRepositoryProvider = Provider<TemplateImportRepository>((ref) {
+final templateImportRepositoryProvider = Provider<TemplateImportRepository>((
+  ref,
+) {
   return TemplateImportRepositoryImpl(ref.watch(dioProvider));
 });

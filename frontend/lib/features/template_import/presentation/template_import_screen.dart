@@ -1,10 +1,14 @@
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:printing/printing.dart';
 
 import '../../../core/utils/web_file_input.dart';
 import '../../../core/widgets/app_components.dart';
+import '../../../core/widgets/async_value_view.dart';
 import '../data/template_import_models.dart';
 import 'template_import_providers.dart';
 
@@ -24,16 +28,21 @@ class TemplateImportScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(templateImportNotifierProvider);
 
-    // On success, show the produced devis model straight away — a real quote
-    // rendered in the artisan's freshly-applied identity — instead of a text
-    // confirmation. On return, reset so the screen starts fresh next time.
+    // The artisan already saw their devis à leur image in the preview, so
+    // confirming just saves it — no second reveal needed. Return where they
+    // came from with a confirmation, and reset so a later import starts fresh.
     ref.listen(templateImportNotifierProvider, (previous, next) {
       if (next is TemplateImportDone) {
-        context.push('/branding/sample-preview').then((_) {
-          if (context.mounted) {
-            ref.read(templateImportNotifierProvider.notifier).reset();
-          }
-        });
+        final messenger = ScaffoldMessenger.of(context);
+        ref.read(templateImportNotifierProvider.notifier).reset();
+        if (context.canPop()) context.pop();
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Votre modèle est enregistré — vos devis porteront votre identité.',
+            ),
+          ),
+        );
       }
     });
 
@@ -56,10 +65,10 @@ class TemplateImportScreen extends ConsumerWidget {
       TemplateImportAnalyzing() => const _StatusView(
         message: 'Analyse du document en cours...',
       ),
-      TemplateImportPreviewReady(:final preview) => _PreviewForm(
+      TemplateImportPreviewReady(:final preview) => _PreviewReadyView(
         preview: preview,
       ),
-      TemplateImportValidating(:final preview) => _PreviewForm(
+      TemplateImportValidating(:final preview) => _PreviewReadyView(
         preview: preview,
         submitting: true,
       ),
@@ -69,7 +78,7 @@ class TemplateImportScreen extends ConsumerWidget {
       ),
       TemplateImportFailed(:final message, :final preview) =>
         preview != null
-            ? _PreviewForm(preview: preview, errorMessage: message)
+            ? _PreviewReadyView(preview: preview, errorMessage: message)
             : _FatalErrorView(
                 message: message,
                 onRetry: () =>
@@ -229,13 +238,12 @@ class _FatalErrorView extends StatelessWidget {
   }
 }
 
-/// The "Prévisualisation" + "Validation" steps: every field defaults to
-/// the detected value, falling back to the company's current value, so
-/// the user always sees *something* sensible to keep or edit rather
-/// than a blank form — never invents a value that wasn't either
-/// detected or already on file.
-class _PreviewForm extends ConsumerStatefulWidget {
-  const _PreviewForm({
+/// After analysis: show the artisan their devis à leur image first, and let
+/// them confirm from there ("montrer plutôt qu'expliquer"). Only those who want
+/// to correct a value flip to the editable form. A single StatefulWidget holds
+/// that toggle so the same instance survives the submitting / error rebuilds.
+class _PreviewReadyView extends StatefulWidget {
+  const _PreviewReadyView({
     required this.preview,
     this.submitting = false,
     this.errorMessage,
@@ -244,6 +252,150 @@ class _PreviewForm extends ConsumerStatefulWidget {
   final TemplateImportPreview preview;
   final bool submitting;
   final String? errorMessage;
+
+  @override
+  State<_PreviewReadyView> createState() => _PreviewReadyViewState();
+}
+
+class _PreviewReadyViewState extends State<_PreviewReadyView> {
+  bool _editing = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_editing) {
+      return _PreviewForm(
+        preview: widget.preview,
+        submitting: widget.submitting,
+        errorMessage: widget.errorMessage,
+        onCancel: () => setState(() => _editing = false),
+      );
+    }
+    return _ProposedPreview(
+      preview: widget.preview,
+      submitting: widget.submitting,
+      errorMessage: widget.errorMessage,
+      onAdjust: () => setState(() => _editing = true),
+    );
+  }
+}
+
+/// The "aperçu du rendu": the demo quote drawn with the detected identity,
+/// shown before anything is saved. One tap confirms — and the values applied on
+/// "je garde" are the exact ones this preview was rendered from (see
+/// [proposedInputFromPreview]), so what the artisan validates is what they saw.
+class _ProposedPreview extends ConsumerWidget {
+  const _ProposedPreview({
+    required this.preview,
+    required this.onAdjust,
+    this.submitting = false,
+    this.errorMessage,
+  });
+
+  final TemplateImportPreview preview;
+  final VoidCallback onAdjust;
+  final bool submitting;
+  final String? errorMessage;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final pdf = ref.watch(proposedSamplePdfProvider(preview));
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Column(
+        children: [
+          if (errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Card(
+                color: theme.colorScheme.errorContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    errorMessage!,
+                    style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                  ),
+                ),
+              ),
+            ),
+          Expanded(
+            child: AsyncValueView<Uint8List>(
+              value: pdf,
+              onRetry: () => ref.invalidate(proposedSamplePdfProvider(preview)),
+              // A fresh copy each build: on web the printing plugin detaches the
+              // PDF's ArrayBuffer when it hands it to its worker, and re-posting
+              // a detached buffer throws — same guard as PdfPreviewScaffold.
+              builder: (context, bytes) => PdfPreview(
+                build: (_) => Uint8List.fromList(bytes),
+                canChangePageFormat: false,
+                canChangeOrientation: false,
+                canDebug: false,
+                pdfFileName: 'apercu-modele.pdf',
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: Material(
+        elevation: 8,
+        color: theme.colorScheme.surface,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: AppPrimaryButton(
+                    label: "C'est bien moi — je garde ce modèle",
+                    icon: Icons.check_circle_outline,
+                    loading: submitting,
+                    onPressed: () => ref
+                        .read(templateImportNotifierProvider.notifier)
+                        .validate(proposedInputFromPreview(preview)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: submitting ? null : onAdjust,
+                    icon: const Icon(Icons.tune),
+                    label: const Text('Ajuster les informations'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The "Ajuster les informations" step, reached from the preview for the
+/// artisan who wants to correct a value: every field defaults to the detected
+/// value, falling back to the company's current one, so they always see
+/// *something* sensible to keep or edit rather than a blank form — never
+/// invents a value that wasn't either detected or already on file.
+class _PreviewForm extends ConsumerStatefulWidget {
+  const _PreviewForm({
+    required this.preview,
+    this.submitting = false,
+    this.errorMessage,
+    this.onCancel,
+  });
+
+  final TemplateImportPreview preview;
+  final bool submitting;
+  final String? errorMessage;
+
+  /// Where "Retour" goes. When the form is opened from the preview via
+  /// "Ajuster", this returns there; when null it cancels the whole import.
+  final VoidCallback? onCancel;
 
   @override
   ConsumerState<_PreviewForm> createState() => _PreviewFormState();
@@ -433,16 +585,17 @@ class _PreviewFormState extends ConsumerState<_PreviewForm> {
                   child: OutlinedButton(
                     onPressed: widget.submitting
                         ? null
-                        : () => ref
-                              .read(templateImportNotifierProvider.notifier)
-                              .reset(),
-                    child: const Text('Annuler'),
+                        : (widget.onCancel ??
+                              () => ref
+                                  .read(templateImportNotifierProvider.notifier)
+                                  .reset()),
+                    child: Text(widget.onCancel != null ? 'Retour' : 'Annuler'),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: AppPrimaryButton(
-                    label: 'Valider ce modèle',
+                    label: 'Enregistrer ce modèle',
                     icon: Icons.check_circle_outline,
                     loading: widget.submitting,
                     onPressed: _submit,
