@@ -135,6 +135,33 @@ restent KO, mais pour une **autre** cause (regex VAT exigeant 9 chiffres
 contigus ; `_guess_company_name` prend la 1re ligne = l'adresse) → **U-011**,
 distincte, à ne pas confondre avec U-010. C'est la prochaine expérience.
 
+### E-004 — premier extracteur géométrique réel  (Capacité 1 : reproduire à l'identique)
+
+Première expérience de **Capacité 1** : un vrai PDF natif redessiné, mesuré par
+l'oracle. Le maillon manquant — `extraction/pdf_extractor.py` (PyMuPDF) —
+transcrit la page 1 en `.artizen` (spans texte verbatim + formes + logo), que le
+renderer déterministe rejoue.
+
+| Maillon | Contenu |
+|---|---|
+| **Question** | Un extracteur géométrique v0 (aucune interprétation métier) peut-il reproduire un vrai devis assez fidèlement pour valoir une base de départ mesurable ? |
+| **Hypothèse** | En transcrivant chaque span à sa bbox exacte (texte verbatim, couleur, position), on atteint une fidélité **Structure + Mise en page + Couleurs** proche de 100 %, les polices et le multi-page restant les seuls trous. |
+| **Protocole** | `extract()` (fitz) → `render_artizen()` → `compare_pdfs()` sur Chapot (Mediabat) et SJE (Solabaie), les 2 seuls devis réels du corpus. |
+| **Résultats** | **Chapot : 87,3 %** — Structure **100 %**, Mise en page **99,8 %**, Couleurs **100 %**, Images **100 %** ; 130/130 textes reproduits. Typographie **42,9 %**, Pagination **50 %**. **SJE : 71,3 %** — Structure 97,1 %, Mise en page 99,9 %, Couleurs 100 % ; Typographie 0 %, Images 10,9 %, Pagination 9,1 % (doc 11 pages / 46 images). |
+| **Biais observés** | N = 2, 2 familles ; l'oracle ne lit que la page 1 (sauf le compte de pages) ; typographie pénalisée par le repli de police (non embarquée). |
+| **Interprétation** | La **géométrie seule suffit** pour Structure/Mise en page/Couleurs (proche de 100 % sur les 2 familles). Les deux trous ont chacun une cause unique : **polices non embarquées** (Typographie) et **format mono-page** (Pagination + contenu des pages 2+). Le texte lettre-espacé de Mediabat **ne gêne pas** la reproduction (recopié verbatim). |
+| **Décision** | Base de départ **validée**. Prochaines expériences ciblées : **E-005 embarquer les polices** (→ Typographie, U-013) ; **multi-page** dans le format (U-012). |
+| **ADR / spec** | Prototype `extraction/` (zone expérimentale) ; **non mergé sur `main`** (ADR-011 : exige le benchmark sur références certifiées). |
+| **Ouverte / Décidée** | 2026-07-24 / 2026-07-24 |
+
+**Pourquoi ça marche ?** L'oracle récompense le texte présent, bien placé, de la
+bonne couleur — exactement ce qu'une transcription géométrique fidèle produit,
+sans aucune interprétation.
+
+**Quand ça cessera de marcher ?** Dès qu'on vise la certification (Or ≥ 98) : la
+typographie (16 %) et le multi-page (pagination 7 % + contenu des pages suivantes)
+deviennent bloquants. Ce sont les deux prochaines inconnues à lever (U-013, U-012).
+
 | Exp | Inconnue | Hypothèse | N docs | Résultat (mesuré) | Décision | Statut |
 |---|---|---|---|---|---|---|
 | _(gabarit — expériences futures ici)_ | U-xxx | … | N | — | — | — |
