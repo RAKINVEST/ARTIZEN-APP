@@ -38,6 +38,10 @@ class ReportElement(BaseModel):
     name: str                       # "Logo", "Entreprise", "Tableau"…
     status: ElementStatus
     detail: str = ""                # e.g. the column labels for "Colonnes"
+    #: 0..100 — how *sure* the engine is of this element (the 3rd KPI). ``None``
+    #: until extraction can measure it; a low value on a DETECTED element is the
+    #: signal Template Studio uses to ask for a human check.
+    confidence: float | None = None
 
 
 @dataclass(frozen=True)
@@ -76,6 +80,9 @@ _SPECS: dict[DocumentType, tuple[_ElementSpec, ...]] = {
     DocumentType.AVOIR: _DEVIS_SPEC,
 }
 
+#: A DETECTED element below this confidence still wants a human's eyes.
+_REVIEW_THRESHOLD = 90.0
+
 
 class ExtractionReport(BaseModel):
     """What the pipeline understood of one document — the artefact the artisan,
@@ -104,6 +111,29 @@ class ExtractionReport(BaseModel):
         applicable = total - absent
         return round(100 * detected / applicable, 1) if applicable else 100.0
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def average_confidence(self) -> float | None:
+        """Mean confidence over the elements that carry one — the 3rd KPI at
+        document level. ``None`` while nothing has been measured yet."""
+        scored = [e.confidence for e in self.elements if e.confidence is not None]
+        return round(sum(scored) / len(scored), 1) if scored else None
+
+    def needs_review(self, threshold: float = _REVIEW_THRESHOLD) -> list[ReportElement]:
+        """The elements a human should validate: everything still ``UNKNOWN``,
+        plus anything ``DETECTED`` the engine isn't confident about. This is what
+        Template Studio surfaces — only the doubtful, never the whole document."""
+        return [
+            e
+            for e in self.elements
+            if e.status is ElementStatus.UNKNOWN
+            or (
+                e.status is ElementStatus.DETECTED
+                and e.confidence is not None
+                and e.confidence < threshold
+            )
+        ]
+
 
 def build_extraction_report(
     *,
@@ -113,6 +143,7 @@ def build_extraction_report(
     sections: SectionPresence,
     columns: Sequence[str] = (),
     statuses: dict[str, ElementStatus] | None = None,
+    confidences: dict[str, float] | None = None,
     extraction_score: float | None = None,
 ) -> ExtractionReport:
     """Assemble the report from what the pipeline already computed.
@@ -120,9 +151,11 @@ def build_extraction_report(
     ``statuses`` lets a caller (Brique 4, once it can *confirm* absence) override
     any element; without it, a section flag that is ``False`` reads as
     ``UNKNOWN`` — the honest default, because "we didn't recognise it" is not the
-    same claim as "it isn't there".
+    same claim as "it isn't there". ``confidences`` (element name → 0..100) is the
+    3rd KPI, filled once extraction can measure per-element certainty.
     """
     overrides = statuses or {}
+    scores = confidences or {}
     spec = _SPECS.get(document_type, _DEVIS_SPEC)
     elements: list[ReportElement] = []
     for item in spec:
@@ -137,7 +170,14 @@ def build_extraction_report(
             detail = " · ".join(columns)
         else:
             status = ElementStatus.UNKNOWN
-        elements.append(ReportElement(name=item.name, status=status, detail=detail))
+        elements.append(
+            ReportElement(
+                name=item.name,
+                status=status,
+                detail=detail,
+                confidence=scores.get(item.name),
+            )
+        )
 
     return ExtractionReport(
         document=document,
@@ -178,9 +218,14 @@ def format_report(report: ExtractionReport) -> str:
         f"Pages    : {report.page_count}",
         "",
     ]
+    review = set(id(e) for e in report.needs_review())
     pad = max((len(e.name) for e in report.elements), default=0)
     for e in report.elements:
         value = e.detail if (e.status is ElementStatus.DETECTED and e.detail) else _STATUS_LABEL[e.status]
+        if e.confidence is not None:
+            value = f"{value}  ({e.confidence:.0f} %)"
+        if id(e) in review:
+            value = f"{value}  ← à valider"
         lines.append(f"{e.name.ljust(pad)} : {value}")
 
     detected = sum(1 for e in report.elements if e.status is ElementStatus.DETECTED)
@@ -192,4 +237,6 @@ def format_report(report: ExtractionReport) -> str:
         f"{'Couverture'.ljust(pad)} : {report.coverage:.0f} % ({detected}/{applicable} éléments)",
         f"{'Score extraction'.ljust(pad)} : {report.extraction_score:.1f} %",
     ]
+    if report.average_confidence is not None:
+        lines.append(f"{'Confiance moyenne'.ljust(pad)} : {report.average_confidence:.1f} %")
     return "\n".join(lines)

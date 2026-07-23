@@ -12,6 +12,38 @@ l'artisan. C'est la moitié « données » de la plateforme d'évaluation ; la m
 > devis *synthétiques* (un rendu parfait sur un PDF maison ne prouve presque
 > rien). Il faut de **vrais devis natifs** exportés par les logiciels du marché.
 
+## Starter Corpus — 5 documents, pas 1, pas 100
+
+Le premier extracteur épouserait la structure du **premier** PDF qu'il voit
+(biais classique : Entreprise → Client → Tableau → Totaux gravé en dur), et il
+faudrait tout réécrire au deuxième document. Un seul PDF est donc un piège ; cent
+sont inutiles pour *démarrer*. La bonne amorce est un **Starter Corpus de 5
+documents très différents** — le moteur voit immédiatement ce qui est invariant,
+ce qui varie, ce qui doit être générique :
+
+1. **1 Batappli** &nbsp; 2. **1 EBP** &nbsp; 3. **1 Word→PDF** &nbsp; 4. **1 Excel→PDF** &nbsp; 5. **1 personnalisé**
+
+La Brique 4 (extraction) démarre **exclusivement** sur ces 5. En parallèle, la
+collecte progresse vers **100–200 documents** répartis par logiciel et par style
+— l'actif long terme qui fera du Document Intelligence Engine un avantage
+concurrentiel. Court terme : 5 pour développer. Long terme : 200 pour durcir.
+
+## Ingest : anonymisation obligatoire
+
+Le risque n°1 du corpus n'est plus technique, il est **juridique** (noms,
+adresses, SIRET, téléphones, IBAN, signatures). Tout document passe donc par
+l'anonymiseur **avant** d'être stocké :
+
+```
+PDF original  ->  Anonymiseur  ->  Corpus ARTIZEN
+```
+
+[`anonymizer.py`](../app/document_clone/anonymizer.py) retire déterministement
+email / IBAN / téléphone / SIRET-SIREN en préservant la mise en page (seule chose
+que le moteur étudie). Les noms, adresses, BIC et signatures ne sont **pas**
+auto-anonymisés (ils nécessitent la passe sémantique ou une relecture humaine) :
+ils sont *signalés*, jamais silencieusement manqués.
+
 ## Arborescence
 
 Un sous-dossier par source, parce que chaque logiciel a sa signature (structure
@@ -74,24 +106,27 @@ chaque rendu sur une échelle :
 Une source n'est déclarée « supportée » que lorsqu'un échantillon représentatif
 de son dossier atteint le badge visé.
 
-## Le KPI double : Fidélité + Couverture
+## Les 3 KPIs : Fidélité + Couverture + Confiance
 
 La certification ci-dessus mesure la **fidélité** : *ce qu'on a reproduit est-il
 conforme ?* Mais un rendu peut être fidèle à 99,8 % sur le cinquième du document
 qu'il a compris, et ignorer la signature, l'adresse de chantier et les mentions
-légales. Il faut donc un **second axe** :
+légales. Trois axes, donc, qui doivent progresser **ensemble** :
 
 | Indicateur | Question | Où il est mesuré |
 |---|---|---|
 | **Fidélité** | Le document est-il reproduit fidèlement ? | [`comparator.py`](../app/document_clone/comparator.py) |
 | **Couverture** | Quelle proportion des éléments ARTIZEN reconnaît-elle vraiment ? | [`extract_report.py`](../app/document_clone/extract_report.py) |
+| **Confiance** | Le moteur est-il *sûr* de chaque élément reconnu ? | [`extract_report.py`](../app/document_clone/extract_report.py) |
 
-La couverture se lit sur le **rapport d'extraction** de chaque document (✓ détecté /
-⚠ absent / ⚠ inconnu). Un élément *confirmé absent* sort du dénominateur (il est
-N/A) ; un élément *inconnu* y reste (c'est le travail qui manque). Les deux
-indicateurs doivent progresser **ensemble** — c'est leur combinaison qui fait le
-vrai KPI technique, et l'argument commercial : « ARTIZEN reproduit votre devis à
-99 % **et** en reconnaît 96 % des éléments ».
+La couverture et la confiance se lisent sur le **rapport d'extraction** de chaque
+document (✓ détecté 99 % / ⚠ absent / ⚠ inconnu). Un élément *confirmé absent*
+sort du dénominateur de couverture (il est N/A) ; un élément *inconnu* y reste
+(c'est le travail qui manque). La confiance, par élément, permet au **Template
+Studio** de ne demander une validation humaine que sur le douteux (Signature 43 %
+→ « à valider »), jamais sur tout le document. L'argument commercial se lit alors :
+« ARTIZEN reproduit votre devis à 99 %, en reconnaît 96 % des éléments, et sait
+lesquels vous montrer pour relecture ».
 
 Le tableau de bord du benchmark, une fois le corpus rempli, agrégera par source :
 
@@ -114,3 +149,14 @@ PDF à mesurer.)*
 
 Tant que l'étape 1 n'a pas de vrais fichiers, les briques 4 (extraction) et 5
 (enrichissement IA) restent des coquilles non prouvables.
+
+## Évolution naturelle : la mémoire documentaire
+
+Une fois le Template Studio en place (extraction → l'artisan corrige → correction
+enregistrée), le moteur peut **mémoriser ces corrections** : quelques mois plus
+tard, même logiciel + même modèle → reconnaissance immédiate, sans nouvelle passe
+IA. C'est la suite logique du Document Intelligence Engine — une mémoire
+documentaire qui s'affine à l'usage. À ne pas coder avant que le Studio et le
+flux de correction existent (règle : aucune ligne de code sans un document réel
+qui la justifie), mais à garder en ligne de mire dès la conception du format des
+corrections.

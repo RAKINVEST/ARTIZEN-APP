@@ -92,6 +92,29 @@ def test_confirmed_absent_leaves_the_denominator() -> None:
     assert set(absents) == {"Signature", "Adresse chantier"}
 
 
+def test_confidence_is_the_third_kpi_and_flags_what_needs_review() -> None:
+    report = build_extraction_report(
+        document="devis_batappli_001.pdf",
+        document_type=DocumentType.DEVIS,
+        quality=_native_quality(),
+        sections=_all_recognised(),
+        columns=["Description", "Montant"],
+        confidences={
+            "Logo": 99.0, "Entreprise": 98.0, "Client": 97.0, "TVA": 100.0,
+            "Signature": 43.0,  # detected but the engine is unsure
+        },
+    )
+
+    # A low-confidence DETECTED element and every UNKNOWN want a human check;
+    # a high-confidence one does not — Studio surfaces only the doubtful.
+    to_review = {e.name for e in report.needs_review()}
+    assert "Signature" in to_review
+    assert "Logo" not in to_review
+    assert report.average_confidence is not None
+    sig = next(e for e in report.elements if e.name == "Signature")
+    assert sig.confidence == 43.0
+
+
 def test_format_report_reads_like_the_support_account() -> None:
     report = build_extraction_report(
         document="devis_ebp_007.pdf",
