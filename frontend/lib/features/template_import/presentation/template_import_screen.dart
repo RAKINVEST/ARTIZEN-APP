@@ -43,23 +43,38 @@ class TemplateImportScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBody(BuildContext context, WidgetRef ref, TemplateImportState state) {
+  Widget _buildBody(
+    BuildContext context,
+    WidgetRef ref,
+    TemplateImportState state,
+  ) {
     return switch (state) {
       TemplateImportIdle() => _IdleView(onPick: () => _pickFile(ref)),
-      TemplateImportUploading() => const _StatusView(message: 'Import du fichier en cours...'),
-      TemplateImportAnalyzing() => const _StatusView(message: 'Analyse du document en cours...'),
-      TemplateImportPreviewReady(:final preview) => _PreviewForm(preview: preview),
-      TemplateImportValidating(:final preview) =>
-        _PreviewForm(preview: preview, submitting: true),
+      TemplateImportUploading() => const _StatusView(
+        message: 'Import du fichier en cours...',
+      ),
+      TemplateImportAnalyzing() => const _StatusView(
+        message: 'Analyse du document en cours...',
+      ),
+      TemplateImportPreviewReady(:final preview) => _PreviewForm(
+        preview: preview,
+      ),
+      TemplateImportValidating(:final preview) => _PreviewForm(
+        preview: preview,
+        submitting: true,
+      ),
       TemplateImportDone() => _DoneView(
-          onFinish: () => ref.read(templateImportNotifierProvider.notifier).reset(),
-        ),
-      TemplateImportFailed(:final message, :final preview) => preview != null
-          ? _PreviewForm(preview: preview, errorMessage: message)
-          : _FatalErrorView(
-              message: message,
-              onRetry: () => ref.read(templateImportNotifierProvider.notifier).reset(),
-            ),
+        onFinish: () =>
+            ref.read(templateImportNotifierProvider.notifier).reset(),
+      ),
+      TemplateImportFailed(:final message, :final preview) =>
+        preview != null
+            ? _PreviewForm(preview: preview, errorMessage: message)
+            : _FatalErrorView(
+                message: message,
+                onRetry: () =>
+                    ref.read(templateImportNotifierProvider.notifier).reset(),
+              ),
     };
   }
 
@@ -75,10 +90,9 @@ class TemplateImportScreen extends ConsumerWidget {
     final file = result?.files.single;
     if (file == null || file.bytes == null) return;
 
-    await ref.read(templateImportNotifierProvider.notifier).importFile(
-          filename: file.name,
-          bytes: file.bytes!,
-        );
+    await ref
+        .read(templateImportNotifierProvider.notifier)
+        .importFile(filename: file.name, bytes: file.bytes!);
   }
 }
 
@@ -95,7 +109,11 @@ class _IdleView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.picture_as_pdf_outlined, size: 56, color: Theme.of(context).colorScheme.primary),
+            Icon(
+              Icons.picture_as_pdf_outlined,
+              size: 56,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(height: 16),
             const Text(
               "Importez un ancien devis au format PDF : Artizen l'analyse "
@@ -150,7 +168,11 @@ class _DoneView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle, size: 56, color: theme.colorScheme.primary),
+            Icon(
+              Icons.check_circle,
+              size: 56,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(height: 16),
             const Text(
               'Modèle de devis mis à jour. Tous les futurs devis utiliseront ce modèle.',
@@ -165,7 +187,11 @@ class _DoneView extends StatelessWidget {
               label: const Text('Aperçu du rendu'),
             ),
             const SizedBox(height: 8),
-            AppPrimaryButton(label: 'Terminer', icon: Icons.check_circle_outline, onPressed: onFinish),
+            AppPrimaryButton(
+              label: 'Terminer',
+              icon: Icons.check_circle_outline,
+              onPressed: onFinish,
+            ),
           ],
         ),
       ),
@@ -192,7 +218,10 @@ class _FatalErrorView extends StatelessWidget {
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            FilledButton.tonal(onPressed: onRetry, child: const Text('Réessayer')),
+            FilledButton.tonal(
+              onPressed: onRetry,
+              child: const Text('Réessayer'),
+            ),
           ],
         ),
       ),
@@ -206,7 +235,11 @@ class _FatalErrorView extends StatelessWidget {
 /// than a blank form — never invents a value that wasn't either
 /// detected or already on file.
 class _PreviewForm extends ConsumerStatefulWidget {
-  const _PreviewForm({required this.preview, this.submitting = false, this.errorMessage});
+  const _PreviewForm({
+    required this.preview,
+    this.submitting = false,
+    this.errorMessage,
+  });
 
   final TemplateImportPreview preview;
   final bool submitting;
@@ -235,13 +268,27 @@ class _PreviewFormState extends ConsumerState<_PreviewForm> {
     final brand = widget.preview.currentBrand;
     final colors = detection.dominantColors;
 
-    _legalName = TextEditingController(text: detection.companyName ?? company.legalName ?? '');
-    _siret = TextEditingController(text: detection.siret ?? company.siret ?? '');
-    _vatNumber = TextEditingController(text: detection.vatNumber ?? company.vatNumber ?? '');
-    _phone = TextEditingController(text: detection.phone ?? company.phone ?? '');
-    _email = TextEditingController(text: detection.email ?? company.email ?? '');
-    _website = TextEditingController(text: detection.website ?? company.website ?? '');
-    _address = TextEditingController(text: detection.address ?? company.addressLine ?? '');
+    _legalName = TextEditingController(
+      text: detection.companyName ?? company.legalName ?? '',
+    );
+    _siret = TextEditingController(
+      text: detection.siret ?? company.siret ?? '',
+    );
+    _vatNumber = TextEditingController(
+      text: detection.vatNumber ?? company.vatNumber ?? '',
+    );
+    _phone = TextEditingController(
+      text: detection.phone ?? company.phone ?? '',
+    );
+    _email = TextEditingController(
+      text: detection.email ?? company.email ?? '',
+    );
+    _website = TextEditingController(
+      text: detection.website ?? company.website ?? '',
+    );
+    _address = TextEditingController(
+      text: detection.address ?? company.addressLine ?? '',
+    );
     _primaryColor = TextEditingController(
       text: colors.isNotEmpty ? colors[0] : (brand.primaryColor ?? ''),
     );
@@ -253,8 +300,15 @@ class _PreviewFormState extends ConsumerState<_PreviewForm> {
   @override
   void dispose() {
     for (final controller in [
-      _legalName, _siret, _vatNumber, _phone, _email, _website, _address,
-      _primaryColor, _secondaryColor,
+      _legalName,
+      _siret,
+      _vatNumber,
+      _phone,
+      _email,
+      _website,
+      _address,
+      _primaryColor,
+      _secondaryColor,
     ]) {
       controller.dispose();
     }
@@ -267,120 +321,138 @@ class _PreviewFormState extends ConsumerState<_PreviewForm> {
     final detection = widget.preview.detection;
     final confidencePercent = (detection.confidenceScore * 100).round();
 
-    return Column(
-      children: [
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            children: [
-        if (widget.errorMessage != null) ...[
-          Card(
-            color: theme.colorScheme.errorContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                widget.errorMessage!,
-                style: TextStyle(color: theme.colorScheme.onErrorContainer),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        children: [
+          if (widget.errorMessage != null) ...[
+            Card(
+              color: theme.colorScheme.errorContainer,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  widget.errorMessage!,
+                  style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-        ],
-        Row(
-          children: [
-            Icon(Icons.insights_outlined, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Text('Confiance de détection : $confidencePercent %', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 16),
           ],
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _DetectionChip(label: 'Logo', detected: detection.logoDetected),
-            _DetectionChip(label: 'En-tête', detected: detection.headerDetected),
-            _DetectionChip(label: 'Pied de page', detected: detection.footerDetected),
-            _DetectionChip(label: 'Tableau', detected: detection.tableDetected),
-            _DetectionChip(label: 'Mentions légales', detected: detection.legalNoticeDetected),
-          ],
-        ),
-        const SizedBox(height: 24),
-        Text("Informations de l'entreprise", style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        AppTextField(label: 'Raison sociale', controller: _legalName),
-        const SizedBox(height: 12),
-        AppTextField(label: 'SIRET', controller: _siret),
-        const SizedBox(height: 12),
-        AppTextField(label: 'N° TVA', controller: _vatNumber),
-        const SizedBox(height: 12),
-        AppTextField(
-          label: 'Téléphone',
-          controller: _phone,
-          keyboardType: TextInputType.phone,
-        ),
-        const SizedBox(height: 12),
-        AppTextField(
-          label: 'Email',
-          controller: _email,
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 12),
-        AppTextField(label: 'Site web', controller: _website),
-        const SizedBox(height: 12),
-        AppTextField(label: 'Adresse', controller: _address),
-        const SizedBox(height: 24),
-        Text('Identité visuelle', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        AppTextField(
-          label: 'Couleur principale (hex)',
-          controller: _primaryColor,
-        ),
-        const SizedBox(height: 12),
-        AppTextField(
-          label: 'Couleur secondaire (hex)',
-          controller: _secondaryColor,
-        ),
-              const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.insights_outlined, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Confiance de détection : $confidencePercent %',
+                style: theme.textTheme.titleSmall,
+              ),
             ],
           ),
-        ),
-        // Actions in a FIXED footer, OUTSIDE the scroll view. Widgets rendered
-        // inside this text-field-heavy ListView did not receive taps on web
-        // (the AppBar and scrolling worked, the in-list buttons did not); a
-        // fixed footer — like the AppBar — is reliably tappable.
-        Material(
-          elevation: 8,
-          color: theme.colorScheme.surface,
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: widget.submitting
-                          ? null
-                          : () => ref.read(templateImportNotifierProvider.notifier).reset(),
-                      child: const Text('Annuler'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AppPrimaryButton(
-                      label: 'Valider ce modèle',
-                      icon: Icons.check_circle_outline,
-                      loading: widget.submitting,
-                      onPressed: _submit,
-                    ),
-                  ),
-                ],
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _DetectionChip(label: 'Logo', detected: detection.logoDetected),
+              _DetectionChip(
+                label: 'En-tête',
+                detected: detection.headerDetected,
               ),
+              _DetectionChip(
+                label: 'Pied de page',
+                detected: detection.footerDetected,
+              ),
+              _DetectionChip(
+                label: 'Tableau',
+                detected: detection.tableDetected,
+              ),
+              _DetectionChip(
+                label: 'Mentions légales',
+                detected: detection.legalNoticeDetected,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            "Informations de l'entreprise",
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          AppTextField(label: 'Raison sociale', controller: _legalName),
+          const SizedBox(height: 12),
+          AppTextField(label: 'SIRET', controller: _siret),
+          const SizedBox(height: 12),
+          AppTextField(label: 'N° TVA', controller: _vatNumber),
+          const SizedBox(height: 12),
+          AppTextField(
+            label: 'Téléphone',
+            controller: _phone,
+            keyboardType: TextInputType.phone,
+          ),
+          const SizedBox(height: 12),
+          AppTextField(
+            label: 'Email',
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 12),
+          AppTextField(label: 'Site web', controller: _website),
+          const SizedBox(height: 12),
+          AppTextField(label: 'Adresse', controller: _address),
+          const SizedBox(height: 24),
+          Text('Identité visuelle', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          AppTextField(
+            label: 'Couleur principale (hex)',
+            controller: _primaryColor,
+          ),
+          const SizedBox(height: 12),
+          AppTextField(
+            label: 'Couleur secondaire (hex)',
+            controller: _secondaryColor,
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+      // The action bar lives in the Scaffold's dedicated bottom slot, not as a
+      // Column sibling of the scroll view. As a sibling on Flutter web the
+      // scrollable's hit-test region overlapped it, so only the top strip of
+      // BOTH buttons received taps; the bottomNavigationBar slot is laid out
+      // separately by the Scaffold and stays reliably tappable end to end.
+      bottomNavigationBar: Material(
+        elevation: 8,
+        color: theme.colorScheme.surface,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: widget.submitting
+                        ? null
+                        : () => ref
+                              .read(templateImportNotifierProvider.notifier)
+                              .reset(),
+                    child: const Text('Annuler'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: AppPrimaryButton(
+                    label: 'Valider ce modèle',
+                    icon: Icons.check_circle_outline,
+                    loading: widget.submitting,
+                    onPressed: _submit,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -390,7 +462,9 @@ class _PreviewFormState extends ConsumerState<_PreviewForm> {
       return value.isEmpty ? null : value;
     }
 
-    ref.read(templateImportNotifierProvider.notifier).validate(
+    ref
+        .read(templateImportNotifierProvider.notifier)
+        .validate(
           TemplateImportValidateInput(
             legalName: orNull(_legalName),
             siret: orNull(_siret),
