@@ -85,6 +85,13 @@ def _parse_color(value: str | None, fallback: colors.Color) -> colors.Color:
         return fallback
 
 
+def _relative_luminance(color: colors.Color) -> float:
+    """Perceived brightness 0..1 (Rec. 601). Used to keep the white text on the
+    navy panels — and the dark text on the gold pill — legible whatever brand
+    colour an artisan (or `document_detection`'s guessing) happens to supply."""
+    return 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
+
+
 def _money(amount: Decimal) -> str:
     """French convention: space as thousands separator, comma as decimal.
 
@@ -145,10 +152,19 @@ class PdfRenderer:
     def render(self, document: Document) -> bytes:
         buffer = BytesIO()
         primary = _parse_color(document.branding.primary_color, _DEFAULT_PRIMARY)
+        # White text sits on `primary` (header panels, table head, TTC box). A
+        # near-white brand colour — e.g. #fdfdfd guessed off a scanned quote —
+        # would render that text invisible, so a too-light primary falls back to
+        # the navy: a readable premium document beats an unreadable "branded" one.
+        if _relative_luminance(primary) > 0.6:
+            primary = _DEFAULT_PRIMARY
         # The second brand colour is the accent (the "DEVIS" number pill, the
-        # TTC box). A company that set only a primary keeps the ARTIZEN gold as
+        # TTC amount). A company that set only a primary keeps the ARTIZEN gold as
         # its accent so the document still reads premium, not flat.
         secondary = _parse_color(document.branding.secondary_color, _DEFAULT_ACCENT)
+        # Dark text sits on the gold pill; a too-dark accent would hide it.
+        if _relative_luminance(secondary) < 0.5:
+            secondary = _DEFAULT_ACCENT
 
         _, footer_legal = _split_details(document.issuer.detail_lines)
 

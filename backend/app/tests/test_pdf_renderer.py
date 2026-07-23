@@ -193,6 +193,22 @@ def test_a_second_brand_colour_renders_without_raising() -> None:
         assert "DEVIS" in _text_of(pdf)
 
 
+def test_a_near_white_brand_colour_still_renders_readably() -> None:
+    """A primary guessed as near-white (off a scanned quote's background) would
+    make the white header text invisible — it must fall back to the navy so the
+    document stays readable, not "branded" into blankness."""
+    pdf = PdfRenderer().render(
+        _document(
+            branding=DocumentBranding(primary_color="#fdfdfd", secondary_color="#ffffff")
+        )
+    )
+
+    assert pdf.startswith(b"%PDF-")
+    text = _text_of(pdf)
+    assert "DEVIS" in text
+    assert "DEV-2026-0001" in text
+
+
 def test_a_valid_logo_is_drawn() -> None:
     png = (
         b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06"
