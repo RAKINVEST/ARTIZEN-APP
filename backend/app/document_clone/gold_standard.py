@@ -41,6 +41,9 @@ GOLD_REVIEWED = "reviewed"    # a human has checked it (or A/B disagreed)
 GOLD_CERTIFIED = "certified"  # two independent Golds agree — official truth
 
 #: Renders of two independent Golds must match at least this much to certify.
+#: **Empirical and provisional** — a starting point, not a truth. To be
+#: recalibrated from the first real data (see GOLD_STANDARD_PROTOCOL.md §1);
+#: changing it is a dated amendment, not a silent tweak.
 AGREEMENT_THRESHOLD = 99.0
 
 

@@ -408,6 +408,30 @@ def append_history(history: dict | None, report: BenchmarkReport) -> dict:
     return history
 
 
+#: A source may not lose more than this many points of fidelity between runs.
+#: Empirical, provisional — to be recalibrated once real data exists.
+_MAX_FAMILY_DROP = 0.5
+
+
+def regression_gate(
+    history: dict | None, report: BenchmarkReport, *, max_drop: float = _MAX_FAMILY_DROP
+) -> tuple[bool, list[tuple[str, float]]]:
+    """Governance gate for the R&D loop: a new heuristic must not sink any family
+    beyond ``max_drop`` points of fidelity versus the previous run. One that lifts
+    Batappli but drops EBP is **not** automatically acceptable — this is how a
+    generic engine avoids rotting into a pile of special cases. Returns
+    ``(passed, [(source, delta), …])``."""
+    previous = _last_run_by_source(history)
+    offenders = [
+        (s.source, round(s.avg_fidelity - previous[s.source]["fidelity"], 2))
+        for s in report.sources
+        if previous.get(s.source, {}).get("fidelity") is not None
+        and s.avg_fidelity is not None
+        and (s.avg_fidelity - previous[s.source]["fidelity"]) < -max_drop
+    ]
+    return (not offenders), offenders
+
+
 def verify_replay(history: dict | None, report: BenchmarkReport) -> tuple[bool, str]:
     """Replay check: does this fresh run reproduce a recorded one exactly? Matches
     by fingerprint against the most recent stored run — the unambiguous answer to

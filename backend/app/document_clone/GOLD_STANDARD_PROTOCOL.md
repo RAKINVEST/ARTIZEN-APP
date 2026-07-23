@@ -35,6 +35,12 @@ inter-annotateurs**. Plus il est élevé, plus le corpus est crédible.
 Seuil de certification : **accord ≥ 99,0 %**
 ([`gold_standard.py`](gold_standard.py), `AGREEMENT_THRESHOLD`).
 
+> **Ce seuil est empirique et provisoire.** 99,0 % est un point de départ, pas
+> une vérité : tant qu'il n'existe pas de corpus réel, aucun seuil ne mérite un
+> statut de vérité. Il sera **recalibré à partir des premières données** (où se
+> situe réellement l'accord de deux bons annotateurs ? 98,5 ? 99,7 ?). Le
+> changer = un amendement daté (§8), pas un ajustement discret.
+
 ---
 
 ## 2. Les trois états — Draft → Reviewed → Certified
@@ -80,6 +86,23 @@ l'accord ne prouve rien.
   comparateur liste les écarts, pire d'abord), corrige la reconstruction fautive,
   puis relance la certification. Tant que l'accord n'est pas atteint, la
   référence **n'entre pas** dans le benchmark officiel.
+
+### Le troisième niveau — l'arbitre (prévu, non implémenté en v1.0)
+
+Deux annotateurs ne suffisent pas *toujours* : parfois A et B incarnent deux
+interprétations légitimes mais différentes, et le désaccord ne se résout pas par
+correction. Les corpus scientifiques prévoient alors un **arbitre** :
+
+```
+Gold A ─┐
+        ├─ désaccord ──▶ Arbitre ──▶ Gold final (certifié)
+Gold B ─┘
+```
+
+Un troisième annotateur, plus expérimenté, tranche et produit la référence
+finale. **Non implémenté en v1.0** (inutile sans corpus), mais inscrit ici pour
+que deux interprétations divergentes ne deviennent jamais un *blocage* : la voie
+de sortie existe, réservée pour le jour où un désaccord réel l'exigera.
 
 ---
 

@@ -117,8 +117,14 @@ def ingest_pdf(
     software: str,
     document_type: str = "devis",
     doc_id: str | None = None,
+    layout_family: str | None = None,
 ) -> IngestResult:
-    """Run the full pipeline for one PDF and register it in the manifest."""
+    """Run the full pipeline for one PDF and register it in the manifest.
+
+    ``layout_family`` groups documents that share the *same underlying layout*
+    (e.g. two devis from one Word template). The Starter Corpus must be
+    structurally diverse, so a repeated family is a *disguised duplicate* — it is
+    flagged, not silently accepted."""
     content = pdf_path.read_bytes()
 
     ok, reason = validate_pdf(content)
@@ -143,10 +149,19 @@ def ingest_pdf(
         "PAS auto-anonymisés" + ("" if native else " ; PII en image non retirée (scan)"),
     ]
 
+    if layout_family and any(
+        d.get("layout_family") == layout_family for d in manifest.get("documents", [])
+    ):
+        messages.append(
+            f"⚠ Doublon déguisé possible : la layout_family '{layout_family}' existe "
+            "déjà — le Starter Corpus doit être structurellement diversifié."
+        )
+
     entry = {
         "id": doc_id,
         "software": software,
         "document_type": document_type,
+        "layout_family": layout_family,
         "pages": quality.page_count,
         "kind": quality.kind.value,
         "stars": quality.stars,

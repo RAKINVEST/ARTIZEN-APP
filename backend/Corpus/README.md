@@ -12,6 +12,13 @@ l'artisan. C'est la moitié « données » de la plateforme d'évaluation ; la m
 > devis *synthétiques* (un rendu parfait sur un PDF maison ne prouve presque
 > rien). Il faut de **vrais devis natifs** exportés par les logiciels du marché.
 
+> 🚦 **Phase R&D lancée.** L'infrastructure est complète et gelée — on ne
+> construit plus de brique. La boucle est désormais : *constituer le Starter
+> Corpus → première extraction réelle → mesurer → corriger → mesurer*. **Le
+> benchmark pilote le développement.** Cadre : [constitution d'extraction](../app/document_clone/EXTRACTION_SPEC.md),
+> [protocole Gold Standard](../app/document_clone/GOLD_STANDARD_PROTOCOL.md),
+> [journal des décisions](../app/document_clone/DECISION_LOG.md).
+
 ## Starter Corpus — 5 documents, pas 1, pas 100
 
 Le premier extracteur épouserait la structure du **premier** PDF qu'il voit
@@ -27,6 +34,12 @@ La Brique 4 (extraction) démarre **exclusivement** sur ces 5. En parallèle, la
 collecte progresse vers **100–200 documents** répartis par logiciel et par style
 — l'actif long terme qui fera du Document Intelligence Engine un avantage
 concurrentiel. Court terme : 5 pour développer. Long terme : 200 pour durcir.
+
+**Contrainte : les 5 doivent être *structurellement* différents.** Deux devis
+Word issus du même modèle ne comptent pas comme deux cas — ce sont des *doublons
+déguisés* qui gonflent le corpus sans l'enrichir. Le manifeste porte un champ
+`layout_family` : l'ingest **signale** toute famille de mise en page déjà
+présente (`python ingest.py … --layout-family word-modele-A`).
 
 ## Ingest — le pipeline d'entrée dans le corpus
 

@@ -89,6 +89,18 @@ def test_ingest_auto_increments_ids_per_software(tmp_path) -> None:
     assert len(load_manifest(tmp_path)["documents"]) == 2
 
 
+def test_layout_family_flags_disguised_duplicates(tmp_path) -> None:
+    a = _write(tmp_path, "a.pdf", _pdf_with_pii())
+    b = _write(tmp_path, "b.pdf", _pdf_with_pii())
+
+    r1 = ingest_pdf(tmp_path, a, software="Word", layout_family="word-modele-A")
+    r2 = ingest_pdf(tmp_path, b, software="Word", layout_family="word-modele-A")
+
+    assert r1.entry["layout_family"] == "word-modele-A"
+    # The second document reusing the family is flagged, not silently accepted.
+    assert any("Doublon déguisé" in m for m in r2.messages)
+
+
 def test_unreadable_file_is_rejected_not_ingested(tmp_path) -> None:
     bad = _write(tmp_path, "bad.pdf", b"this is not a pdf")
 

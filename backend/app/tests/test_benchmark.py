@@ -25,6 +25,7 @@ from app.document_clone.artizen_format import (
 )
 from app.document_clone.benchmark import (
     append_history,
+    regression_gate,
     run_benchmark,
     to_json,
     to_markdown,
@@ -201,6 +202,27 @@ def test_official_run_includes_only_certified_references(tmp_path) -> None:
     assert full.total_documents == 2
     assert official.total_documents == 1
     assert official.documents[0].document == "batappli-001.pdf"
+
+
+def test_regression_gate_blocks_a_family_dropping_beyond_threshold(tmp_path) -> None:
+    batappli = tmp_path / "Batappli"
+    batappli.mkdir()
+    _gold_standard(batappli, "batappli-001")
+
+    report = run_benchmark(tmp_path, label="v0.8")
+    current = report.sources[0].avg_fidelity
+
+    # Previous run scored a full point higher → a −1.0 drop must be blocked.
+    worse = {"runs": [{"run": 1, "sources": {"Batappli": {"fidelity": current + 1.0}}}]}
+    passed, offenders = regression_gate(worse, report)
+    assert passed is False
+    assert offenders and offenders[0][0] == "Batappli"
+
+    # Previous run scored the same → nothing regressed, gate passes.
+    same = {"runs": [{"run": 1, "sources": {"Batappli": {"fidelity": current}}}]}
+    passed_same, none = regression_gate(same, report)
+    assert passed_same is True
+    assert none == []
 
 
 def test_run_number_increments_with_history(tmp_path) -> None:

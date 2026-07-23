@@ -44,6 +44,11 @@ def main() -> None:
     parser.add_argument("--software", help="source software, e.g. Batappli")
     parser.add_argument("--type", default="devis", dest="document_type")
     parser.add_argument("--id", dest="doc_id", help="force an id (else auto-numbered)")
+    parser.add_argument(
+        "--layout-family",
+        dest="layout_family",
+        help="shared layout id (e.g. word-modele-A) — flags disguised duplicates",
+    )
     parser.add_argument("--list", action="store_true", help="show the manifest")
     parser.add_argument("--promote", metavar="ID", help="human step: promote to Gold Standard")
     args = parser.parse_args()
@@ -67,6 +72,7 @@ def main() -> None:
             software=args.software,
             document_type=args.document_type,
             doc_id=args.doc_id if len(args.pdfs) == 1 else None,
+            layout_family=args.layout_family,
         )
         header = f"✓ {result.id}" if result.ok else f"✗ {pdf.name}"
         print(f"\n{header}")

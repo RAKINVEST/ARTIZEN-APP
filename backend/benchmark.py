@@ -19,6 +19,7 @@ from pathlib import Path
 
 from app.document_clone.benchmark import (
     append_history,
+    regression_gate,
     run_benchmark,
     to_json,
     to_markdown,
@@ -45,6 +46,11 @@ def main() -> None:
         action="store_true",
         help="restrict to certified references only (the official benchmark)",
     )
+    parser.add_argument(
+        "--gate",
+        action="store_true",
+        help="fail if any family regressed beyond the allowed drop vs the last run",
+    )
     args = parser.parse_args()
 
     history_path = args.corpus / "benchmark_history.json"
@@ -62,6 +68,15 @@ def main() -> None:
         ok, message = verify_replay(history, report)
         print(("✓ " if ok else "✗ ") + message)
         return
+
+    if args.gate:
+        passed, offenders = regression_gate(history, report)
+        if passed:
+            print("✓ Garde-fou : aucune famille ne régresse au-delà du seuil.")
+        else:
+            drops = ", ".join(f"{src} {delta:+.1f}" for src, delta in offenders)
+            print(f"✗ Garde-fou : régression refusée → {drops}")
+        raise SystemExit(0 if passed else 1)
 
     markdown = to_markdown(report)
     print(markdown)
