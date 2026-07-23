@@ -14,7 +14,9 @@ exactly as the ``Document`` carries it. The only logic here is layout.
 import base64
 import logging
 import re
+from functools import lru_cache
 from html import escape as _esc
+from pathlib import Path
 
 from weasyprint import HTML
 
@@ -60,6 +62,31 @@ def _logo_data_uri(data: bytes | None) -> str | None:
         return None
 
 
+_FONT_DIR = Path(__file__).parent / "fonts"
+
+
+@lru_cache(maxsize=1)
+def _font_face_css() -> str:
+    """The ARTIZEN brand fonts, embedded so the PDF matches the app (and the
+    model, designed with them): Exo 2 for everything, Orbitron for the wordmark.
+    Inlined as base64 so the render never depends on a font being installed on
+    the host. Both are variable fonts — the ``font-weight: 100 900`` range lets
+    WeasyPrint hit any weight along the axis. Loaded once (cached)."""
+    faces = []
+    for family, filename in (("Exo 2", "Exo2.ttf"), ("Orbitron", "Orbitron.ttf")):
+        try:
+            data = (_FONT_DIR / filename).read_bytes()
+            b64 = base64.b64encode(data).decode("ascii")
+            faces.append(
+                f"@font-face {{ font-family: '{family}';"
+                f" src: url(data:font/ttf;base64,{b64}) format('truetype');"
+                f" font-weight: 100 900; font-style: normal; }}"
+            )
+        except Exception:
+            logger.warning("html_pdf.font_load_failed file=%s", filename, exc_info=True)
+    return "\n".join(faces)
+
+
 class HtmlPdfRenderer:
     """Turns a ``Document`` into PDF bytes via WeasyPrint. Same interface as
     ``PdfRenderer`` (``render(document) -> bytes``) so it drops in for it."""
@@ -98,13 +125,14 @@ class HtmlPdfRenderer:
 
     def _css(self, navy: str, gold: str) -> str:
         return f"""
+        {_font_face_css()}
         @page {{
             size: A4;
             margin: 11mm 11mm 30mm 11mm;
         }}
         * {{ box-sizing: border-box; }}
         body {{
-            font-family: 'Liberation Sans', 'DejaVu Sans', sans-serif;
+            font-family: 'Exo 2', 'Liberation Sans', sans-serif;
             font-size: 9pt; color: {_TEXT}; margin: 0;
         }}
         .muted {{ color: {_MUTED}; }}
@@ -118,12 +146,12 @@ class HtmlPdfRenderer:
             padding: 14px 10px; text-align: center; vertical-align: middle;
         }}
         .logo-box img {{ max-width: 78%; max-height: 60px; }}
-        .logo-mark {{ color: {gold}; font-size: 30px; font-weight: 700;
-                      line-height: 1; }}
-        .logo-word {{ color: #fff; font-size: 17px; font-weight: 700;
-                      letter-spacing: 4px; margin-top: 4px; }}
+        .logo-mark {{ color: {gold}; font-size: 42px; line-height: 1; }}
+        .logo-word {{ font-family: 'Orbitron', 'Exo 2', sans-serif; color: #fff;
+                      font-size: 18px; font-weight: 700; letter-spacing: 4px;
+                      margin-top: 6px; }}
         .logo-tagline {{ color: {gold}; font-size: 6.5px; letter-spacing: 1px;
-                         margin-top: 5px; line-height: 1.5; }}
+                         margin-top: 6px; line-height: 1.5; }}
         .company {{ width: 42%; padding: 0 10px; vertical-align: top; }}
         .company-name {{ color: {navy}; font-size: 15pt; font-weight: 700;
                          margin-bottom: 4px; }}
@@ -232,7 +260,7 @@ class HtmlPdfRenderer:
                 else ""
             )
             logo_html = (
-                '<div class="logo-mark">&#9651;</div>'
+                '<div class="logo-mark">&#9650;</div>'
                 f'<div class="logo-word">{_esc(document.issuer.name)}</div>'
                 f"{tagline}"
             )
