@@ -27,6 +27,45 @@ renderer ne crée jamais un nouveau devis : il **redessine exactement le sien**.
 
 ---
 
+## Les deux capacités — reproduire, puis créer
+
+Le moteur a **deux capacités distinctes**, et la seconde n'a de sens que si la
+première est parfaite :
+
+```
+        Ancien devis PDF
+              │
+              ▼
+    Reproduction à l'identique      ◄── Capacité 1 : reconstruire le MÊME document
+              │
+              ▼
+      Modèle ARTIZEN fidèle             (.artizen : mise en page exacte + emplacements variables)
+              │
+              ▼
+ Tous les futurs devis gardent          ◄── Capacité 2 : créer depuis le modèle reproduit,
+      cette identité                          jamais depuis un modèle générique
+```
+
+**Capacité 1 — Reproduction à l'identique.** L'artisan importe son devis PDF ;
+ARTIZEN reconstruit la **même** mise en page, positions, polices, couleurs,
+espacements, tableaux, bordures, pages et retours à la ligne — si fidèlement que
+l'artisan ne distingue pas l'original de la reproduction. *Reconstruire le même
+document, jamais « refaire un devis qui ressemble ».*
+
+**Capacité 2 — Création des futurs devis.** Une fois la reproduction acquise,
+ARTIZEN **ne repart plus jamais d'un modèle générique** : il repart du modèle
+reproduit à l'identique. Nouveau client, nouvelles lignes d'articles → le document
+conserve **exactement** l'apparence de l'ancien devis. Seules les **données**
+varient (la couche métier du `.artizen`, ADR-003) ; la **couche graphique** ne
+bouge pas d'un point.
+
+C'est la raison d'être de toute l'infrastructure — renderer déterministe, oracle,
+benchmark, Double Gold, fidélité : tout existe pour **un** objectif — reproduire le
+devis de l'artisan à l'identique, puis préserver cette identité dans chacun de ses
+devis futurs.
+
+---
+
 ## La règle fondamentale — la séparation des rôles
 
 ```
@@ -84,6 +123,17 @@ coordonnée ≤ 0,1 pt, taille de police ≤ 0,25 pt, couleur **ΔE\*ab < 2,0**
 (imperceptible à l'œil). Le renderer hérite de ces tolérances : il ne s'accorde
 aucune liberté que l'oracle ne tolère déjà.
 
+Concrètement, cela veut dire :
+
+- Si le logo est à **18 mm** du bord gauche, il reste à **18 mm**.
+- Si le tableau fait **164 mm** de large, il fait **164 mm**.
+- Si le titre est centré en **22 pt**, il reste centré en **22 pt**.
+- Si le document fait **deux pages** avec un saut précis, il garde ces deux pages
+  et ce saut.
+
+> Le renderer ne se dit jamais « je peux faire mieux ».
+> Il se dit **« je dois faire pareil »**.
+
 ---
 
 ## Le test avant chaque commit
@@ -125,7 +175,8 @@ la promesse honnête.
 ARTIZEN reprend votre identité graphique (couleurs, logo, coordonnées) **sur son
 propre modèle**. C'est utile. C'est rapide. **Mais ce n'est pas une restitution.**
 → C'est ce que le produit sait faire aujourd'hui ; l'« aperçu du rendu » de
-l'import en est l'exemple exact.
+l'import en est l'exemple exact. C'est un **pont transitoire, pas la destination** :
+la destination est le Mode 2 et ses deux capacités.
 
 ### Mode 2 — Restitution fidèle
 ARTIZEN **redessine votre devis à l'identique**, à partir du `.artizen` extrait.
