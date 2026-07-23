@@ -3,6 +3,29 @@
 > Ce n'est pas un document marketing. C'est la référence qui empêchera ARTIZEN de
 > devenir un logiciel générique au fil des années. Avant chaque écran, chaque
 > texte, chaque fonctionnalité — on relit ceci.
+>
+> C'est aujourd'hui **le document le plus important du projet.** La technologie
+> évoluera, les modèles d'IA évolueront, le moteur changera — mais tant que ce
+> document reste stable, toute évolution technique continuera de servir la même
+> promesse.
+
+---
+
+## La vraie différence
+
+Au début, on croyait que la différence d'ARTIZEN était *l'IA*. Puis *le moteur
+documentaire*. Puis *le laboratoire de validation*. Ce n'est aucun des trois.
+
+> ### Les autres logiciels demandent à l'artisan de s'adapter au logiciel.
+> ### ARTIZEN s'adapte à l'artisan.
+
+Et son corollaire, qui résume tout le projet — le moteur, l'import, la restitution
+fidèle, le refus des modèles imposés, et même toute l'architecture R&D :
+
+> **L'artisan ne doit jamais avoir l'impression d'apprendre ARTIZEN.**
+> **ARTIZEN doit donner l'impression d'avoir appris l'artisan.**
+
+C'est cette phrase qu'il faut protéger pendant dix ans.
 
 ---
 
@@ -72,6 +95,29 @@ paraissent **jamais** face à l'artisan.
 
 ---
 
+## Deux langues — l'ingénierie ne parle jamais à l'artisan
+
+L'ingénierie peut être extraordinairement complexe ; l'expérience reste
+extraordinairement simple. Les très grands produits appliquent cette séparation
+sans qu'on la voie :
+
+- Chez Apple, personne ne voit *APFS*, *Metal* ou *CoreAnimation*.
+- Chez Stripe, personne ne voit *idempotency key*.
+- Chez Notion, personne ne voit *block tree*.
+
+Chez ARTIZEN, c'est pareil :
+
+| L'équipe dit (code, doc technique) | L'artisan voit |
+|---|---|
+| `.artizen`, extraction, oracle, benchmark, corpus, Double Gold | Votre identité |
+| moteur, rendu déterministe, KPI, fidélité | Votre devis |
+| pipeline d'import, compilation, `.meta.json` | Votre signature |
+| couverture, régression, empreinte de run | Votre savoir-faire |
+
+**Un terme d'ingénierie qui apparaît à l'écran est un bug de marque.**
+
+---
+
 ## 6. Notre étoile polaire
 
 Chaque décision produit doit répondre à **une seule question** :
@@ -89,6 +135,27 @@ vidéos. Partout.
 
 > ### Chaque devis laisse une empreinte.
 > ### ARTIZEN restitue la vôtre.
+
+---
+
+## Nos règles de décision
+
+Deux tests, à passer avant de valider un écran ou une fonctionnalité.
+
+### Le test des 5 secondes
+
+> Un artisan qui découvre ARTIZEN pendant **5 secondes** comprend-il ce qui rend
+> ARTIZEN unique ?
+
+Si non, l'écran **n'est pas terminé** — non parce qu'il est moche, mais parce
+qu'il ne raconte pas la bonne histoire. Le login le passe. Le tableau de bord, le
+premier import et le premier devis devront le passer aussi.
+
+### Montrer plutôt qu'expliquer
+
+Entre *expliquer* une fonctionnalité et la *montrer en action*, on choisit
+toujours la seconde. L'animation « ancien devis → analyse → nouveau devis » en est
+la preuve : en quatre secondes, elle dit plus que dix paragraphes de marketing.
 
 ---
 
