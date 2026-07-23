@@ -23,7 +23,7 @@ from app.catalog.repository import CatalogItemRepository
 from app.clients.repository import ClientRepository
 from app.core.exceptions import NotFoundError
 from app.email.base import EmailAttachment, EmailProvider
-from app.pdf.renderer import PdfRenderer
+from app.pdf.html_renderer import HtmlPdfRenderer
 from app.quotes.document_mapper import quote_to_document, sample_document
 from app.storage import StorageProvider
 from app.quotes.calculator import LineTotals, QuoteCalculator, QuoteTotals
@@ -91,7 +91,7 @@ class QuoteService:
         self._branding = branding
         self._storage = storage
         self._email = email
-        self._renderer = PdfRenderer()
+        self._renderer = HtmlPdfRenderer()
         self._quotes = QuoteRepository(session)
         self._lines = QuoteLineRepository(session)
         self._counters = QuoteCounterRepository(session)

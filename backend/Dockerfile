@@ -6,8 +6,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# curl: healthcheck. The rest are WeasyPrint's runtime dependencies — it
+# renders the quote PDF from an HTML/CSS template (a pixel-faithful copy of the
+# premium model), which needs Pango for text layout + a couple of image libs +
+# base fonts. This is the trade the product asked for: an exact devis is worth
+# a heavier image than reportlab's zero-dependency one.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        libpango-1.0-0 \
+        libpangoft2-1.0-0 \
+        libjpeg62-turbo \
+        libopenjp2-7 \
+        fonts-dejavu-core \
+        fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

@@ -7,11 +7,13 @@ asyncpg==0.30.0
 alembic==1.14.0
 pypdf==5.1.0
 Pillow==11.0.0
-# PDF generation (app/pdf/). Pure Python, no system libraries — which is
-# why it beats WeasyPrint here: WeasyPrint renders HTML/CSS (nicer to
-# style) but needs cairo and pango via apt, and python:3.13-slim has
-# neither. reportlab uses Pillow, already above.
+# PDF generation. WeasyPrint renders the quote PDF from an HTML/CSS template —
+# the only way to reproduce the premium model *exactly* (rounded panels,
+# columns, backgrounds), which the product requires. It needs Pango via apt
+# (see Dockerfile). reportlab is kept for now (other document paths / the demo
+# still build on it) — quotes move to the HTML renderer.
 reportlab==4.2.5
+weasyprint==63.1
 pydantic==2.10.4
 pydantic-settings==2.7.0
 # JWT: PyJWT replaces the unmaintained python-jose (last release 2021). Same
