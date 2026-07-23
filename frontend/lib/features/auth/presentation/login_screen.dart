@@ -267,16 +267,64 @@ class _Hero extends StatelessWidget {
             shadows: [Shadow(color: _Lux.gold, blurRadius: 22)],
           ),
         ),
-        const SizedBox(height: 28),
-        _TransformDemo(progress: pulse),
-        const SizedBox(height: 22),
+        const SizedBox(height: 14),
+        // Both promises in one line: the emotion (identity) AND the concrete
+        // benefit (time) — the question every artisan asks first.
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
-          child: const Text(
-            "Importez votre ancien devis PDF. En quelques secondes, ARTIZEN "
-            "retrouve votre logo, vos couleurs, votre mise en page et votre "
-            "façon de présenter votre savoir-faire.",
-            style: TextStyle(color: _Lux.textDim, fontSize: 15, height: 1.55),
+          child: const Text.rich(
+            TextSpan(
+              style: TextStyle(
+                color: _Lux.textDim,
+                fontSize: 16,
+                height: 1.45,
+                fontWeight: FontWeight.w600,
+              ),
+              children: [
+                TextSpan(text: 'Retrouvez votre identité une seule fois — créez ensuite chaque devis '),
+                TextSpan(
+                  text: 'en quelques minutes.',
+                  style: TextStyle(color: _Lux.goldLight, fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 26),
+        _TransformDemo(progress: pulse),
+        const SizedBox(height: 18),
+        // The full journey, right under the demo (the "4th step"): import once →
+        // identity recovered → every future devis in minutes.
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: Icon(Icons.auto_awesome, color: _Lux.gold, size: 18),
+              ),
+              SizedBox(width: 10),
+              Flexible(
+                child: Text.rich(
+                  TextSpan(
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                      height: 1.35,
+                    ),
+                    children: [
+                      TextSpan(text: 'Une seule importation. Une identité retrouvée. '),
+                      TextSpan(
+                        text: 'Des devis en quelques minutes.',
+                        style: TextStyle(color: _Lux.goldLight, fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 24),
@@ -749,17 +797,17 @@ class _StatChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const chips = [
-      _StatChip(icon: Icons.fingerprint, title: 'Votre identité', sub: 'préservée', accent: _Lux.gold),
-      _StatChip(icon: Icons.auto_fix_high, title: 'Votre style', sub: 'retrouvé', accent: _Lux.violetLight),
-      _StatChip(icon: Icons.file_upload_outlined, title: 'Import unique', sub: 'une seule fois', accent: _Lux.goldLight),
-      _StatChip(icon: Icons.shield_outlined, title: 'Vos données', sub: 'protégées', accent: _Lux.success),
+      _StatChip(icon: Icons.file_upload_outlined, title: 'Import unique', sub: 'Votre identité retrouvée une seule fois.', accent: _Lux.violetLight),
+      _StatChip(icon: Icons.bolt, title: 'Devis en quelques minutes', sub: 'Plus besoin de repartir de zéro.', accent: _Lux.gold),
+      _StatChip(icon: Icons.palette_outlined, title: '100 % à votre image', sub: 'Logo, couleurs, présentation.', accent: _Lux.goldLight),
+      _StatChip(icon: Icons.shield_outlined, title: 'Vos données protégées', sub: 'Sécurisées et confidentielles.', accent: _Lux.success),
     ];
     return Wrap(
       spacing: 12,
       runSpacing: 12,
       children: [
         for (final c in chips)
-          ConstrainedBox(constraints: const BoxConstraints(minWidth: 150), child: c),
+          ConstrainedBox(constraints: const BoxConstraints(minWidth: 250), child: c),
       ],
     );
   }
@@ -789,10 +837,14 @@ class _StatChip extends StatelessWidget {
           Icon(icon, color: accent, size: 20),
           const SizedBox(height: 8),
           Text(title,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
-          Text(sub, style: const TextStyle(color: _Lux.textDim, fontSize: 12)),
+          const SizedBox(height: 2),
+          Text(sub,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: _Lux.textDim, fontSize: 12, height: 1.25)),
         ],
       ),
     );
