@@ -9,14 +9,13 @@ import '../../../core/api/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import 'auth_providers.dart';
 
-/// The ARTIZEN premium sign-in — a dark, living page whose whole job is to make
-/// one thing land in under five seconds: **ARTIZEN ne fabrique pas des devis, il
-/// restitue l'identité de chaque artisan.** A single full-width demonstration
-/// (mon ancien devis → ARTIZEN analyse → mon nouveau modèle, à l'identique) sits
-/// beside a glass sign-in card. Auth behaviour is unchanged — only the look.
-///
-/// Native Flutter: glass via [BackdropFilter], a living background + parallax via
-/// a pointer-driven [CustomPainter], the demo via an [AnimationController].
+/// The ARTIZEN premium sign-in — a dark, living page whose whole job is a brand
+/// promise, not a feature list: **ARTIZEN ne fabrique pas des devis, il restitue
+/// l'identité de chaque artisan.** A single full-width demonstration (mon ancien
+/// devis → ARTIZEN analyse → mon nouveau modèle, à l'identique) sits beside a
+/// glass sign-in card. One shared animation drives the demo *and* lights the
+/// "A" of the wordmark as the identity is recovered. Auth behaviour is
+/// unchanged — only the look.
 class _Lux {
   static const nightBlue = Color(0xFF0A0B2E);
   static const deepBlue = Color(0xFF151845);
@@ -39,12 +38,21 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _pointer = ValueNotifier<Offset>(Offset.zero);
   late final List<_Star> _stars = _buildStars();
+
+  // One micro-loop (~3.6 s, à la Apple/Stripe/Linear) drives both the demo and
+  // the wordmark's glow, so they stay perfectly in sync.
+  late final AnimationController _demo = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 3600),
+  )..repeat();
+
   bool _loading = false;
   String? _error;
 
@@ -53,6 +61,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _email.dispose();
     _password.dispose();
     _pointer.dispose();
+    _demo.dispose();
     super.dispose();
   }
 
@@ -134,8 +143,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             SafeArea(
               child: wide
-                  ? _WideLayout(hero: const _Hero(), card: card)
-                  : _NarrowLayout(card: card),
+                  ? _WideLayout(hero: _Hero(pulse: _demo), card: card)
+                  : _NarrowLayout(card: card, pulse: _demo),
             ),
           ],
         ),
@@ -161,7 +170,7 @@ class _WideLayout extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Expanded(flex: 7, child: _Appear(child: _Hero())),
+              Expanded(flex: 7, child: _Appear(child: hero)),
               const SizedBox(width: 48),
               SizedBox(width: 400, child: _Appear(delayMs: 120, child: card)),
             ],
@@ -173,9 +182,10 @@ class _WideLayout extends StatelessWidget {
 }
 
 class _NarrowLayout extends StatelessWidget {
-  const _NarrowLayout({required this.card});
+  const _NarrowLayout({required this.card, required this.pulse});
 
   final Widget card;
+  final Animation<double> pulse;
 
   @override
   Widget build(BuildContext context) {
@@ -183,11 +193,11 @@ class _NarrowLayout extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
       child: Column(
         children: [
-          const _BrandMark(),
+          _BrandMark(pulse: pulse),
           const SizedBox(height: 24),
           _Appear(child: card),
           const SizedBox(height: 30),
-          const _Appear(delayMs: 120, child: _TransformDemo()),
+          _Appear(delayMs: 120, child: _TransformDemo(progress: pulse)),
         ],
       ),
     );
@@ -196,7 +206,9 @@ class _NarrowLayout extends StatelessWidget {
 
 // ------------------------------------------------------------------------ hero
 class _Hero extends StatelessWidget {
-  const _Hero();
+  const _Hero({required this.pulse});
+
+  final Animation<double> pulse;
 
   @override
   Widget build(BuildContext context) {
@@ -204,11 +216,11 @@ class _Hero extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const _BrandMark(),
+        _BrandMark(pulse: pulse),
         const SizedBox(height: 30),
-        // The emotional line — the message an artisan remembers.
+        // Three impacts, no explanation.
         const Text(
-          'Vos devis racontent',
+          'Vos devis.',
           style: TextStyle(
             color: Colors.white,
             fontSize: 44,
@@ -218,52 +230,71 @@ class _Hero extends StatelessWidget {
           ),
         ),
         _GradientText(
-          'votre histoire.',
+          'Votre identité.',
           colors: _Lux.heroTitle,
           fontSize: 44,
           fontWeight: FontWeight.w800,
         ),
-        const SizedBox(height: 16),
-        const Row(
-          children: [
-            Icon(Icons.auto_awesome, color: _Lux.gold, size: 20),
-            SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                "ARTIZEN les recrée à l'identique.",
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 540),
-          child: const Text(
-            "Votre savoir-faire mérite mieux qu'un modèle générique. Importez un "
-            "ancien devis PDF : ARTIZEN restitue votre identité, ligne pour ligne.",
-            style: TextStyle(color: _Lux.textDim, fontSize: 15.5, height: 1.55),
+        const SizedBox(height: 20),
+        // The emotional core — an artisan doesn't sell a PDF, he leaves an
+        // impression. The devis is often the first contact with his company.
+        const Text(
+          'Chaque devis laisse une empreinte.',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 21,
+            fontWeight: FontWeight.w700,
+            height: 1.25,
           ),
         ),
+        const SizedBox(height: 4),
+        const Text(
+          'ARTIZEN restitue la vôtre.',
+          style: TextStyle(
+            color: _Lux.goldLight,
+            fontSize: 21,
+            fontWeight: FontWeight.w800,
+            height: 1.25,
+          ),
+        ),
+        const SizedBox(height: 28),
+        _TransformDemo(progress: pulse),
         const SizedBox(height: 22),
-        const _TechPill(),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: const Text(
+            "Importez votre ancien devis PDF. En quelques secondes, ARTIZEN "
+            "retrouve votre logo, vos couleurs, votre mise en page et votre "
+            "façon de présenter votre savoir-faire.",
+            style: TextStyle(color: _Lux.textDim, fontSize: 15, height: 1.55),
+          ),
+        ),
         const SizedBox(height: 24),
-        const _TransformDemo(),
-        const SizedBox(height: 22),
         const _StatChips(),
       ],
     );
   }
 }
 
+/// The wordmark, with the brand signature and a living detail: the **A** lights
+/// up (gold, glowing) as [pulse] runs through the detection window — as if the
+/// software were rebuilding the artisan's identity, letter by letter.
 class _BrandMark extends StatelessWidget {
-  const _BrandMark();
+  const _BrandMark({this.pulse});
+
+  final Animation<double>? pulse;
+
+  static const _wordmark = TextStyle(
+    fontFamily: AppTheme.displayFontFamily,
+    color: Colors.white,
+    fontSize: 30,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 5,
+  );
 
   @override
   Widget build(BuildContext context) {
+    final p = pulse;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,20 +319,40 @@ class _BrandMark extends StatelessWidget {
               child: const Icon(Icons.handyman, color: _Lux.nightBlue, size: 26),
             ),
             const SizedBox(width: 14),
-            const Text(
-              'ARTIZEN',
-              style: TextStyle(
-                fontFamily: AppTheme.displayFontFamily,
-                color: Colors.white,
-                fontSize: 30,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 5,
-              ),
+            // Base wordmark stays a single 'ARTIZEN' Text; a gold 'A' fades in on
+            // top of its first glyph (same font/size, left-aligned → aligned).
+            Stack(
+              alignment: Alignment.centerLeft,
+              children: [
+                const Text('ARTIZEN', style: _wordmark),
+                if (p != null)
+                  AnimatedBuilder(
+                    animation: p,
+                    builder: (context, _) {
+                      final g = ((p.value - 0.08) / 0.55).clamp(0.0, 1.0);
+                      return Opacity(
+                        opacity: g,
+                        child: Text(
+                          'A',
+                          style: _wordmark.copyWith(
+                            color: _Lux.goldLight,
+                            shadows: [
+                              Shadow(
+                                color: _Lux.gold.withValues(alpha: 0.85),
+                                blurRadius: 4 + 16 * g,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+              ],
             ),
           ],
         ),
         const SizedBox(height: 8),
-        // The brand signature — a line meant to stick, not a description.
+        // The brand signature — a line meant to stick.
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -331,68 +382,17 @@ class _BrandMark extends StatelessWidget {
   }
 }
 
-class _TechPill extends StatelessWidget {
-  const _TechPill();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.auto_awesome, color: _Lux.gold, size: 18),
-          SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              'Vos devis. Votre identité.',
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ----------------------------------------------- the transformation demo (WOW)
-/// One full-width demonstration — the whole promise in four seconds:
+/// One full-width demonstration — the whole promise in ~3.6 s:
 /// *mon ancien devis → ARTIZEN analyse → mon nouveau modèle, à l'identique.*
-/// It replaces the old decorative action cards, which looked clickable but,
-/// before login, led nowhere — so nothing here invites a tap that fails.
-class _TransformDemo extends StatefulWidget {
-  const _TransformDemo();
+/// Left-to-right on purpose: the Western eye reads *avant → après* instantly.
+/// Driven by the shared [progress] so it owns no controller of its own.
+class _TransformDemo extends StatelessWidget {
+  const _TransformDemo({required this.progress});
 
-  @override
-  State<_TransformDemo> createState() => _TransformDemoState();
-}
-
-class _TransformDemoState extends State<_TransformDemo>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 4000),
-  )..repeat();
+  final Animation<double> progress;
 
   static const _checks = ['Logo', 'Tableau', 'TVA', 'Police', 'Couleurs'];
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -516,10 +516,10 @@ class _TransformDemoState extends State<_TransformDemo>
       );
 
   Widget _analyse() => AnimatedBuilder(
-        animation: _c,
+        animation: progress,
         builder: (context, _) {
           final revealed =
-              ((_c.value - 0.10) / 0.5).clamp(0.0, 1.0) * _checks.length;
+              ((progress.value - 0.10) / 0.5).clamp(0.0, 1.0) * _checks.length;
           final done = revealed >= _checks.length;
           return _panel(
             border: _Lux.violet.withValues(alpha: 0.5),
@@ -589,9 +589,9 @@ class _TransformDemoState extends State<_TransformDemo>
   }
 
   Widget _newModel() => AnimatedBuilder(
-        animation: _c,
+        animation: progress,
         builder: (context, _) {
-          final t = ((_c.value - 0.62) / 0.18).clamp(0.0, 1.0);
+          final t = ((progress.value - 0.62) / 0.18).clamp(0.0, 1.0);
           return Opacity(
             opacity: t,
             child: Transform.scale(
@@ -628,7 +628,7 @@ class _TransformDemoState extends State<_TransformDemo>
                         SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            "Recréé à l'identique",
+                            "Votre signature, retrouvée",
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -655,10 +655,10 @@ class _StatChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const chips = [
-      _StatChip(icon: Icons.bolt, value: '10x', label: 'Plus rapide', hint: 'Gagnez du temps chaque jour', accent: _Lux.gold),
-      _StatChip(icon: Icons.task_alt, value: '100%', label: 'À votre image', hint: 'Reproduction fidèle', accent: _Lux.violetLight),
-      _StatChip(icon: Icons.shield_outlined, value: 'Sécurisé', label: 'Vos données', hint: 'sont protégées', accent: _Lux.success),
-      _StatChip(icon: Icons.mood, value: 'Simple', label: 'Prise en main', hint: 'immédiate', accent: _Lux.goldLight),
+      _StatChip(icon: Icons.fingerprint, value: 'Votre', label: 'identité', hint: 'dans chaque devis', accent: _Lux.gold),
+      _StatChip(icon: Icons.task_alt, value: '100%', label: 'à votre image', hint: 'logo, couleurs, mise en page', accent: _Lux.violetLight),
+      _StatChip(icon: Icons.bolt, value: 'Quelques', label: 'secondes', hint: "à l'import, une seule fois", accent: _Lux.goldLight),
+      _StatChip(icon: Icons.shield_outlined, value: 'Sécurisé', label: 'vos données', hint: 'protégées', accent: _Lux.success),
     ];
     return Wrap(
       spacing: 12,
