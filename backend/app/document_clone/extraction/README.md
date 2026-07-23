@@ -15,9 +15,11 @@ bonnes raisons, et toute modification est un ADR.
 
 ## Code expérimental — ce dossier, destiné à évoluer souvent
 
-Les **heuristiques d'extraction** de la Brique 4 vivent **ici, et nulle part
-ailleurs**. Elles changeront à chaque expérience du corpus. Les isoler empêche
-qu'une expérimentation contamine les fondations.
+Les **heuristiques d'extraction** du *Programme expérimental d'extraction*
+(ex-« Brique 4 ») vivent **ici, et nulle part ailleurs**. Elles changeront à
+chaque expérience du corpus. Les isoler empêche qu'une expérimentation contamine
+les fondations. Cycle : *Hypothèse → Expérience → Mesure → Décision → ADR/spec*
+(pas *idée → code → correction*).
 
 ### Règles d'entrée (rappel, cf [`../DECISION_LOG.md`](../DECISION_LOG.md) ADR-011/013)
 

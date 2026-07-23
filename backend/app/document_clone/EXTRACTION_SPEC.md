@@ -1,10 +1,16 @@
 # Spécification d'extraction — v1.0
 
-**La constitution de la Brique 4.** Ce document est figé *avant* toute ligne de
-code d'extraction. Il n'est pas une implémentation : c'est le **contrat
-scientifique** auquel tout extracteur devra se conformer, et par lequel tout
-extracteur sera jugé. Le modifier, c'est amender la constitution — cela exige une
-nouvelle version numérotée et justifiée.
+**La constitution du Programme expérimental d'extraction** (ex-« Brique 4 »). Ce
+document est figé *avant* toute ligne de code d'extraction. Il n'est pas une
+implémentation : c'est le **contrat scientifique** auquel tout extracteur devra
+se conformer, et par lequel tout extracteur sera jugé. Le modifier, c'est amender
+la constitution — cela exige une nouvelle version numérotée et justifiée.
+
+> **Ce n'est plus « développer une fonctionnalité ».** L'objectif du programme est
+> de transformer progressivement des inconnues ([UNKNOWNS.md](UNKNOWNS.md)) en
+> connaissances validées. Le cycle n'est pas *idée → code → correction*, mais :
+>
+> **Hypothèse → Expérience → Mesure → Décision → ADR (ou évolution de la spec).**
 
 > ARTIZEN ne clone pas un document parce qu'une IA « devine ». Il applique un
 > **protocole déterministe**, mesuré par **six KPI**, validé sur un **corpus de
@@ -193,7 +199,7 @@ l'empreinte.
 
 ---
 
-## 7. Processus de développement de la Brique 4
+## 7. Processus — le programme expérimental d'extraction
 
 Une fois cette spec figée, et **seulement ensuite** :
 

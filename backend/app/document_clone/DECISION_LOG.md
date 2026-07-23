@@ -33,6 +33,7 @@ décision remplacée est toujours en vigueur.
 | ADR-014 | **Critères de sortie de Phase R&D** mesurables (5 docs, 50 certifiés, fidélité ≥99, couverture ≥95, auto-pass ≥90, validation ≤20 s, 0 régression/3 versions) | Savoir *quand* la R&D se termine, pas seulement quand elle commence → passage R&D → Production | 2026-07 | Active |
 | ADR-015 | **Périmètre gelé aux devis** jusqu'à maîtrise complète de la boucle | Risque de succès : un moteur générique ne le devient qu'après robustesse prouvée sur un domaine restreint (pas de factures/avoirs/contrats/bons avant) | 2026-07 | Active |
 | ADR-016 | **Objectif = réduire l'incertitude** (registre UNKNOWNS), plus ajouter des briques | La plateforme est complète ; désormais la vérité vient des données, pas de la réflexion | 2026-07 | Active |
+| ADR-017 | « Brique 4 » renommée **Programme expérimental d'extraction** ; cycle *Hypothèse→Expérience→Mesure→Décision→ADR/spec* | Ce n'est plus « développer une fonctionnalité » mais transformer des inconnues en connaissances validées ; la fin est actée par [SUCCESS_CRITERIA.md](SUCCESS_CRITERIA.md) | 2026-07 | Active |
 
 ## Décisions volontairement **différées** (à trancher avec des données)
 

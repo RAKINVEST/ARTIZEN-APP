@@ -24,3 +24,18 @@ des briques.
 Convention : `U-NNN` immuable. Une inconnue résolue passe en `Résolue → ADR-xxx`
 (la réponse devient une décision) ou `Résolue → sans impact`. On ne supprime pas
 une ligne : on garde la trace de ce qu'on ignorait et de comment on l'a levé.
+
+## La métrique phare de la Phase 3 : inconnues éliminées
+
+À chaque point d'avancement, **l'indicateur n°1 n'est plus la fidélité — c'est le
+nombre d'inconnues éliminées.** Il mesure directement la *réduction du risque
+scientifique* : les KPI disent à quel point le moteur est performant ; les
+inconnues disent à quel point on **comprend** réellement le problème. Les deux
+dimensions sont complémentaires.
+
+| Point | Inconnues ouvertes | Inconnues résolues |
+|---|---|---|
+| S0 (départ, corpus vide) | 9 | 0 |
+
+*(À compléter à chaque expérience du Starter Corpus — la courbe descendante des
+inconnues ouvertes est le vrai tableau de bord de la Phase 3.)*

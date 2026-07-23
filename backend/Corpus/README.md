@@ -263,6 +263,14 @@ Tant que l'étape 1 n'a pas de vrais fichiers, les briques 4 (extraction) et 5
 
 ## Phase R&D — cadence et sortie
 
+Trois phases distinctes : **1. concevoir le moteur** (terminée) · **2. construire
+le laboratoire de validation** (terminée) · **3. réduire l'incertitude par
+l'expérimentation** (commence maintenant). L'ex-« Brique 4 » est donc rebaptisée
+le **Programme expérimental d'extraction** : son objet n'est pas « livrer une
+fonctionnalité » mais transformer des inconnues en connaissances validées, sur le
+cycle **Hypothèse → Expérience → Mesure → Décision → ADR/spec** (et non *idée →
+code → correction*).
+
 La boucle est fixe : **constituer le Starter Corpus → première extraction réelle
 → mesurer → corriger → mesurer.** Le benchmark pilote le développement ; on ne
 développe plus « au feeling ». Chaque point de suivi ne répond qu'à **quatre
@@ -273,6 +281,11 @@ questions** :
 3. Quelle hypothèse ([UNKNOWNS](../app/document_clone/UNKNOWNS.md)) est confirmée ou infirmée ?
 4. Quelle est la prochaine expérience à mener ?
 
+**Métrique phare de la Phase 3 : le nombre d'inconnues éliminées** (et non la
+fidélité). Les KPI disent la *performance* du moteur ; les inconnues disent la
+*compréhension* du problème — le burndown vit dans
+[UNKNOWNS.md](../app/document_clone/UNKNOWNS.md).
+
 **Critères de sortie** (R&D → Production) — mesurables, vérifiables par
 `python benchmark.py --phase` :
 
@@ -282,7 +295,8 @@ questions** :
 - Temps moyen de validation **≤ 20 s** ;
 - **aucune régression sur trois versions consécutives**.
 
-Quand tous sont atteints, la Brique 4 passe de *R&D* à *Production*.
+Quand tous sont atteints, le programme d'extraction passe de *R&D* à *Production*
+— définition figée dans [SUCCESS_CRITERIA.md](../app/document_clone/SUCCESS_CRITERIA.md).
 
 **Discipline de périmètre (ADR-015).** Si le moteur réussit vite sur les 5 premiers
 logiciels, la tentation sera d'ajouter factures, avoirs, contrats, bons

@@ -1,5 +1,9 @@
-"""The **experimental** tier of the clone engine — where Brique 4's extraction
-heuristics will live, and *only* them.
+"""The **experimental** tier of the clone engine — home of the *Programme
+expérimental d'extraction* (formerly "Brique 4"), and *only* its heuristics.
+
+Its objective is not "ship a feature" but to turn open questions (UNKNOWNS.md)
+into validated knowledge, on the cycle:
+Hypothèse → Expérience → Mesure → Décision → ADR (ou évolution de la spec).
 
 Deliberately isolated from the stable infrastructure (renderer, comparator,
 benchmark, replay, manifest, gold_standard) so that an experiment can never
