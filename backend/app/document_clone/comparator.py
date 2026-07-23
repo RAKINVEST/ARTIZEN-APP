@@ -38,12 +38,38 @@ class Gap:
     delta: float = 0.0  # magnitude (e.g. points of displacement)
 
 
+#: Weighted categories (they sum to 1). "Tableaux" gets its own weight once
+#: table detection lands (extraction) — for now its share sits in Structure /
+#: Mise en page, which already cover the table's texts and positions.
+_WEIGHTS: dict[str, float] = {
+    "Structure": 0.33,      # is every label / value present?
+    "Mise en page": 0.27,   # did each land at the right place?
+    "Typographie": 0.16,    # same fonts / sizes?
+    "Couleurs": 0.11,       # text + fill colours
+    "Images": 0.06,
+    "Pagination": 0.07,
+}
+
+#: Fidelity → certification badge ("Compatible Batappli : Or").
+_CERT = ((99.5, "Platine"), (98.0, "Or"), (95.0, "Argent"), (90.0, "Bronze"))
+
+
+def certification(overall: float) -> str:
+    for threshold, label in _CERT:
+        if overall >= threshold:
+            return label
+    return "Non certifié"
+
+
 @dataclass(frozen=True)
 class FidelityReport:
-    overall: float          # 0..100
+    overall: float          # 0..100, the weighted-category score
+    certification: str      # Platine | Or | Argent | Bronze | Non certifié
+    categories: dict[str, float]  # French category -> %, the weighted breakdown
     text_recall: float      # % of the original's texts found in the candidate
     position_score: float   # % positional closeness of the matched texts
-    color_score: float      # % of the original's colours present
+    typography_score: float # % of the original's (font, size) pairs present
+    color_score: float      # % of the original's text colours present
     shape_score: float      # % of the original's coloured fills present
     image_score: float      # image-count closeness
     page_score: float       # same page count?
@@ -80,6 +106,7 @@ def _read(content: bytes) -> dict:
 
         texts = []  # (normalized_text, center_x, center_y, quant_color)
         text_colors = set()
+        typography = set()  # (font, rounded size) pairs actually used
         for b in page.get_text("dict")["blocks"]:
             for line in b.get("lines", []):
                 for s in line["spans"]:
@@ -90,6 +117,7 @@ def _read(content: bytes) -> dict:
                     q = _quant(_int_to_rgb(s["color"]))
                     texts.append((t, (bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2, q))
                     text_colors.add(q)
+                    typography.add((s["font"], round(s["size"])))
 
         fills = set()  # quantised fill colours
         for d in page.get_drawings():
@@ -100,6 +128,7 @@ def _read(content: bytes) -> dict:
         return {
             "pages": pages, "diag": diag, "texts": texts,
             "text_colors": text_colors, "fills": fills, "images": images,
+            "typography": typography,
         }
     finally:
         doc.close()
@@ -138,6 +167,7 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
     text_recall = matched / n_ref_text if n_ref_text else 1.0
     position_score = position_sum / matched if matched else (1.0 if not n_ref_text else 0.0)
 
+    typo_score = _overlap(ref["typography"], cand["typography"])
     color_score = _overlap(ref["text_colors"], cand["text_colors"])
     shape_score = _overlap(ref["fills"], cand["fills"])
     image_score = 1.0 - abs(ref["images"] - cand["images"]) / max(1, ref["images"])
@@ -146,6 +176,8 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
         0.0, 1.0 - abs(ref["pages"] - cand["pages"]) / max(1, ref["pages"])
     )
 
+    for font, size in ref["typography"] - cand["typography"]:
+        gaps.append(Gap("typographie", f"{font} {size}pt"))
     for col in ref["text_colors"] - cand["text_colors"]:
         gaps.append(Gap("couleur", "#%02x%02x%02x" % col))
     for col in ref["fills"] - cand["fills"]:
@@ -158,19 +190,23 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
     # Worst displacements first, then the rest — the fix list, ordered.
     gaps.sort(key=lambda g: -g.delta)
 
-    overall = (
-        0.30 * text_recall
-        + 0.30 * position_score
-        + 0.15 * color_score
-        + 0.15 * shape_score
-        + 0.05 * image_score
-        + 0.05 * page_score
-    ) * 100
+    categories = {
+        "Structure": text_recall,
+        "Mise en page": position_score,
+        "Typographie": typo_score,
+        "Couleurs": (color_score + shape_score) / 2,
+        "Images": image_score,
+        "Pagination": page_score,
+    }
+    overall = sum(_WEIGHTS[k] * categories[k] for k in _WEIGHTS) * 100
 
     return FidelityReport(
         overall=round(overall, 2),
+        certification=certification(overall),
+        categories={k: round(v * 100, 1) for k, v in categories.items()},
         text_recall=round(text_recall * 100, 1),
         position_score=round(position_score * 100, 1),
+        typography_score=round(typo_score * 100, 1),
         color_score=round(color_score * 100, 1),
         shape_score=round(shape_score * 100, 1),
         image_score=round(image_score * 100, 1),

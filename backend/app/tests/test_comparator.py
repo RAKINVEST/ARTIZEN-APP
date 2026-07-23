@@ -93,3 +93,41 @@ def test_report_counts_texts() -> None:
 
     assert report.reference_texts == len(_TEXTS)
     assert report.matched_texts == len(_TEXTS)
+
+
+def test_identical_pdf_is_certified_platine() -> None:
+    a = _pdf(_TEXTS, _FILLS)
+
+    report = compare_pdfs(a, a)
+
+    # Same fonts/sizes → full typography; a perfect clone earns the top badge.
+    assert report.typography_score == 100.0
+    assert report.overall >= 99.5
+    assert report.certification == "Platine"
+    # The weighted breakdown covers every category and matches the headline.
+    assert set(report.categories) == {
+        "Structure", "Mise en page", "Typographie", "Couleurs", "Images", "Pagination",
+    }
+    assert all(v == 100.0 for v in report.categories.values())
+
+
+def test_wrong_font_size_loses_on_typography() -> None:
+    a = _pdf(_TEXTS, _FILLS)
+    # Same words, same places, but rendered a couple sizes bigger.
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(_W, _H))
+    for hexcol, (x, y, w, h) in _FILLS:
+        c.setFillColor(HexColor(hexcol))
+        c.rect(x, _H - y - h, w, h, fill=1, stroke=0)
+    c.setFillColorRGB(0, 0, 0)
+    c.setFont("Helvetica", 14)  # original is 10pt
+    for text, x, y in _TEXTS:
+        c.drawString(x, _H - y - 10, text)
+    c.save()
+    bigger = buf.getvalue()
+
+    report = compare_pdfs(a, bigger)
+
+    assert report.typography_score < 100.0
+    assert report.overall < compare_pdfs(a, a).overall
+    assert any(g.aspect == "typographie" for g in report.gaps)
