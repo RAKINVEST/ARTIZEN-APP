@@ -29,7 +29,7 @@ Consequences, and what changed in Sprint 4:
 
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import fitz  # PyMuPDF
 
@@ -119,6 +119,10 @@ class FidelityReport:
     #: The two readings of the same measurement (Sprint 4).
     structural_fidelity: float = 0.0   # content in the right place
     perceptual_fidelity: float = 0.0   # what a human actually sees
+    #: Each subsystem's share of the **lost** fidelity, in % summing to 100 —
+    #: the project's steering metric: the next sprint is the biggest contributor,
+    #: chosen by the data, never by intuition.
+    error_contributions: dict[str, float] = field(default_factory=dict)
 
 
 _WS = re.compile(r"\s+")
@@ -327,7 +331,20 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
         gaps=tuple(gaps),
         structural_fidelity=round(_indicator(categories, _STRUCTURAL) * 100, 2),
         perceptual_fidelity=round(_indicator(categories, _PERCEPTUAL) * 100, 2),
+        error_contributions=_error_contributions(categories),
     )
+
+
+def _error_contributions(categories: dict[str, float]) -> dict[str, float]:
+    """Decompose the **lost** fidelity by subsystem: each category's weighted
+    loss ``weight × (1 − score)`` as a share of the total loss, in % summing to
+    100. Answers "what must we improve first?" without debate — a perfect
+    document has no lost fidelity, hence an empty budget."""
+    losses = {name: _WEIGHTS[name] * (1.0 - categories[name]) for name in _WEIGHTS}
+    total = sum(losses.values())
+    if total <= 0:
+        return {name: 0.0 for name in _WEIGHTS}
+    return {name: round(losses[name] / total * 100, 1) for name in _WEIGHTS}
 
 
 def _indicator(categories: dict[str, float], keys: tuple[str, ...]) -> float:

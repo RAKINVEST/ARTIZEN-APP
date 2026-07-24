@@ -123,6 +123,19 @@ def test_every_page_is_measured_not_only_the_first() -> None:
     assert any(gap.aspect == "texte_manquant" for gap in degraded.gaps)
 
 
+def test_error_budget_decomposes_the_lost_fidelity() -> None:
+    """The steering metric: a perfect document has no error budget; an imperfect
+    one attributes 100 % across subsystems, and names the biggest contributor —
+    which is what chooses the next sprint, by data not intuition."""
+    perfect = compare_pdfs(_pdf("Helvetica"), _pdf("Helvetica"))
+    assert sum(perfect.error_contributions.values()) == pytest.approx(0.0, abs=0.01)
+
+    lossy = compare_pdfs(_pdf("Helvetica", size=10.0), _pdf("Helvetica", size=16.0))
+    assert sum(lossy.error_contributions.values()) == pytest.approx(100.0, abs=0.5)
+    top = max(lossy.error_contributions, key=lossy.error_contributions.get)
+    assert top == "Typographie", "a pure size change is a typography loss"
+
+
 def test_the_two_indicators_are_reported() -> None:
     """Structural (content in place) and perceptual (what the eye sees) are two
     readings of the same measurement."""
