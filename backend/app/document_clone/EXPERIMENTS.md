@@ -247,6 +247,21 @@ SJE **9,1 %** — 503 images extraites, bien moins restituées). **C'est le proc
 verrou du moteur**, désigné par la mesure et non par l'intuition — exactement ce
 pour quoi la séparation structurelle/perceptuelle a été demandée.
 
+### E-009 — Fidélité graphique : le rendu est bon, la métrique est fausse  (inconnue : U-015)
+
+Sprint désigné par le **budget d'erreur** (images = 69,5 % de la perte). *Data
+before action* : on diagnostique avant de coder.
+
+| Maillon | Contenu |
+|---|---|
+| **Question** | La perte « images » (70 % du budget) est-elle un problème de **rendu** ou de **mesure** ? |
+| **Diagnostic** | Pipeline original → extrait → rendu, par page. **Correctif d'extraction livré** : toutes les positions via `get_image_info` (au lieu de `rects[0]` qui n'en gardait qu'une) + **déduplication des octets par xref** (SJE : 503 ImageBlocks/503 assets → 55 placements/**12 assets**). |
+| **Résultat clé (mesuré)** | Les 12 images distinctes de SJE se décodent **toutes** (JPEG RGB, reportlab OK) — **aucun échec de rendu**. `get_images` compte **605** images (55/page) mais `get_image_info` (ce qui est *dessiné*) en trouve **~5/page** — que le candidat **reproduit**. Le PDF *référence* 55 images/page en ressources, n'en **dessine** que ~5. Budget images **inchangé** (91 %) : le correctif d'extraction ne le bouge pas. |
+| **Interprétation** | **Le rendu est visuellement fidèle ; la métrique est fausse.** `image_score` compare des **comptages `get_images`** = références du dictionnaire de ressources, gonflées, **pas ce que l'œil voit**. C'est **le même schéma que la typographie au Sprint 4** (on comparait des *noms*, on doit comparer le *rendu*). Ici : on compte des *artefacts*, on doit compter des *placements dessinés*. |
+| **Décision** | Correctif d'extraction **gardé** (modèle plus juste et 40× plus léger). **Recommandation : rendre `image_score` perceptuel** — comparer les placements réellement dessinés (`get_image_info` : nombre + position + aire), pas `get_images`. Changement d'oracle → **feu vert PO attendu** (comme Sprint 4). |
+| **Reste ouvert** | Chapot page 2 : le même logo qu'en page 1 est dessiné mais **ni** `get_image_rects` **ni** `get_image_info` ne retrouvent son rectangle → placement manquant (cas limite fitz, à creuser). |
+| **Ouverte / Décidée** | 2026-07-24 / (métrique : en attente PO) |
+
 | Exp | Inconnue | Hypothèse | N docs | Résultat (mesuré) | Décision | Statut |
 |---|---|---|---|---|---|---|
 | _(gabarit — expériences futures ici)_ | U-xxx | … | N | — | — | — |

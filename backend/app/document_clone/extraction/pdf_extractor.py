@@ -96,32 +96,62 @@ def _extract_shapes(page: "fitz.Page") -> list[Shape]:
     return shapes
 
 
+def _placements(page: "fitz.Page") -> list[tuple[int, tuple[float, float, float, float]]]:
+    """Every image **placement** on the page as ``(xref, bbox)``.
+
+    ``get_image_info`` returns one entry per *drawing* of an image — so the same
+    icon placed 55 times yields 55 placements, and it locates reuses that
+    ``get_image_rects`` misses (a logo shown again on page 2 came back empty).
+    Falls back to ``get_image_rects`` if the richer call is unavailable."""
+    out: list[tuple[int, tuple[float, float, float, float]]] = []
+    try:
+        for info in page.get_image_info(xrefs=True):
+            xref, bbox = info.get("xref", 0), info.get("bbox")
+            if xref and bbox:
+                out.append((xref, tuple(bbox)))
+    except Exception:
+        out = []
+    if out:
+        return out
+    for info in page.get_images(full=True):
+        xref = info[0]
+        try:
+            for r in page.get_image_rects(xref):
+                out.append((xref, (r.x0, r.y0, r.x1, r.y1)))
+        except Exception:
+            continue
+    return out
+
+
 def _extract_images(
-    page: "fitz.Page", doc: "fitz.Document", assets: dict[str, str], page_index: int
+    page: "fitz.Page",
+    doc: "fitz.Document",
+    assets: dict[str, str],
+    xref_to_ref: dict[int, str],
 ) -> list[ImageBlock]:
+    """All image placements on the page, de-duplicated by content: an image's
+    bytes are stored **once** (keyed by xref, shared across every page) and each
+    placement is an :class:`ImageBlock` pointing at that single asset. This
+    reproduces every occurrence without bloating the model with 500 identical
+    copies. Best-effort: an image we cannot re-read is skipped, never fatal."""
     import base64
 
     images: list[ImageBlock] = []
-    for index, info in enumerate(page.get_images(full=True)):
-        xref = info[0]
-        try:
-            rects = page.get_image_rects(xref)
-            if not rects:
+    for xref, (x0, y0, x1, y1) in _placements(page):
+        ref = xref_to_ref.get(xref)
+        if ref is None:
+            try:
+                extracted = doc.extract_image(xref)
+            except Exception:
                 continue
-            extracted = doc.extract_image(xref)
-            ref = f"img_p{page_index}_{index}"  # unique across pages
+            if not extracted.get("image"):
+                continue
+            ref = f"img_x{xref}"
             assets[ref] = base64.b64encode(extracted["image"]).decode("ascii")
-            r = rects[0]
-            images.append(
-                ImageBlock(
-                    role="logo" if index == 0 else "picto",
-                    rect=Rect(x=r.x0, y=r.y0, w=r.width, h=r.height),
-                    asset_ref=ref,
-                )
-            )
-        except Exception:
-            # A logo we cannot re-read must not fail the whole extraction.
-            continue
+            xref_to_ref[xref] = ref
+        images.append(
+            ImageBlock(role="image", rect=Rect(x=x0, y=y0, w=x1 - x0, h=y1 - y0), asset_ref=ref)
+        )
     return images
 
 
@@ -133,14 +163,15 @@ def extract(pdf_bytes: bytes) -> ArtizenTemplate:
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     try:
         assets: dict[str, str] = {}
+        xref_to_ref: dict[int, str] = {}  # image bytes stored once, shared across pages
         pages = [
             GraphicPage(
                 page=PageGeometry(width=page.rect.width, height=page.rect.height),
                 fixed_texts=_extract_texts(page),
                 shapes=_extract_shapes(page),
-                images=_extract_images(page, doc, assets, index),
+                images=_extract_images(page, doc, assets, xref_to_ref),
             )
-            for index, page in enumerate(doc)
+            for page in doc
         ]
         graphic = GraphicLayer(page=pages[0].page, pages=pages)
         return ArtizenTemplate(graphic=graphic, estimated_fidelity=0, assets=assets)
