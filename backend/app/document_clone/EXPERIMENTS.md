@@ -198,6 +198,31 @@ devis, pas seulement un 2-pages. Le format et le renderer étaient mono-page.
 | **ADR / spec** | Évolution d'infra (format+renderer) **ordonnée par le PO** ; pas d'ADR (directive « aucun nouvel ADR sauf nécessité absolue »). Consignée ici. |
 | **Ouverte / Décidée** | 2026-07-24 / 2026-07-24 |
 
+### E-007 — voie C : substitut métrique-compatible  (inconnue : U-013)
+
+Sprint U-013 (stratégie E validée par le PO), phase C : `font_resolver.py` rend
+chaque police via un substitut **libre et métriquement compatible** (Liberation
+Sans ≡ Arial, Liberation Serif ≡ Times), classé par famille (serif/sans/mono) pour
+**généraliser** au-delà d'Arial. Le `.artizen` garde le **nom d'origine** intact
+(résolution au rendu → on pourra revenir à la vraie police).
+
+| Maillon | Contenu |
+|---|---|
+| **Question** | Un substitut métrique-compatible (voie C) répare-t-il les défauts Sprint 2 sans régresser la géométrie ? |
+| **Hypothèse** | Métriques Arial exactes + Unicode complet → apostrophe `ʼ` et re-segmentation réglées ; positions maintenues. |
+| **Résultats mesurés** | **SJE** : rappel page 1 97,1 → **100 %** ; **pages avec écart 7 → 0** ; global 77,7 → **78,6 %**. **Chapot** : positions 99,8 → 99,9 % ; **Typographie 42,9 → 0 %** → global 90,8 → **84,0 %**. **22 tests moteur verts.** |
+| **Interprétation** | Voie C est **objectivement plus fidèle** (positions ↑, rappel SJE 100 % sur *toutes* les pages, Unicode complet). La baisse de Chapot est **entièrement** due à la Typographie *nom* : les 42,9 % étaient un **faux ami** (match de nom fortuit Helvetica orig ↔ repli Helvetica). Liberation Sans (≡ Arial réel de Chapot) est plus proche du vrai rendu, mais l'oracle compare les **noms** → 0. **C'est le cas prévu « rendu meilleur / score nom pire ».** |
+| **Décision** | **Gardée** (règle PO : ne jamais dégrader le renderer pour le score ; un rendu plus fidèle au score plus bas → faire évoluer l'oracle). **Preuve mesurée que le prochain verrou est l'oracle** (U-014 + Typographie par métriques, pas par nom) — Sprint 4. |
+| **ADR / spec** | Évolution du moteur (renderer + `font_resolver`), ordonnée par le PO. Pas d'ADR. |
+| **Ouverte / Décidée** | 2026-07-24 / 2026-07-24 |
+
+**Quand ça cessera de marcher / reste ouvert.** (1) Chapot page 2 garde 3 textes
+non appariés (`278-0 ter`, `et`, `279-0 bis`) — re-segmentation résiduelle, hors
+apostrophe. (2) Les substituts sont *métrique-exacts* pour Arial/Times ; les autres
+familles (Calibri…) seront des approximations visuelles à mesurer sur les
+prochaines familles (Sprint 3). (3) Voie A (police embarquée réelle) reste un hook,
+à activer quand le mécanisme E-005 sera élucidé et la licence vérifiée.
+
 | Exp | Inconnue | Hypothèse | N docs | Résultat (mesuré) | Décision | Statut |
 |---|---|---|---|---|---|---|
 | _(gabarit — expériences futures ici)_ | U-xxx | … | N | — | — | — |

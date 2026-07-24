@@ -31,6 +31,7 @@ from app.document_clone.artizen_format import (
     TableSpec,
     TextStyle,
 )
+from app.document_clone.font_resolver import resolve as resolve_font
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +68,13 @@ def _register_fonts(template: ArtizenTemplate) -> dict[str, str]:
 
 
 def _font_name(style: TextStyle, mapping: dict[str, str]) -> str:
+    # Strategy A: the original embedded font, when the renderer registered it.
     if style.font in mapping:
         return mapping[style.font]
-    return "Helvetica-Bold" if style.bold else "Helvetica"
+    # Strategy C: a metric-compatible substitute (Liberation…), the intelligent
+    # fallback. The ``.artizen`` keeps ``style.font`` untouched, so the true font
+    # can be restored later — resolution happens here, at draw time.
+    return resolve_font(style)
 
 
 def render_artizen(

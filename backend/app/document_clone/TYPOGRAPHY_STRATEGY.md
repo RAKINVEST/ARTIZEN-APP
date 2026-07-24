@@ -162,8 +162,9 @@ fidélité · impact juridique · compatibilité avec la promesse ARTIZEN.
 - **Complexité.** Moyenne.
 - **Impact fidélité.** Le plus élevé sur l'ensemble du corpus.
 - **Impact juridique.** ✅ Maîtrisé (A limité aux fontes libres ; C sinon).
-- **Compatibilité promesse.** La meilleure : maximise l'indiscernabilité **par
-  document**, sans jamais dépendre d'un cas unique.
+- **Compatibilité promesse.** La meilleure : maximise l'indiscernabilité visuelle
+  **sans compromettre la reproductibilité ni la généralisation à l'ensemble du
+  corpus** — jamais optimiser Chapot au détriment des futurs EBP/Batappli/Word.
 
 ---
 
@@ -181,7 +182,19 @@ fidélité · impact juridique · compatibilité avec la promesse ARTIZEN.
 
 ## 4. Recommandation argumentée
 
-**Voie E (hybride A→C), démarrée par C.** Justification, mesurée :
+**Voie E (hybride A→C), démarrée par C — implémentée comme une *architecture de
+résolution des polices*, pas un simple remplacement.** Décidée par le PO. Trois
+niveaux, dans cet ordre :
+
+1. **Police embarquée** si complète, exploitable **et** licence permissive (voie A).
+2. **Sinon**, substitut **métriquement compatible** couvrant tout l'Unicode
+   nécessaire (voie C) — un *fallback intelligent*, jamais une fin en soi.
+3. **Conservation** : le `.artizen` garde **toutes** les métadonnées de la police
+   d'origine (nom, famille, graisse, italique, taille). La résolution se fait **au
+   rendu**, jamais en gravant le substitut dans le modèle — on pourra donc revenir
+   à la vraie police si elle devient un jour exploitable.
+
+Justification, mesurée :
 
 1. **C seule couvre déjà tout le corpus** (Chapot *et* SJE) et **corrige les
    défauts Sprint 2** (les métriques Liberation/Arimo = Arial règlent l'apostrophe
