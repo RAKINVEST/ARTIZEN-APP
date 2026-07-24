@@ -305,6 +305,22 @@ mesurer avant d'optimiser.
 | **Décision** | Généralisation **validée**. **Sprint Typographie débloqué** (ADR-021 satisfait). Nouvelle inconnue : **Fenêtre = devis image/scan** (0 texte extrait, 100 % trivial car tout est raster) → **U-016**, un *mode de reproduction distinct*. |
 | **Ouverte / Décidée** | 2026-07-24 / 2026-07-24 |
 
+### E-012 — Sprint Typographie  (inconnue : U-013)
+
+Sprint désigné par le budget d'erreur (Typographie = 66 % du corpus, E-011).
+Mesuré sur les **4 devis natifs (P1)** — Fenêtre exclue (P2, image).
+
+| Maillon | Contenu |
+|---|---|
+| **Question** | D'où vient l'écart typographique (largeur rendue), et comment le réduire côté renderer ? |
+| **Diagnostic** | **Tous** les échecs sont des écarts de **largeur** (aucun de graisse/taille), petits (3–7 %, un Tahoma à 10 %), sur des polices variées (Helvetica, Arial, Tahoma…). |
+| **Hyp. 1 — INFIRMÉE** | « Utiliser la police *exacte* (base-14 Helvetica pour Helvetica) réduit l'écart. » → **aucun effet** : les échecs Helvetica persistent à l'identique. L'écart n'est pas la *famille*, c'est une différence **fine de métriques/chasse** entre tout substitut et la source. Reverté. |
+| **Hyp. 2 — CONFIRMÉE** | « Mettre chaque run **à l'échelle horizontale** pour occuper la largeur d'origine (`rect.w`, déjà extraite) absorbe l'écart. » → transform translate+scale sur les runs alignés à gauche. |
+| **Résultats mesurés** | **Chapot 96,8 → 99,8 % (Platine)** · SJE 98,7 → 99,2 % · Pneu 99,0 → 99,6 % (Platine) · Poêle 99,1 → 99,9 % (Platine). Typographie : Chapot **83,3 → 98,5**, SJE 96,7 → **100**, Pneu 94 → 97,7, Poêle → **100**. Structure 99,8–100. **30 tests verts.** |
+| **Anti-laxisme** | Ce n'est **pas** un relâchement de l'oracle (tolérance largeur inchangée à 2 %) : le texte occupe **réellement** la bonne largeur, donc la mise en page s'aligne comme la source. Coût assumé : les glyphes du substitut sont étirés de quelques % (imperceptible ; ce ne sont déjà pas les glyphes d'origine). |
+| **Décision** | **Confirmée → gardée.** U-013 largement résolue. Budget P1 recomposé : Images 50 % · Typographie 41 % (résidu faible) · Structure 5 %. |
+| **Ouverte / Décidée** | 2026-07-25 / 2026-07-25 |
+
 | Exp | Inconnue | Hypothèse | N docs | Résultat (mesuré) | Décision | Statut |
 |---|---|---|---|---|---|---|
 | _(gabarit — expériences futures ici)_ | U-xxx | … | N | — | — | — |

@@ -127,12 +127,33 @@ def _draw_page(
     def draw_text(text: str, rect: Rect, style: TextStyle, valign_center: bool = False) -> None:
         if not text:
             return
+        font = _font_name(style, fonts)
         c.setFillColor(_hex(style.color, "#1E293B"))
-        c.setFont(_font_name(style, fonts), style.size)
+        c.setFont(font, style.size)
         if valign_center:
             baseline = flip(rect.y + rect.h / 2 + style.size * 0.35)
         else:
             baseline = flip(rect.y + style.size * 0.82)
+
+        # Horizontal scale so a left-aligned reproduction run occupies the
+        # ORIGINAL advance width (``rect.w``). Any substitute font renders a few
+        # percent off; forcing the exact width makes the layout line up like the
+        # source, glyph proportions shifting imperceptibly. Done with a transform
+        # (translate to the origin, scale x) — robust across reportlab versions.
+        # Table cells and bound fields (centred / right-aligned) keep their
+        # natural width.
+        if not valign_center and style.align == HAlign.LEFT and rect.w > 0:
+            natural = pdfmetrics.stringWidth(text, font, style.size)
+            if natural > 0:
+                ratio = rect.w / natural
+                if 0.5 <= ratio <= 2.0 and abs(ratio - 1.0) > 1e-3:
+                    c.saveState()
+                    c.translate(rect.x, baseline)
+                    c.scale(ratio, 1.0)
+                    c.drawString(0, 0, text)
+                    c.restoreState()
+                    return
+
         if style.align == HAlign.RIGHT:
             c.drawRightString(rect.x + rect.w, baseline, text)
         elif style.align == HAlign.CENTER:

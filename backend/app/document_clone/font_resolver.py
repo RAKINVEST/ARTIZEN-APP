@@ -109,7 +109,9 @@ def resolve(style: TextStyle) -> str:
     """Return the reportlab font name to draw ``style`` with (strategy C).
 
     Metric-compatible substitute by family class, then progressively safer
-    fallbacks, never failing the document."""
+    fallbacks, never failing the document. The renderer additionally scales each
+    run horizontally to the original advance width, so the small residual metric
+    difference between any substitute and the source font is absorbed."""
     base = _family_base(style.font)
     candidates = [
         _styled(base, style.bold, style.italic),
