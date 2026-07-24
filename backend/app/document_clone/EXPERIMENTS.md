@@ -262,6 +262,34 @@ before action* : on diagnostique avant de coder.
 | **Reste ouvert** | Chapot page 2 : le même logo qu'en page 1 est dessiné mais **ni** `get_image_rects` **ni** `get_image_info` ne retrouvent son rectangle → placement manquant (cas limite fitz, à creuser). |
 | **Ouverte / Décidée** | 2026-07-24 / (métrique : en attente PO) |
 
+### E-010 — oracle image perceptuel  (inconnue : U-015)
+
+Feu vert PO après E-009 : le rendu était bon, la **mesure** fausse. **Le renderer
+n'est pas touché** ; seule la façon de mesurer les images évolue — comme la
+typographie au Sprint 4 (nom → rendu ; ici : ressource PDF → image dessinée).
+
+| Maillon | Contenu |
+|---|---|
+| **Question** | `image_score` peut-il mesurer les images **réellement dessinées** (position, dimensions, aire) au lieu des **ressources** `get_images` (dont beaucoup jamais peintes) ? |
+| **Hypothèse** | En comparant les placements de `get_image_info`, pondérés par l'**aire couverte**, un rendu fidèle n'est plus pénalisé et une image manquante reste détectée. |
+| **Protocole** | `_read` collecte les images dessinées par page ; `_image_score` = rappel d'aire apparié par position+taille. Renderer inchangé. Tests dédiés + rejeu benchmark. |
+| **Résultats mesurés** | **Chapot 93,8 → 96,8 %** ; **SJE 94,0 → 98,7 %** (image 9,1 → ~96 %). **562 tests passent** (0 régression). |
+| **Validation des lois** | ✅ *fidèle non pénalisé* (image identique → 100 %). ✅ *manquante/déplacée détectée* (< 50 % + gap). ✅ **test spécial** : PDF **3 références / 1 dessinée** → ancien oracle (comptage) 33 %, **nouveau 100 %**. |
+| **Anti-laxisme** | Le gain **ne relâche pas** la mesure : une image absente, déplacée ou redimensionnée est toujours prise. Le score monte **parce que la mesure est plus fidèle à l'œil**, pas plus permissive. |
+| **Décision** | **Confirmée → gardée.** U-015 (mesure) close. |
+| **Ouverte / Décidée** | 2026-07-24 / 2026-07-24 |
+
+**Le budget d'erreur se recompose — et désigne le prochain sprint, par la donnée :**
+
+```
+AVANT E-010 : Images 69,5%  ·  Typographie 26,2%  ·  Structure 4,1%
+APRÈS E-010 : Typographie 71,5%  ·  Images 16,8%  ·  Structure 11,1%
+```
+
+**La typographie redevient le contributeur n°1 (71,5 %)** — non par intuition, par
+recomposition mesurée du budget. C'est le prochain sprint : Chapot Typographie 83,3 %
+(la largeur rendue de certains spans diffère encore), SJE 96,7 %.
+
 | Exp | Inconnue | Hypothèse | N docs | Résultat (mesuré) | Décision | Statut |
 |---|---|---|---|---|---|---|
 | _(gabarit — expériences futures ici)_ | U-xxx | … | N | — | — | — |

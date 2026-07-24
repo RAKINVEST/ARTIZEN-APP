@@ -14,7 +14,9 @@ Plus: every page must count, not only page 1.
 
 import io
 import os
+import re
 
+import fitz
 import pytest
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -134,6 +136,105 @@ def test_error_budget_decomposes_the_lost_fidelity() -> None:
     assert sum(lossy.error_contributions.values()) == pytest.approx(100.0, abs=0.5)
     top = max(lossy.error_contributions, key=lossy.error_contributions.get)
     assert top == "Typographie", "a pure size change is a typography loss"
+
+
+# --------------------------------------------------------------- images (U-015)
+
+def _swatch(gray: int) -> "fitz.Pixmap":
+    pix = fitz.Pixmap(fitz.csRGB, fitz.IRect(0, 0, 40, 40))
+    pix.clear_with(gray)
+    return pix
+
+
+def _image_pdf(rects: list[tuple], size: int = 200) -> bytes:
+    """A PDF drawing one image at each given rect."""
+    doc = fitz.open()
+    page = doc.new_page(width=size, height=size)
+    for rect in rects:
+        page.insert_image(fitz.Rect(*rect), pixmap=_swatch(150))
+    data = doc.tobytes()
+    doc.close()
+    return data
+
+
+def _phantom_pdf(drawn_rect: tuple, phantoms: int = 2, size: int = 200) -> bytes:
+    """A page that **references** ``phantoms + 1`` image resources but **draws**
+    only one — the "multiple references, a single occurrence" case. Built by
+    inserting several distinct images then stripping all but the first ``Do``
+    operator from the content stream, so the extra XObjects linger in the page
+    resources (``get_images`` sees them) while only one is painted
+    (``get_image_info`` sees it)."""
+    doc = fitz.open()
+    page = doc.new_page(width=size, height=size)
+    page.insert_image(fitz.Rect(*drawn_rect), pixmap=_swatch(150))  # the one kept
+    for index in range(phantoms):
+        page.insert_image(
+            fitz.Rect(5 + index, 5 + index, 30 + index, 30 + index), pixmap=_swatch(60 + index * 30)
+        )
+    page.clean_contents()
+    _, contents = doc.xref_get_key(page.xref, "Contents")
+    cxref = int(contents.split()[0])
+    stream = doc.xref_stream(cxref).decode("latin-1")
+    seen = [0]
+
+    def keep_first(match: "re.Match") -> str:
+        seen[0] += 1
+        return match.group(0) if seen[0] == 1 else ""
+
+    doc.update_stream(cxref, re.sub(r"/\w+ Do", keep_first, stream).encode("latin-1"))
+    data = doc.tobytes()
+    doc.close()
+    return data
+
+
+def test_image_faithfully_reproduced_is_not_penalised() -> None:
+    """LOI 1 — an image drawn at the same place and size scores perfectly."""
+    reference = _image_pdf([(20, 20, 90, 90)])
+    candidate = _image_pdf([(20, 20, 90, 90)])
+    assert compare_pdfs(reference, candidate).image_score == 100.0
+
+
+def test_missing_image_is_detected() -> None:
+    """LOI 2 — an image present in the original but absent from the candidate
+    must be caught, and reported as a gap."""
+    reference = _image_pdf([(20, 20, 90, 90)])
+    candidate = _image_pdf([])  # blank page
+
+    report = compare_pdfs(reference, candidate)
+
+    assert report.image_score < 50.0
+    assert any(gap.aspect == "image" for gap in report.gaps)
+
+
+def test_displaced_image_is_detected() -> None:
+    """An image drawn somewhere else is not the same rendering — caught."""
+    reference = _image_pdf([(20, 20, 90, 90)])
+    candidate = _image_pdf([(110, 110, 180, 180)])
+    assert compare_pdfs(reference, candidate).image_score < 50.0
+
+
+def test_phantom_resources_are_ignored_only_drawn_images_count() -> None:
+    """THE required test: multiple references, a single occurrence drawn.
+
+    The old oracle compared ``get_images`` (the resources) and would penalise a
+    faithful reproduction that draws the one real image; the new oracle compares
+    what is actually drawn and scores it perfectly."""
+    drawn = (20, 20, 90, 90)
+    reference = _phantom_pdf(drawn, phantoms=2)  # 3 resources, 1 drawn
+    candidate = _image_pdf([drawn])              # 1 resource, 1 drawn
+
+    # The artefact really exists: resources over-count the drawings.
+    doc = fitz.open(stream=reference, filetype="pdf")
+    resources = len(doc[0].get_images(full=True))
+    drawn_count = len(doc[0].get_image_info())
+    doc.close()
+    assert resources > drawn_count, "fixture must reference more images than it draws"
+
+    # New oracle: the single drawn image matches → perfect.
+    assert compare_pdfs(reference, candidate).image_score == 100.0
+    # Old, count-based oracle would have failed on the same pair.
+    old_style = max(0.0, 1.0 - abs(resources - 1) / max(1, resources)) * 100
+    assert old_style < 100.0
 
 
 def test_the_two_indicators_are_reported() -> None:

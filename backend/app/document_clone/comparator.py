@@ -88,6 +88,10 @@ _SIZE_TOL_PT = 0.25
 _WIDTH_TOL_RATIO = 0.02
 #: Beyond this, a matched text is visibly displaced and worth reporting.
 _POSITION_GAP_PT = 3.0
+#: A drawn image matches its counterpart when it lands close enough (fraction of
+#: the page diagonal) and at the same size (fraction of each dimension).
+_IMAGE_POSITION_TOL_RATIO = 0.04
+_IMAGE_SIZE_TOL_RATIO = 0.05
 
 # fitz span "flags" bit field.
 _FLAG_ITALIC = 1 << 1
@@ -167,7 +171,6 @@ def _read(content: bytes) -> dict:
         per_page: list[dict] = []
         text_colors: set = set()
         fills: set = set()
-        images = 0
 
         for number in range(doc.page_count):
             page = doc[number]
@@ -198,9 +201,12 @@ def _read(content: bytes) -> dict:
             for drawing in page.get_drawings():
                 if drawing.get("fill"):
                     fills.add(_quant(tuple(drawing["fill"])))
-            images += len(page.get_images(full=True))
             per_page.append(
-                {"diag": (width * width + height * height) ** 0.5 or 1.0, "spans": spans}
+                {
+                    "diag": (width * width + height * height) ** 0.5 or 1.0,
+                    "spans": spans,
+                    "images": _drawn_images(page),
+                }
             )
 
         return {
@@ -208,10 +214,33 @@ def _read(content: bytes) -> dict:
             "per_page": per_page,
             "text_colors": text_colors,
             "fills": fills,
-            "images": images,
         }
     finally:
         doc.close()
+
+
+def _drawn_images(page: "fitz.Page") -> list[tuple[float, float, float, float]]:
+    """The images **actually drawn** on the page, as ``(cx, cy, w, h)``.
+
+    ``get_image_info`` reports one entry per *drawing* of an image; unlike
+    ``get_images`` (which lists the page's XObject *resources*, many never
+    painted), it is what the eye sees — the same shift the oracle made for
+    typography (Sprint 4): measure the render, not the technical artefact."""
+    placements: list[tuple[float, float, float, float]] = []
+    try:
+        infos = page.get_image_info(xrefs=True)
+    except Exception:
+        infos = []
+    for info in infos:
+        bbox = info.get("bbox")
+        if not bbox:
+            continue
+        x0, y0, x1, y1 = bbox
+        width, height = x1 - x0, y1 - y0
+        if width <= 0 or height <= 0:
+            continue
+        placements.append(((x0 + x1) / 2, (y0 + y1) / 2, width, height))
+    return placements
 
 
 def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
@@ -286,7 +315,7 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
 
     color_score = _overlap(ref["text_colors"], cand["text_colors"])
     shape_score = _overlap(ref["fills"], cand["fills"])
-    image_score = max(0.0, 1.0 - abs(ref["images"] - cand["images"]) / max(1, ref["images"]))
+    image_score = _image_score(ref["per_page"], cand["per_page"], gaps)
     page_score = 1.0 if ref["pages"] == cand["pages"] else max(
         0.0, 1.0 - abs(ref["pages"] - cand["pages"]) / max(1, ref["pages"])
     )
@@ -297,8 +326,6 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
         gaps.append(Gap("forme", "#%02x%02x%02x" % col))
     if ref["pages"] != cand["pages"]:
         gaps.append(Gap("pagination", f"{ref['pages']} → {cand['pages']} pages"))
-    if ref["images"] != cand["images"]:
-        gaps.append(Gap("image", f"{ref['images']} → {cand['images']} images"))
 
     # Worst displacements first, then a total order (aspect, detail) so the fix
     # list is byte-identical across processes — a prerequisite for replayable
@@ -345,6 +372,47 @@ def _error_contributions(categories: dict[str, float]) -> dict[str, float]:
     if total <= 0:
         return {name: 0.0 for name in _WEIGHTS}
     return {name: round(losses[name] / total * 100, 1) for name in _WEIGHTS}
+
+
+def _image_score(ref_pages: list[dict], cand_pages: list[dict], gaps: list[Gap]) -> float:
+    """Perceptual image fidelity: **area-weighted** recall of the images actually
+    drawn, matched page by page by position and size — a big logo missing hurts
+    more than a tiny icon. Resources never painted are ignored (they are not in
+    ``get_image_info``), and a genuinely missing image is caught (its area drops
+    out of the numerator). A document with no drawn image scores a perfect 1."""
+    reference_area = 0.0
+    matched_area = 0.0
+    for number, ref_page in enumerate(ref_pages):
+        ref_images = ref_page["images"]
+        cand_images = cand_pages[number]["images"] if number < len(cand_pages) else []
+        used = [False] * len(cand_images)
+        diag = ref_page["diag"]
+        for cx, cy, width, height in ref_images:
+            area = width * height
+            reference_area += area
+            best_index, best_distance = -1, None
+            for index, (cx2, cy2, width2, height2) in enumerate(cand_images):
+                if used[index]:
+                    continue
+                if abs(width - width2) / width > _IMAGE_SIZE_TOL_RATIO:
+                    continue
+                if abs(height - height2) / height > _IMAGE_SIZE_TOL_RATIO:
+                    continue
+                distance = ((cx - cx2) ** 2 + (cy - cy2) ** 2) ** 0.5
+                if distance > _IMAGE_POSITION_TOL_RATIO * diag:
+                    continue
+                if best_distance is None or distance < best_distance:
+                    best_index, best_distance = index, distance
+            if best_index >= 0:
+                used[best_index] = True
+                matched_area += area
+            else:
+                gaps.append(
+                    Gap("image", f"p{number + 1} {width:.0f}×{height:.0f}", round(area, 0))
+                )
+    if reference_area <= 0:
+        return 1.0
+    return matched_area / reference_area
 
 
 def _indicator(categories: dict[str, float], keys: tuple[str, ...]) -> float:
