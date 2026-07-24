@@ -1,21 +1,30 @@
-"""The fidelity comparator — Brique 3.5.
+"""The fidelity comparator — Brique 3.5, the project's quality **oracle**.
 
 Takes two PDFs (the artisan's **original** and the one ARTIZEN **generated**)
-and measures how alike they are — objectively, deterministically, no AI. It
-reads both with PyMuPDF and compares what actually landed on the page:
+and measures how alike they are — objectively, deterministically, no AI.
 
-* text content — is every label / value present?
-* **position** — did each land where the original had it?
-* colours — text and fills.
-* shapes / fills — the coloured bands and frames.
-* images — the logo and pictos.
-* pagination — same number of pages?
+Two laws govern this module (Sprint 4):
 
-It returns a single fidelity score (e.g. ``99.8 %``) plus a per-aspect
-breakdown. This is the project's **quality oracle**: at every change to the
-engine you see immediately whether the render improved or regressed — the guard
-rail that lets the clone engine march toward "indistinguishable" with numbers,
-not vibes.
+> **It must never reward a visible difference, and never penalise an invisible
+> one.** The oracle exists to converge toward the judgment of an artisan holding
+> the two devis side by side — the benchmark reflects human perception, never the
+> reverse.
+
+Consequences, and what changed in Sprint 4:
+
+* **Typography is judged on what actually renders, not on font names.** A
+  metric-compatible substitute (*Liberation Sans* for Arial) draws the same
+  glyphs at the same widths: it is invisible to the eye, so it must not be
+  penalised. We therefore compare **size, weight, slant and the rendered advance
+  width** of each matched text — the properties that determine the rendering —
+  and ignore the internal font name entirely.
+* **Every page counts.** Measuring page 1 only was not representative of a
+  multi-page devis; texts are now matched page by page and the score aggregates
+  the whole document.
+* **Two indicators**, because they do not play the same role:
+  **structurelle** (content in the right place: structure, layout, pagination)
+  and **perceptuelle** (what a human actually sees: typography, colours, images).
+  They should converge as the engine matures.
 """
 
 import logging
@@ -33,9 +42,23 @@ class Gap:
     what the extraction still has to fix. The detailed report the artisan (and
     the extraction dev loop) reads, beyond the single score."""
 
-    aspect: str    # texte_manquant | position | couleur | forme | image | pagination
+    aspect: str    # texte_manquant | position | typographie | couleur | forme | image | pagination
     detail: str    # the text / colour / value concerned
     delta: float = 0.0  # magnitude (e.g. points of displacement)
+
+
+@dataclass(frozen=True)
+class _Span:
+    """A rendered text run, with the properties that determine how it *looks*."""
+
+    text: str
+    cx: float
+    cy: float
+    color: tuple[int, int, int]
+    size: float
+    width: float   # rendered advance width — the real "chasse" signal
+    bold: bool
+    italic: bool
 
 
 #: Weighted categories (they sum to 1). "Tableaux" gets its own weight once
@@ -44,14 +67,31 @@ class Gap:
 _WEIGHTS: dict[str, float] = {
     "Structure": 0.33,      # is every label / value present?
     "Mise en page": 0.27,   # did each land at the right place?
-    "Typographie": 0.16,    # same fonts / sizes?
+    "Typographie": 0.16,    # does it *render* the same (metrics, not names)?
     "Couleurs": 0.11,       # text + fill colours
     "Images": 0.06,
     "Pagination": 0.07,
 }
 
+#: The two indicators. Structural = the content is in the right place;
+#: perceptual = what a human actually sees. Same categories, two readings.
+_STRUCTURAL = ("Structure", "Mise en page", "Pagination")
+_PERCEPTUAL = ("Typographie", "Couleurs", "Images")
+
 #: Fidelity → certification badge ("Compatible Batappli : Or").
 _CERT = ((99.5, "Platine"), (98.0, "Or"), (95.0, "Argent"), (90.0, "Bronze"))
+
+#: Rendering-equivalence tolerances. Size follows EXTRACTION_SPEC §4; the width
+#: tolerance is what separates a metric-compatible substitute (invisible) from a
+#: genuinely different typeface (visible).
+_SIZE_TOL_PT = 0.25
+_WIDTH_TOL_RATIO = 0.02
+#: Beyond this, a matched text is visibly displaced and worth reporting.
+_POSITION_GAP_PT = 3.0
+
+# fitz span "flags" bit field.
+_FLAG_ITALIC = 1 << 1
+_FLAG_BOLD = 1 << 4
 
 
 def certification(overall: float) -> str:
@@ -68,14 +108,17 @@ class FidelityReport:
     categories: dict[str, float]  # French category -> %, the weighted breakdown
     text_recall: float      # % of the original's texts found in the candidate
     position_score: float   # % positional closeness of the matched texts
-    typography_score: float # % of the original's (font, size) pairs present
+    typography_score: float # % of matched texts that *render* alike (metrics)
     color_score: float      # % of the original's text colours present
     shape_score: float      # % of the original's coloured fills present
-    image_score: float      # image-count closeness
+    image_score: float      # image-count closeness (all pages)
     page_score: float       # same page count?
     reference_texts: int
     matched_texts: int
     gaps: tuple[Gap, ...] = ()   # the detailed list of discrepancies
+    #: The two readings of the same measurement (Sprint 4).
+    structural_fidelity: float = 0.0   # content in the right place
+    perceptual_fidelity: float = 0.0   # what a human actually sees
 
 
 _WS = re.compile(r"\s+")
@@ -96,39 +139,72 @@ def _int_to_rgb(color: int) -> tuple[float, float, float]:
     return ((color >> 16 & 255) / 255, (color >> 8 & 255) / 255, (color & 255) / 255)
 
 
+def _renders_alike(reference: _Span, candidate: _Span) -> bool:
+    """Do these two runs of identical text *look* the same?
+
+    Deliberately blind to the font name: what the eye sees is the size, the
+    weight, the slant and how wide the run actually draws. A metric-compatible
+    substitute passes; a genuinely different typeface changes the advance width
+    and is caught."""
+    if abs(reference.size - candidate.size) > _SIZE_TOL_PT:
+        return False
+    if reference.bold != candidate.bold or reference.italic != candidate.italic:
+        return False
+    if reference.width <= 0:
+        return candidate.width <= 0
+    return abs(reference.width - candidate.width) / reference.width <= _WIDTH_TOL_RATIO
+
+
 def _read(content: bytes) -> dict:
+    """Read **every** page: the spans that carry the rendering, plus the
+    document-wide colour/fill/image census."""
     doc = fitz.open(stream=content, filetype="pdf")
     try:
-        pages = doc.page_count or 1
-        page = doc[0]
-        w, h = page.rect.width, page.rect.height
-        diag = (w * w + h * h) ** 0.5 or 1.0
+        per_page: list[dict] = []
+        text_colors: set = set()
+        fills: set = set()
+        images = 0
 
-        texts = []  # (normalized_text, center_x, center_y, quant_color)
-        text_colors = set()
-        typography = set()  # (font, rounded size) pairs actually used
-        for b in page.get_text("dict")["blocks"]:
-            for line in b.get("lines", []):
-                for s in line["spans"]:
-                    t = _norm(s["text"])
-                    if not t:
-                        continue
-                    bb = s["bbox"]
-                    q = _quant(_int_to_rgb(s["color"]))
-                    texts.append((t, (bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2, q))
-                    text_colors.add(q)
-                    typography.add((s["font"], round(s["size"])))
+        for number in range(doc.page_count):
+            page = doc[number]
+            width, height = page.rect.width, page.rect.height
+            spans: list[_Span] = []
+            for block in page.get_text("dict")["blocks"]:
+                for line in block.get("lines", []):
+                    for span in line["spans"]:
+                        text = _norm(span["text"])
+                        if not text:
+                            continue
+                        x0, y0, x1, y1 = span["bbox"]
+                        color = _quant(_int_to_rgb(span["color"]))
+                        flags = span.get("flags", 0)
+                        spans.append(
+                            _Span(
+                                text=text,
+                                cx=(x0 + x1) / 2,
+                                cy=(y0 + y1) / 2,
+                                color=color,
+                                size=span["size"],
+                                width=x1 - x0,
+                                bold=bool(flags & _FLAG_BOLD),
+                                italic=bool(flags & _FLAG_ITALIC),
+                            )
+                        )
+                        text_colors.add(color)
+            for drawing in page.get_drawings():
+                if drawing.get("fill"):
+                    fills.add(_quant(tuple(drawing["fill"])))
+            images += len(page.get_images(full=True))
+            per_page.append(
+                {"diag": (width * width + height * height) ** 0.5 or 1.0, "spans": spans}
+            )
 
-        fills = set()  # quantised fill colours
-        for d in page.get_drawings():
-            if d.get("fill"):
-                fills.add(_quant(tuple(d["fill"])))
-
-        images = len(page.get_images(full=True))
         return {
-            "pages": pages, "diag": diag, "texts": texts,
-            "text_colors": text_colors, "fills": fills, "images": images,
-            "typography": typography,
+            "pages": doc.page_count or 1,
+            "per_page": per_page,
+            "text_colors": text_colors,
+            "fills": fills,
+            "images": images,
         }
     finally:
         doc.close()
@@ -139,45 +215,78 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
     cand = _read(candidate)
 
     gaps: list[Gap] = []
-
-    # --- text recall + position: match each reference text to the nearest
-    # candidate text with the same content, unmatched candidates can't be reused.
-    cand_texts = list(cand["texts"])
-    used = [False] * len(cand_texts)
+    reference_texts = 0
     matched = 0
     position_sum = 0.0
-    for t, cx, cy, _ in ref["texts"]:
-        best_i, best_d = -1, None
-        for i, (t2, cx2, cy2, _) in enumerate(cand_texts):
-            if used[i] or t2 != t:
+    typo_alike = 0
+    typo_judged = 0
+
+    # --- Text recall, position and typography, matched **page by page**: a label
+    # on page 1 must be reproduced on page 1, not found anywhere in the document.
+    common_pages = min(len(ref["per_page"]), len(cand["per_page"]))
+    for number in range(common_pages):
+        ref_page, cand_page = ref["per_page"][number], cand["per_page"][number]
+        cand_spans = cand_page["spans"]
+        used = [False] * len(cand_spans)
+        diag = ref_page["diag"]
+
+        for ref_span in ref_page["spans"]:
+            reference_texts += 1
+            best_index, best_distance = -1, None
+            for index, cand_span in enumerate(cand_spans):
+                if used[index] or cand_span.text != ref_span.text:
+                    continue
+                distance = (
+                    (ref_span.cx - cand_span.cx) ** 2 + (ref_span.cy - cand_span.cy) ** 2
+                ) ** 0.5
+                if best_distance is None or distance < best_distance:
+                    best_index, best_distance = index, distance
+
+            if best_index < 0:
+                gaps.append(Gap("texte_manquant", f"p{number + 1} {ref_span.text[:40]}"))
                 continue
-            d = ((cx - cx2) ** 2 + (cy - cy2) ** 2) ** 0.5
-            if best_d is None or d < best_d:
-                best_i, best_d = i, d
-        if best_i >= 0:
-            used[best_i] = True
+
+            used[best_index] = True
             matched += 1
-            position_sum += max(0.0, 1.0 - best_d / ref["diag"])
-            if best_d is not None and best_d > 3.0:  # noticeably displaced
-                gaps.append(Gap("position", t[:40], round(best_d, 1)))
-        else:
-            gaps.append(Gap("texte_manquant", t[:40]))
+            position_sum += max(0.0, 1.0 - best_distance / diag)
+            if best_distance > _POSITION_GAP_PT:
+                gaps.append(
+                    Gap("position", f"p{number + 1} {ref_span.text[:40]}", round(best_distance, 1))
+                )
 
-    n_ref_text = len(ref["texts"])
-    text_recall = matched / n_ref_text if n_ref_text else 1.0
-    position_score = position_sum / matched if matched else (1.0 if not n_ref_text else 0.0)
+            # Typography: does it *render* alike? (metrics, never the name)
+            cand_span = cand_spans[best_index]
+            typo_judged += 1
+            if _renders_alike(ref_span, cand_span):
+                typo_alike += 1
+            else:
+                gaps.append(
+                    Gap(
+                        "typographie",
+                        f"p{number + 1} {ref_span.text[:30]} "
+                        f"{ref_span.size:.1f}pt/{ref_span.width:.1f}pt → "
+                        f"{cand_span.size:.1f}pt/{cand_span.width:.1f}pt",
+                        round(abs(ref_span.width - cand_span.width), 1),
+                    )
+                )
 
-    typo_score = _overlap(ref["typography"], cand["typography"])
+    # Pages the candidate does not have at all: their texts are simply missing.
+    for number in range(common_pages, len(ref["per_page"])):
+        for ref_span in ref["per_page"][number]["spans"]:
+            reference_texts += 1
+            gaps.append(Gap("texte_manquant", f"p{number + 1} {ref_span.text[:40]}"))
+
+    text_recall = matched / reference_texts if reference_texts else 1.0
+    position_score = position_sum / matched if matched else (1.0 if not reference_texts else 0.0)
+    typo_score = typo_alike / typo_judged if typo_judged else 1.0
+
     color_score = _overlap(ref["text_colors"], cand["text_colors"])
     shape_score = _overlap(ref["fills"], cand["fills"])
-    image_score = 1.0 - abs(ref["images"] - cand["images"]) / max(1, ref["images"])
-    image_score = max(0.0, image_score)
+    image_score = max(0.0, 1.0 - abs(ref["images"] - cand["images"]) / max(1, ref["images"]))
     page_score = 1.0 if ref["pages"] == cand["pages"] else max(
         0.0, 1.0 - abs(ref["pages"] - cand["pages"]) / max(1, ref["pages"])
     )
 
-    for font, size in ref["typography"] - cand["typography"]:
-        gaps.append(Gap("typographie", f"{font} {size}pt"))
     for col in ref["text_colors"] - cand["text_colors"]:
         gaps.append(Gap("couleur", "#%02x%02x%02x" % col))
     for col in ref["fills"] - cand["fills"]:
@@ -213,10 +322,19 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
         shape_score=round(shape_score * 100, 1),
         image_score=round(image_score * 100, 1),
         page_score=round(page_score * 100, 1),
-        reference_texts=n_ref_text,
+        reference_texts=reference_texts,
         matched_texts=matched,
         gaps=tuple(gaps),
+        structural_fidelity=round(_indicator(categories, _STRUCTURAL) * 100, 2),
+        perceptual_fidelity=round(_indicator(categories, _PERCEPTUAL) * 100, 2),
     )
+
+
+def _indicator(categories: dict[str, float], keys: tuple[str, ...]) -> float:
+    """One of the two readings: the categories' weighted mean, renormalised so
+    each indicator is itself a 0..1 score."""
+    total = sum(_WEIGHTS[k] for k in keys)
+    return sum(_WEIGHTS[k] * categories[k] for k in keys) / total if total else 1.0
 
 
 def _overlap(reference: set, candidate: set) -> float:
