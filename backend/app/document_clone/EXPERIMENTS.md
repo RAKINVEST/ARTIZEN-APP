@@ -223,6 +223,30 @@ familles (Calibri…) seront des approximations visuelles à mesurer sur les
 prochaines familles (Sprint 3). (3) Voie A (police embarquée réelle) reste un hook,
 à activer quand le mécanisme E-005 sera élucidé et la licence vérifiée.
 
+### E-008 — Sprint 4 : l'oracle mesure enfin le rendu  (inconnue : U-014)
+
+Ouvert par le PO **sur preuve mesurée** : E-007 avait montré un rendu meilleur
+avec un score plus bas. Le facteur limitant n'était plus le moteur, mais la
+mesure. **Le renderer n'a pas été touché de tout le sprint.**
+
+| Maillon | Contenu |
+|---|---|
+| **Question** | L'oracle peut-il juger la fidélité **visuelle réelle** — sans jamais récompenser une différence visible, ni pénaliser une différence invisible ? |
+| **Hypothèse** | En comparant les propriétés qui **déterminent le rendu** (taille, graisse, italique, **largeur rendue**) au lieu du **nom** de police, et en mesurant **toutes les pages**, le score converge vers la perception humaine. |
+| **Protocole** | `comparator.py` : `_Span` sans nom de police (name-blind *par construction*), appariement **page par page**, agrégation document ; 2 indicateurs. Tests dédiés + rejeu du benchmark. Renderer inchangé. |
+| **Résultats mesurés** | **Chapot 84,0 → 93,8 % (Bronze)** — Typographie **0 → 83,3 %**. **SJE 78,6 → 94,0 % (Bronze)** — Typographie **0 → 96,7 %**, Structure 97,1 → **100 %** (823/823 textes sur 11 pages). Chapot Structure 100 → 98,5 % : mesure **plus honnête** (toutes pages, les 3 textes récalcitrants de la page 2 comptent enfin). **77 tests verts.** |
+| **Validation des deux lois** | ✅ *invisible non pénalisé* : Helvetica ↔ Liberation Sans (mêmes chasses, noms différents) → typographie ≥ 90 %. ✅ *visible détecté* : autre famille < 90 %, autre taille < 50 %. ✅ *toutes les pages* : une divergence en page 3 fait baisser le score. |
+| **Interprétation** | Le gain de +9,8 et +15,4 points **ne vient d'aucune amélioration du rendu** — le renderer est identique. Il vient de la **fin d'une pénalité injustifiée**. L'oracle jugeait une étiquette ; il juge désormais ce que l'œil voit. |
+| **Décision** | **Confirmée → gardée.** U-014 close. |
+| **Ouverte / Décidée** | 2026-07-24 / 2026-07-24 |
+
+**Ce que les deux indicateurs révèlent immédiatement.** Structurelle **99,2 %**
+(Chapot) et **100 %** (SJE) : *le placement est résolu*. Perceptuelle **82,8 %** et
+**81,9 %** : le retard n'est plus la typographie mais les **images** (Chapot 50 %,
+SJE **9,1 %** — 503 images extraites, bien moins restituées). **C'est le prochain
+verrou du moteur**, désigné par la mesure et non par l'intuition — exactement ce
+pour quoi la séparation structurelle/perceptuelle a été demandée.
+
 | Exp | Inconnue | Hypothèse | N docs | Résultat (mesuré) | Décision | Statut |
 |---|---|---|---|---|---|---|
 | _(gabarit — expériences futures ici)_ | U-xxx | … | N | — | — | — |

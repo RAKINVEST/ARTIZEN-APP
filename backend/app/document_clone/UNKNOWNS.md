@@ -23,7 +23,8 @@ des briques.
 | U-010 | Combien de logiciels écrivent le texte **lettre par lettre espacée** (« S A R L »), cassant les regex de champs ? | Observé sur Mediabat (E-001). Normaliser le texte avant regex, mesurer le gain sur le corpus | **Résolue → E-003** (Mediabat réparé, SJE non régressé) |
 | U-011 | Comment récupérer **nom d'entreprise** et **TVA** quand les chiffres sont *groupés* (« 948 081 807 ») et que la 1re ligne n'est pas la raison sociale ? | Regex VAT tolérant les espaces + heuristique de nom moins naïve. Mesurer sur le corpus (distincte de U-010) | **Ouverte (observée sur Chapot, E-003)** |
 | U-012 | Le format `.artizen` et le renderer sont **mono-page** ; les vrais devis sont **multi-pages** (SJE = 11 pages). Comment étendre sans casser le déterminisme ? | `GraphicPage` + `pages` + renderer `_draw_page` par page | **Résolue → E-006** (Chapot 90,8 %, Pagination 100 %, 22 tests verts) |
-| U-014 | L'**oracle** ne lit que la **page 0** (`comparator._read` fait `doc[0]`) → la fidélité des **pages 2+** n'est pas mesurée. Comment l'étendre sans fausser les scores existants ? | Faire boucler `_read` sur toutes les pages. **Différée** au sprint oracle (on ne touche pas le thermomètre pendant qu'on construit le moteur) | **Ouverte — différée (sprint oracle)** |
+| U-014 | L'**oracle** ne lit que la **page 0** → fidélité des pages 2+ non mesurée ; et il compare les **noms** de police, pénalisant un rendu identique | Sprint 4 (E-008) : appariement page par page + typographie par **métriques** (taille/graisse/italique/largeur rendue), `_Span` sans nom de police | **Résolue → E-008** (Chapot 84→93,8 %, SJE 78,6→94 %, 77 tests verts) |
+| U-015 | Les **images** sont le nouveau retard perceptuel : Chapot 50 %, **SJE 9,1 %** (503 images extraites, bien moins restituées). Pourquoi la restitution en perd-elle autant ? | Comparer images extraites vs réellement rendues, page par page ; vérifier `get_image_rects`/masques/doublons et le rendu reportlab | **Ouverte — désignée par l'indicateur perceptuel (E-008)** |
 | U-013 | Les **polices** ne sont pas embarquées → repli au rendu. Impact plus large que prévu (analyse Sprint 2, E-006) : **(1)** Typographie basse ; **(2)** rappel texte −2 à −6 %/page car le repli n'a pas certains caractères (**`ʼ` U+02BC**) et ses métriques font **re-segmenter** les spans par `fitz` (« 278-0 ter » → « 278-0 »+« ter »). La mise en page, elle, reste fidèle (positions 99,9 %). | Étude → [TYPOGRAPHY_STRATEGY.md](TYPOGRAPHY_STRATEGY.md) ; stratégie **E validée par le PO** ; **voie C livrée** (`font_resolver.py`, E-007) : substitut métrique libre, `.artizen` garde le nom d'origine. Reste la greffe voie A (police embarquée) quand E-005 sera élucidé + licence vérifiée | **Voie C résolue → E-007** ; voie A ouverte |
 
 Convention : `U-NNN` immuable. Une inconnue résolue passe en `Résolue → ADR-xxx`
@@ -44,6 +45,7 @@ dimensions sont complémentaires.
 | S1 (2 devis réels : Mediabat + Solabaie) | 10 | 1 |
 | S2 (1re extraction réelle, E-004) | 12 | 1 |
 | S3 (multipage, E-006) | 13 | 2 |
+| S4 (oracle perceptuel, E-008) | 15 | 4 |
 
 De S0 à S1, le corpus réel a **ouvert** 2 inconnues (U-010, U-011 — invisibles sans
 données) et **fermé** 1 (U-010 → E-003). Le total *monte* d'abord : c'est sain — le
