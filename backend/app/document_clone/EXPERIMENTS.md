@@ -290,6 +290,21 @@ APRÈS E-010 : Typographie 71,5%  ·  Images 16,8%  ·  Structure 11,1%
 recomposition mesurée du budget. C'est le prochain sprint : Chapot Typographie 83,3 %
 (la largeur rendue de certains spans diffère encore), SJE 96,7 %.
 
+### E-011 — généralisation sur le Starter Corpus complet (5 familles)
+
+Starter Corpus complété (ADR-012) : Mediabat, Solabaie, **Fenêtre Diffusion,
+Pneu, Poêle à bois** (logiciels/métiers différents). Condition d'ADR-021 :
+mesurer avant d'optimiser.
+
+| Maillon | Contenu |
+|---|---|
+| **Question** | Le moteur (extraction → rendu → oracle) **généralise-t-il** au-delà de 2 familles, et la typographie est-elle un verrou **général** ou un cas particulier ? |
+| **Résultats mesurés** | **Chapot 96,8 % (Argent) · SJE 98,7 % (Or) · Fenêtre 100 % (Platine) · Pneu 99,0 % (Or) · Poêle 99,1 % (Or).** Aucune famille ne s'effondre. |
+| **Budget d'erreur agrégé (5)** | **Typographie 66,3 % · Structure 20,4 % · Images 11,8 % · Mise en page 1,5 %.** |
+| **Interprétation** | (1) **L'architecture généralise** : 5 logiciels, tous ≥ 96,8 %, sans heuristique spécifique. (2) **La typographie est le verrou n°1 *général*** (66 %), confirmé sur le corpus — pas un artefact de Chapot. La **Structure** (rappel texte, 20 %) monte en n°2, tirée par les documents longs (Poêle : 453 textes, rappel 98 %). |
+| **Décision** | Généralisation **validée**. **Sprint Typographie débloqué** (ADR-021 satisfait). Nouvelle inconnue : **Fenêtre = devis image/scan** (0 texte extrait, 100 % trivial car tout est raster) → **U-016**, un *mode de reproduction distinct*. |
+| **Ouverte / Décidée** | 2026-07-24 / 2026-07-24 |
+
 | Exp | Inconnue | Hypothèse | N docs | Résultat (mesuré) | Décision | Statut |
 |---|---|---|---|---|---|---|
 | _(gabarit — expériences futures ici)_ | U-xxx | … | N | — | — | — |
