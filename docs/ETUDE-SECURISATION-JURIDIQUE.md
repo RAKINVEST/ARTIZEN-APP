@@ -273,8 +273,13 @@ techniquement impossible.
 
 ## 8. Suite
 
-Si cette étude est retenue, la **Phase 1** devient un **ADR** (dans
-[docs/DECISIONS.md](DECISIONS.md) ou le journal du moteur), et **seulement alors**
-on conçoit écrans et workflow (aucun n'est créé ici). La **Phase 2 (fingerprint)**
-fera l'objet d'une étude technique + DPIA dédiées, sur le modèle de l'étude
-typographique : décision sur mesures, jamais sur intuition.
+**Retenue par le PO (2026-07).** La **Phase 1** est adoptée telle quelle et gravée
+en règle de gouvernance : [Décision 8 — *ARTIZEN protège l'identité documentaire
+autant qu'il la restitue*](DECISIONS.md). Composants validés : vérification de
+cohérence (raison sociale, SIREN/SIRET, Sirene) · déclaration sur l'honneur en cas
+de discordance · workflow progressif (pas de blocage brutal) · filigrane interne
++ take-down. **Fingerprint inter-comptes : différé.** **Aucun écran ni workflow
+n'est créé** avant la conception feature par feature.
+
+La **Phase 2 (fingerprint)** fera l'objet d'une étude technique + DPIA dédiées, sur
+le modèle de l'étude typographique : décision sur mesures, jamais sur intuition.

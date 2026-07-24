@@ -5,7 +5,7 @@
 > répartition des responsabilités et les garanties juridiques du produit.
 >
 > Tout le reste — écrans, dossiers, fonctionnalités, prix, libellés — peut évoluer librement.
-> Ces sept décisions, non.
+> Ces huit décisions, non.
 >
 > Chaque décision indique **la règle**, **le pourquoi** (le raisonnement, pas seulement le
 > choix) et **ce qu'elle implique dans le code**. Un développeur qui arrive doit pouvoir
@@ -210,6 +210,51 @@ geste d'import sert d'import initial et de mise à jour.
 
 ---
 
+## Décision 8 — ARTIZEN protège l'identité documentaire autant qu'il la restitue
+
+**Règle.** À l'import d'un devis, le produit **vérifie que l'identité extraite
+(raison sociale, SIREN/SIRET) est celle du compte** avant de la reproduire.
+Concordance → restitution **silencieuse**. Discordance ou identité absente →
+**déclaration sur l'honneur** de l'artisan, dans un **workflow progressif**
+(avertir → confirmer → au plus, blocage en douceur), **jamais un blocage brutal**
+sur un simple écart de SIRET. Tout PDF émis porte un **filigrane interne de
+traçabilité**, et un **canal de signalement / retrait** existe. La **détection
+inter-comptes par empreinte (fingerprint) est différée** à une phase ultérieure.
+
+**Pourquoi.** La promesse ([BRAND.md](BRAND.md)) — *ARTIZEN retrouve votre
+identité* — devient un **risque** si quelqu'un importe le devis d'un **tiers**.
+Les fondements juridiques (contrefaçon de logo/marque, concurrence déloyale,
+parasitisme, usurpation) supposent **tous** l'identité d'un tiers : ils
+s'effondrent si ARTIZEN garantit qu'on restitue la **propre** identité de
+l'artisan. Mais le SIRET peut **légitimement** différer (rachat, changement de
+forme sociale, franchise, groupe, cabinet comptable) — donc la vérification
+**avertit et fait confirmer, elle ne bloque pas** : un faux positif (soupçonner un
+client honnête) coûte plus qu'un vrai négatif rare. Étude complète :
+[docs/ETUDE-SECURISATION-JURIDIQUE.md](ETUDE-SECURISATION-JURIDIQUE.md).
+
+**Conséquences.**
+- La vérification n'est **pas** une barrière anti-fraude : c'est la promesse
+  rendue concrète — *« on s'assure de restituer **votre** identité »*. En **langue
+  artisan** (BRAND.md, deux langues), jamais « fraude » ni « contrôle » :
+  - concordance → *« Nous avons reconnu votre entreprise. Nous allons reproduire
+    votre identité documentaire. »*
+  - discordance → *« Ce document semble appartenir à une autre entreprise. Si vous
+    en avez les droits (changement de société, rachat, franchise…), vous pouvez
+    poursuivre après confirmation. »*
+- La donnée nécessaire (SIREN/SIRET, raison sociale) est **déjà extraite** par
+  `document_detection` ; le compte porte déjà son SIRET. Un contrôle **Sirene**
+  (INSEE) fiabilise la concordance.
+- La déclaration sur l'honneur est **horodatée et journalisée** : responsabilité
+  de l'utilisateur **et** diligence d'ARTIZEN (élément de défense).
+- RGPD : minimisation, empreinte future **non réversible**, **non-divulgation
+  croisée** (on signale un conflit, jamais *qui*), **pas de décision purement
+  automatisée** sur un blocage.
+- **Aucun écran ni workflow n'est figé ici** : la règle fige le *principe* et la
+  *politique*, pas l'implémentation. Elle se concrétise feature par feature,
+  chacune passant les portes de BRAND.md.
+
+---
+
 ## Ce que ces décisions excluent volontairement
 
 - ❌ Un catalogue partagé entre artisans.
@@ -219,6 +264,10 @@ geste d'import sert d'import initial et de mise à jour.
 - ❌ Une ligne de devis dépendante du catalogue après sa création.
 - ❌ Un mode hors-ligne complet en V1.
 - ❌ Un dossier réservé à une qualification chargé par défaut.
+- ❌ Un blocage brutal sur un simple écart de SIRET (les usages légitimes priment).
+- ❌ La reproduction assumée de l'identité documentaire d'un tiers.
+- ❌ Un vocabulaire de fraude ou de contrôle face à l'artisan.
+- ❌ La détection inter-comptes par empreinte en Phase 1 (différée, sensible RGPD).
 
 ---
 
