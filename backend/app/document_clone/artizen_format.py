@@ -124,6 +124,19 @@ class TableSpec(BaseModel):
     grid_color: str | None = None
 
 
+class GraphicPage(BaseModel):
+    """One physical page's graphic content — the multipage unit. Each page keeps
+    its own geometry, so a document mixing A4 portrait and landscape reproduces
+    faithfully. A flat (legacy, single-page) :class:`GraphicLayer` is treated as
+    one implicit page by the renderer."""
+
+    page: PageGeometry
+    fixed_texts: list[FixedText] = Field(default_factory=list)
+    shapes: list[Shape] = Field(default_factory=list)
+    images: list[ImageBlock] = Field(default_factory=list)
+    table: TableSpec | None = None
+
+
 class GraphicLayer(BaseModel):
     page: PageGeometry
     fonts: list[FontRef] = Field(default_factory=list)
@@ -132,6 +145,11 @@ class GraphicLayer(BaseModel):
     shapes: list[Shape] = Field(default_factory=list)
     images: list[ImageBlock] = Field(default_factory=list)
     table: TableSpec | None = None
+    #: Multipage content. When non-empty, the renderer draws these pages (and
+    #: ignores the flat single-page fields above, kept for backward compat).
+    #: A real devis is multi-page — page breaks, headers and footers are part of
+    #: the identity, so they are reproduced page by page, never recomposed.
+    pages: list[GraphicPage] = Field(default_factory=list)
 
 
 # --------------------------------------------------------------- Layer 2 : métier

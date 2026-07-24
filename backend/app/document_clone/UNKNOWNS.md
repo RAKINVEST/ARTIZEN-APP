@@ -22,7 +22,8 @@ des briques.
 | U-009 | La quantification couleur 16 niveaux suffit-elle, ou faut-il un vrai **ΔE\*ab** ? | Mesurer les faux positifs/négatifs couleur sur le corpus | Ouverte |
 | U-010 | Combien de logiciels écrivent le texte **lettre par lettre espacée** (« S A R L »), cassant les regex de champs ? | Observé sur Mediabat (E-001). Normaliser le texte avant regex, mesurer le gain sur le corpus | **Résolue → E-003** (Mediabat réparé, SJE non régressé) |
 | U-011 | Comment récupérer **nom d'entreprise** et **TVA** quand les chiffres sont *groupés* (« 948 081 807 ») et que la 1re ligne n'est pas la raison sociale ? | Regex VAT tolérant les espaces + heuristique de nom moins naïve. Mesurer sur le corpus (distincte de U-010) | **Ouverte (observée sur Chapot, E-003)** |
-| U-012 | Le format `.artizen` et le renderer sont **mono-page** ; les vrais devis sont **multi-pages** (SJE = 11 pages). Comment étendre sans casser le déterminisme ? | Ajouter une liste de pages au format + boucle `showPage` au renderer ; mesurer Pagination + rappel texte pages 2+ | **Ouverte (observée, E-004)** |
+| U-012 | Le format `.artizen` et le renderer sont **mono-page** ; les vrais devis sont **multi-pages** (SJE = 11 pages). Comment étendre sans casser le déterminisme ? | `GraphicPage` + `pages` + renderer `_draw_page` par page | **Résolue → E-006** (Chapot 90,8 %, Pagination 100 %, 22 tests verts) |
+| U-014 | L'**oracle** ne lit que la **page 0** (`comparator._read` fait `doc[0]`) → la fidélité des **pages 2+** n'est pas mesurée. Comment l'étendre sans fausser les scores existants ? | Faire boucler `_read` sur toutes les pages. **Différée** au sprint oracle (on ne touche pas le thermomètre pendant qu'on construit le moteur) | **Ouverte — différée (sprint oracle)** |
 | U-013 | Les **polices** ne sont pas embarquées → repli au rendu → Typographie basse (Chapot 42,9 %, SJE 0 %). Comment restituer la police exacte ? | **E-005 a fermé la voie naïve** (embarquer la fonte subsettée régresse la Structure 100→54 %, cf. `cmap` non round-trip). Restent : (a) améliorer l'oracle (métriques de police, pas le nom) ; (b) fonte complète non-subsettée | **Ouverte — voie naïve fermée (E-005)** |
 
 Convention : `U-NNN` immuable. Une inconnue résolue passe en `Résolue → ADR-xxx`
@@ -42,6 +43,7 @@ dimensions sont complémentaires.
 | S0 (départ, corpus vide) | 9 | 0 |
 | S1 (2 devis réels : Mediabat + Solabaie) | 10 | 1 |
 | S2 (1re extraction réelle, E-004) | 12 | 1 |
+| S3 (multipage, E-006) | 13 | 2 |
 
 De S0 à S1, le corpus réel a **ouvert** 2 inconnues (U-010, U-011 — invisibles sans
 données) et **fermé** 1 (U-010 → E-003). Le total *monte* d'abord : c'est sain — le

@@ -182,6 +182,22 @@ pistes pour U-013, à trancher sur plus de familles : (a) **améliorer l'oracle*
 comparer des **métriques** de police, pas le nom ; (b) reconstruire une fonte
 **complète** (non subsettée) avant de l'embarquer.
 
+### E-006 — reproduction multipage  (inconnue : U-012)
+
+Sprint 1 de la feuille de route PO : le moteur doit reproduire **n'importe quel**
+devis, pas seulement un 2-pages. Le format et le renderer étaient mono-page.
+
+| Maillon | Contenu |
+|---|---|
+| **Question** | Étendre `.artizen` et le renderer au multi-page fait-il monter la fidélité sans régresser le mono-page ? |
+| **Hypothèse** | Une page = une `GraphicPage` (géométrie + contenu propres) ; le renderer boucle et **préserve les sauts de page**. Pagination → 100 %, mono-page inchangé. |
+| **Protocole** | `GraphicPage` + `GraphicLayer.pages` (rétrocompatible) ; renderer `_draw_page` par page ; extracteur transcrit **toutes** les pages. `render → compare` sur Chapot + SJE + 22 tests moteur. |
+| **Résultats** | **Chapot : 87,3 % → 90,8 % (Bronze)** ; Pagination 50 → **100 %** ; 2 pages, **201 textes** reproduits. **SJE : 71,3 % → 77,7 %** ; Pagination 9,1 → **100 %** ; 11 pages, **823 textes / 503 images** extraits. **22 tests moteur verts** (mono-page inchangé). |
+| **Interprétation** | Le multi-page fait ce qu'on attendait : la pagination est réparée et le PDF reproduit contient **toutes** les pages. Confirmé : le 71 % de SJE était en partie **artificiel**. **Limite honnête** : l'oracle (`comparator._read`) ne lit que la **page 0** pour le contenu → les pages 2+ ne sont pas encore *mesurées* (seul leur nombre l'est) → **U-014**. C'est une évolution du **thermomètre**, volontairement différée (sprint oracle) — on ne le touche pas pendant qu'on construit le moteur. |
+| **Décision** | **Confirmée → gardée.** U-012 close côté format/renderer. |
+| **ADR / spec** | Évolution d'infra (format+renderer) **ordonnée par le PO** ; pas d'ADR (directive « aucun nouvel ADR sauf nécessité absolue »). Consignée ici. |
+| **Ouverte / Décidée** | 2026-07-24 / 2026-07-24 |
+
 | Exp | Inconnue | Hypothèse | N docs | Résultat (mesuré) | Décision | Statut |
 |---|---|---|---|---|---|---|
 | _(gabarit — expériences futures ici)_ | U-xxx | … | N | — | — | — |

@@ -25,6 +25,7 @@ from reportlab.pdfgen import canvas
 
 from app.document_clone.artizen_format import (
     ArtizenTemplate,
+    GraphicPage,
     HAlign,
     Rect,
     TableSpec,
@@ -77,10 +78,42 @@ def render_artizen(
     rows: list[dict[str, str]],
 ) -> bytes:
     g = template.graphic
-    width, height = g.page.width, g.page.height
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=(width, height))
     fonts = _register_fonts(template)
+
+    # A flat (legacy, single-page) template is one implicit page; a multipage
+    # one drives the loop from ``g.pages``. Either way each page is drawn by the
+    # same ``_draw_page`` — page breaks are preserved, never recomposed.
+    pages = g.pages or [
+        GraphicPage(
+            page=g.page,
+            fixed_texts=g.fixed_texts,
+            shapes=g.shapes,
+            images=g.images,
+            table=g.table,
+        )
+    ]
+
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=(pages[0].page.width, pages[0].page.height))
+    for index, page in enumerate(pages):
+        c.setPageSize((page.page.width, page.page.height))
+        # Bound fields (the variable zones) live on the first page only; on a
+        # reproduction they are empty anyway.
+        _draw_page(c, template, page, fonts, fields if index == 0 else {}, rows)
+        c.showPage()
+    c.save()
+    return buffer.getvalue()
+
+
+def _draw_page(
+    c: canvas.Canvas,
+    template: ArtizenTemplate,
+    page: GraphicPage,
+    fonts: dict[str, str],
+    fields: dict[str, str],
+    rows: list[dict[str, str]],
+) -> None:
+    height = page.page.height
 
     # .artizen coordinates are top-left; reportlab's are bottom-left.
     def flip(y: float, h: float = 0.0) -> float:
@@ -103,7 +136,7 @@ def render_artizen(
             c.drawString(rect.x, baseline, text)
 
     # 1) Shapes (backgrounds / frames) — drawn first so text sits on top.
-    for shape in g.shapes:
+    for shape in page.shapes:
         r = shape.rect
         fill = 1 if shape.fill else 0
         stroke = 1 if shape.stroke else 0
@@ -118,7 +151,7 @@ def render_artizen(
             c.rect(r.x, flip(r.y, r.h), r.w, r.h, fill=fill, stroke=stroke)
 
     # 2) Images (logo…).
-    for img in g.images:
+    for img in page.images:
         data_b64 = template.assets.get(img.asset_ref)
         if not data_b64:
             continue
@@ -133,22 +166,18 @@ def render_artizen(
             logger.warning("artizen_renderer.image_failed ref=%s", img.asset_ref)
 
     # 3) Fixed labels.
-    for ft in g.fixed_texts:
+    for ft in page.fixed_texts:
         draw_text(ft.text, ft.rect, ft.style)
 
     # 4) The table (the one variable-length region).
-    if g.table is not None:
-        _draw_table(c, g.table, rows, flip, draw_text)
+    if page.table is not None:
+        _draw_table(c, page.table, rows, flip, draw_text)
 
     # 5) Bound fields (the variable zones).
     for fb in template.business.fields:
         value = fields.get(fb.field, "")
         if value != "":
             draw_text(f"{fb.prefix}{value}{fb.suffix}", fb.rect, fb.style, valign_center=False)
-
-    c.showPage()
-    c.save()
-    return buffer.getvalue()
 
 
 def _draw_table(c, table: TableSpec, rows, flip, draw_text) -> None:

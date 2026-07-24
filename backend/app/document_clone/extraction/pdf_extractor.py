@@ -1,7 +1,8 @@
 """First real extractor (experiment E-004) — a native PDF → ``ArtizenTemplate``.
 
-Reads page 1's geometry with **PyMuPDF (fitz)** and transcribes it into the
-graphic layer the deterministic renderer replays:
+Reads **every page's** geometry with **PyMuPDF (fitz)** and transcribes it into
+the graphic layer the deterministic renderer replays, one :class:`GraphicPage`
+per page (page breaks preserved, never recomposed):
 
 * every text **span** → a :class:`FixedText` at its exact bbox, verbatim
   (letter-spacing and all — the renderer copies it, so it reproduces perfectly);
@@ -12,10 +13,9 @@ It is **descriptive, never interpretive** (EXTRACTION_SPEC §0): it transcribes
 what is physically on the page — no business meaning, no "this is a SIRET". A
 pure function of the PDF.
 
-Known limits of this v0, tracked as unknowns, not hidden:
-* **page 1 only** — the ``.artizen`` format is single-page today (U-012);
-* **no font embedding yet** — fonts fall back at render time, so typography is
-  the weakest axis until the exact fonts are embedded (U-013, next experiment).
+Known limit, tracked not hidden: **no font embedding yet** — fonts fall back at
+render time, so typography is the weakest axis (U-013; the naive embedding of
+subsetted fonts was tried in E-005 and regressed, so it stays open).
 """
 
 import fitz
@@ -24,6 +24,7 @@ from app.document_clone.artizen_format import (
     ArtizenTemplate,
     FixedText,
     GraphicLayer,
+    GraphicPage,
     HAlign,
     ImageBlock,
     PageGeometry,
@@ -95,7 +96,9 @@ def _extract_shapes(page: "fitz.Page") -> list[Shape]:
     return shapes
 
 
-def _extract_images(page: "fitz.Page", doc: "fitz.Document", assets: dict[str, str]) -> list[ImageBlock]:
+def _extract_images(
+    page: "fitz.Page", doc: "fitz.Document", assets: dict[str, str], page_index: int
+) -> list[ImageBlock]:
     import base64
 
     images: list[ImageBlock] = []
@@ -106,7 +109,7 @@ def _extract_images(page: "fitz.Page", doc: "fitz.Document", assets: dict[str, s
             if not rects:
                 continue
             extracted = doc.extract_image(xref)
-            ref = f"img_{index}"
+            ref = f"img_p{page_index}_{index}"  # unique across pages
             assets[ref] = base64.b64encode(extracted["image"]).decode("ascii")
             r = rects[0]
             images.append(
@@ -123,17 +126,23 @@ def _extract_images(page: "fitz.Page", doc: "fitz.Document", assets: dict[str, s
 
 
 def extract(pdf_bytes: bytes) -> ArtizenTemplate:
-    """Transcribe page 1 of a native PDF into an :class:`ArtizenTemplate`."""
+    """Transcribe **every** page of a native PDF into an :class:`ArtizenTemplate`.
+
+    Each page keeps its own geometry and content, so page breaks, headers and
+    footers are reproduced exactly where the original put them."""
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     try:
-        page = doc[0]
         assets: dict[str, str] = {}
-        graphic = GraphicLayer(
-            page=PageGeometry(width=page.rect.width, height=page.rect.height),
-            fixed_texts=_extract_texts(page),
-            shapes=_extract_shapes(page),
-            images=_extract_images(page, doc, assets),
-        )
+        pages = [
+            GraphicPage(
+                page=PageGeometry(width=page.rect.width, height=page.rect.height),
+                fixed_texts=_extract_texts(page),
+                shapes=_extract_shapes(page),
+                images=_extract_images(page, doc, assets, index),
+            )
+            for index, page in enumerate(doc)
+        ]
+        graphic = GraphicLayer(page=pages[0].page, pages=pages)
         return ArtizenTemplate(graphic=graphic, estimated_fidelity=0, assets=assets)
     finally:
         doc.close()
