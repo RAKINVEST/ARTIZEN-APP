@@ -15,6 +15,8 @@ and only the ones actually provided are applied, exactly like
 mirror).
 """
 
+from enum import Enum
+
 from pydantic import BaseModel
 
 from app.branding.schemas import BrandProfileRead, CompanyRead
@@ -22,11 +24,33 @@ from app.document_analysis.schemas import DocumentAnalysisRead
 from app.document_detection.schemas import DocumentDetectionResultRead
 
 
+class IdentityVerdict(str, Enum):
+    """Does the imported devis's identity look like the account's own?
+    (Décision 8). Never a fraud verdict — a check that keeps the promise:
+    *we reproduce **your** identity.*"""
+
+    RECOGNIZED = "recognized"    # SIRET (or name) matches — "Nous avons reconnu votre entreprise"
+    MISMATCH = "mismatch"        # a *different* SIRET — likely another company; warn + confirm
+    UNVERIFIED = "unverified"    # no legible identity to compare — soft confirmation
+
+
+class IdentityCoherence(BaseModel):
+    """The signal the import screen turns into an artisan-language message. The
+    backend judges; the client speaks (BRAND.md, deux langues)."""
+
+    verdict: IdentityVerdict
+    #: True/False when both SIRETs were comparable, else None.
+    siret_matches: bool | None = None
+    extracted_siret: str | None = None
+    extracted_name: str | None = None
+
+
 class TemplateImportPreviewRead(BaseModel):
     analysis: DocumentAnalysisRead
     detection: DocumentDetectionResultRead
     current_company: CompanyRead
     current_brand: BrandProfileRead
+    coherence: IdentityCoherence
 
 
 class TemplateImportValidateRequest(BaseModel):

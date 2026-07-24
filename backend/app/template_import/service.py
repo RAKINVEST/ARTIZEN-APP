@@ -35,6 +35,7 @@ from app.document_analysis.schemas import DocumentAnalysisRead
 from app.document_detection.schemas import DocumentDetectionResultRead
 from app.document_detection.service import DocumentDetectionService
 from app.quotes.service import QuoteService
+from app.template_import.coherence import assess as assess_identity
 from app.template_import.exceptions import InvalidDocumentTypeForTemplateError
 from app.template_import.schemas import TemplateImportPreviewRead, TemplateImportValidateRequest
 
@@ -65,11 +66,20 @@ class TemplateImportService:
         detection = await self._detection.get_or_run(analysis_id, company_id=company_id)
         profile = await self._branding.get_profile(company_id)
 
+        # Décision 8: does this devis's identity look like the artisan's own?
+        coherence = assess_identity(
+            extracted_siret=detection.siret,
+            extracted_name=detection.company_name,
+            account_siret=profile.company.siret,
+            account_names=[profile.company.legal_name, profile.company.name],
+        )
+
         return TemplateImportPreviewRead(
             analysis=DocumentAnalysisRead.model_validate(analysis),
             detection=DocumentDetectionResultRead.model_validate(detection),
             current_company=profile.company,
             current_brand=profile.brand,
+            coherence=coherence,
         )
 
     async def render_proposed_sample(
