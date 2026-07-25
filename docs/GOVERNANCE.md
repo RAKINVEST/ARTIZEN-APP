@@ -37,6 +37,19 @@ montrent que la technique est une *conséquence*, la promesse une *cause*.
 | [EXPERIMENTS.md](../backend/app/document_clone/EXPERIMENTS.md) | Comment allons-nous le découvrir ? |
 | [SUCCESS_CRITERIA.md](../backend/app/document_clone/SUCCESS_CRITERIA.md) | Quand considérerons-nous l'objectif atteint ? |
 
+## Études et journaux — la gouvernance qui évolue
+
+Autour de cette constitution *stable*, des documents **vivants** : ils tranchent
+une question par la mesure (études) ou tiennent la trace du progrès (journaux).
+On les fait évoluer sans jamais toucher aux fondations.
+
+| Document | Répond à |
+|---|---|
+| [DECISIONS.md](DECISIONS.md) | Quelles décisions **produit** ne se rediscutent pas ? (8 règles, dont la protection de l'identité documentaire) |
+| [TYPOGRAPHY_STRATEGY.md](../backend/app/document_clone/TYPOGRAPHY_STRATEGY.md) | Comment reproduire les **polices** ? (étude → décision E) |
+| [ETUDE-SECURISATION-JURIDIQUE.md](ETUDE-SECURISATION-JURIDIQUE.md) | Comment **protéger** l'identité contre un usage tiers ? (→ Décision 8) |
+| [PERFORMANCE_HISTORY.md](../backend/app/document_clone/PERFORMANCE_HISTORY.md) | Où en est la **qualité**, étape après étape ? (E-004 → E-012) |
+
 ## L'ordre de lecture
 
 Un nouvel arrivant lit **[BRAND.md](BRAND.md) en premier** : la promesse avant la
