@@ -36,6 +36,7 @@ TemplateImportPreview _preview() => TemplateImportPreview(
       detection: _detection(),
       currentCompany: _company(),
       currentBrand: _brand(),
+      coherence: const IdentityCoherence(verdict: IdentityVerdict.recognized),
     );
 
 BrandingProfile _brandingProfile() =>

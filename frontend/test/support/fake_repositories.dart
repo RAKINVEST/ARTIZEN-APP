@@ -404,6 +404,12 @@ class FakeTemplateImportRepository implements TemplateImportRepository {
   Future<TemplateImportPreview> getPreview(String analysisId) async => preview;
 
   @override
+  Future<Uint8List> renderProposedSample(
+    String analysisId,
+    TemplateImportValidateInput input,
+  ) async => Uint8List(0);
+
+  @override
   Future<BrandingProfile> validate(
     String analysisId,
     TemplateImportValidateInput input,

@@ -755,6 +755,241 @@ abstract class _DetectionResult implements DetectionResult {
       throw _privateConstructorUsedError;
 }
 
+IdentityCoherence _$IdentityCoherenceFromJson(Map<String, dynamic> json) {
+  return _IdentityCoherence.fromJson(json);
+}
+
+/// @nodoc
+mixin _$IdentityCoherence {
+  IdentityVerdict get verdict => throw _privateConstructorUsedError;
+  bool? get siretMatches => throw _privateConstructorUsedError;
+  String? get extractedSiret => throw _privateConstructorUsedError;
+  String? get extractedName => throw _privateConstructorUsedError;
+
+  /// Serializes this IdentityCoherence to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of IdentityCoherence
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $IdentityCoherenceCopyWith<IdentityCoherence> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $IdentityCoherenceCopyWith<$Res> {
+  factory $IdentityCoherenceCopyWith(
+    IdentityCoherence value,
+    $Res Function(IdentityCoherence) then,
+  ) = _$IdentityCoherenceCopyWithImpl<$Res, IdentityCoherence>;
+  @useResult
+  $Res call({
+    IdentityVerdict verdict,
+    bool? siretMatches,
+    String? extractedSiret,
+    String? extractedName,
+  });
+}
+
+/// @nodoc
+class _$IdentityCoherenceCopyWithImpl<$Res, $Val extends IdentityCoherence>
+    implements $IdentityCoherenceCopyWith<$Res> {
+  _$IdentityCoherenceCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of IdentityCoherence
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? verdict = null,
+    Object? siretMatches = freezed,
+    Object? extractedSiret = freezed,
+    Object? extractedName = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            verdict: null == verdict
+                ? _value.verdict
+                : verdict // ignore: cast_nullable_to_non_nullable
+                      as IdentityVerdict,
+            siretMatches: freezed == siretMatches
+                ? _value.siretMatches
+                : siretMatches // ignore: cast_nullable_to_non_nullable
+                      as bool?,
+            extractedSiret: freezed == extractedSiret
+                ? _value.extractedSiret
+                : extractedSiret // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            extractedName: freezed == extractedName
+                ? _value.extractedName
+                : extractedName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$IdentityCoherenceImplCopyWith<$Res>
+    implements $IdentityCoherenceCopyWith<$Res> {
+  factory _$$IdentityCoherenceImplCopyWith(
+    _$IdentityCoherenceImpl value,
+    $Res Function(_$IdentityCoherenceImpl) then,
+  ) = __$$IdentityCoherenceImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    IdentityVerdict verdict,
+    bool? siretMatches,
+    String? extractedSiret,
+    String? extractedName,
+  });
+}
+
+/// @nodoc
+class __$$IdentityCoherenceImplCopyWithImpl<$Res>
+    extends _$IdentityCoherenceCopyWithImpl<$Res, _$IdentityCoherenceImpl>
+    implements _$$IdentityCoherenceImplCopyWith<$Res> {
+  __$$IdentityCoherenceImplCopyWithImpl(
+    _$IdentityCoherenceImpl _value,
+    $Res Function(_$IdentityCoherenceImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of IdentityCoherence
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? verdict = null,
+    Object? siretMatches = freezed,
+    Object? extractedSiret = freezed,
+    Object? extractedName = freezed,
+  }) {
+    return _then(
+      _$IdentityCoherenceImpl(
+        verdict: null == verdict
+            ? _value.verdict
+            : verdict // ignore: cast_nullable_to_non_nullable
+                  as IdentityVerdict,
+        siretMatches: freezed == siretMatches
+            ? _value.siretMatches
+            : siretMatches // ignore: cast_nullable_to_non_nullable
+                  as bool?,
+        extractedSiret: freezed == extractedSiret
+            ? _value.extractedSiret
+            : extractedSiret // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        extractedName: freezed == extractedName
+            ? _value.extractedName
+            : extractedName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$IdentityCoherenceImpl implements _IdentityCoherence {
+  const _$IdentityCoherenceImpl({
+    required this.verdict,
+    this.siretMatches,
+    this.extractedSiret,
+    this.extractedName,
+  });
+
+  factory _$IdentityCoherenceImpl.fromJson(Map<String, dynamic> json) =>
+      _$$IdentityCoherenceImplFromJson(json);
+
+  @override
+  final IdentityVerdict verdict;
+  @override
+  final bool? siretMatches;
+  @override
+  final String? extractedSiret;
+  @override
+  final String? extractedName;
+
+  @override
+  String toString() {
+    return 'IdentityCoherence(verdict: $verdict, siretMatches: $siretMatches, extractedSiret: $extractedSiret, extractedName: $extractedName)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$IdentityCoherenceImpl &&
+            (identical(other.verdict, verdict) || other.verdict == verdict) &&
+            (identical(other.siretMatches, siretMatches) ||
+                other.siretMatches == siretMatches) &&
+            (identical(other.extractedSiret, extractedSiret) ||
+                other.extractedSiret == extractedSiret) &&
+            (identical(other.extractedName, extractedName) ||
+                other.extractedName == extractedName));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    verdict,
+    siretMatches,
+    extractedSiret,
+    extractedName,
+  );
+
+  /// Create a copy of IdentityCoherence
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$IdentityCoherenceImplCopyWith<_$IdentityCoherenceImpl> get copyWith =>
+      __$$IdentityCoherenceImplCopyWithImpl<_$IdentityCoherenceImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$IdentityCoherenceImplToJson(this);
+  }
+}
+
+abstract class _IdentityCoherence implements IdentityCoherence {
+  const factory _IdentityCoherence({
+    required final IdentityVerdict verdict,
+    final bool? siretMatches,
+    final String? extractedSiret,
+    final String? extractedName,
+  }) = _$IdentityCoherenceImpl;
+
+  factory _IdentityCoherence.fromJson(Map<String, dynamic> json) =
+      _$IdentityCoherenceImpl.fromJson;
+
+  @override
+  IdentityVerdict get verdict;
+  @override
+  bool? get siretMatches;
+  @override
+  String? get extractedSiret;
+  @override
+  String? get extractedName;
+
+  /// Create a copy of IdentityCoherence
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$IdentityCoherenceImplCopyWith<_$IdentityCoherenceImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 TemplateImportPreview _$TemplateImportPreviewFromJson(
   Map<String, dynamic> json,
 ) {
@@ -767,6 +1002,7 @@ mixin _$TemplateImportPreview {
   DetectionResult get detection => throw _privateConstructorUsedError;
   Company get currentCompany => throw _privateConstructorUsedError;
   BrandProfile get currentBrand => throw _privateConstructorUsedError;
+  IdentityCoherence get coherence => throw _privateConstructorUsedError;
 
   /// Serializes this TemplateImportPreview to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -790,12 +1026,14 @@ abstract class $TemplateImportPreviewCopyWith<$Res> {
     DetectionResult detection,
     Company currentCompany,
     BrandProfile currentBrand,
+    IdentityCoherence coherence,
   });
 
   $DocumentAnalysisSummaryCopyWith<$Res> get analysis;
   $DetectionResultCopyWith<$Res> get detection;
   $CompanyCopyWith<$Res> get currentCompany;
   $BrandProfileCopyWith<$Res> get currentBrand;
+  $IdentityCoherenceCopyWith<$Res> get coherence;
 }
 
 /// @nodoc
@@ -820,6 +1058,7 @@ class _$TemplateImportPreviewCopyWithImpl<
     Object? detection = null,
     Object? currentCompany = null,
     Object? currentBrand = null,
+    Object? coherence = null,
   }) {
     return _then(
       _value.copyWith(
@@ -839,6 +1078,10 @@ class _$TemplateImportPreviewCopyWithImpl<
                 ? _value.currentBrand
                 : currentBrand // ignore: cast_nullable_to_non_nullable
                       as BrandProfile,
+            coherence: null == coherence
+                ? _value.coherence
+                : coherence // ignore: cast_nullable_to_non_nullable
+                      as IdentityCoherence,
           )
           as $Val,
     );
@@ -883,6 +1126,16 @@ class _$TemplateImportPreviewCopyWithImpl<
       return _then(_value.copyWith(currentBrand: value) as $Val);
     });
   }
+
+  /// Create a copy of TemplateImportPreview
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $IdentityCoherenceCopyWith<$Res> get coherence {
+    return $IdentityCoherenceCopyWith<$Res>(_value.coherence, (value) {
+      return _then(_value.copyWith(coherence: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -899,6 +1152,7 @@ abstract class _$$TemplateImportPreviewImplCopyWith<$Res>
     DetectionResult detection,
     Company currentCompany,
     BrandProfile currentBrand,
+    IdentityCoherence coherence,
   });
 
   @override
@@ -909,6 +1163,8 @@ abstract class _$$TemplateImportPreviewImplCopyWith<$Res>
   $CompanyCopyWith<$Res> get currentCompany;
   @override
   $BrandProfileCopyWith<$Res> get currentBrand;
+  @override
+  $IdentityCoherenceCopyWith<$Res> get coherence;
 }
 
 /// @nodoc
@@ -930,6 +1186,7 @@ class __$$TemplateImportPreviewImplCopyWithImpl<$Res>
     Object? detection = null,
     Object? currentCompany = null,
     Object? currentBrand = null,
+    Object? coherence = null,
   }) {
     return _then(
       _$TemplateImportPreviewImpl(
@@ -949,6 +1206,10 @@ class __$$TemplateImportPreviewImplCopyWithImpl<$Res>
             ? _value.currentBrand
             : currentBrand // ignore: cast_nullable_to_non_nullable
                   as BrandProfile,
+        coherence: null == coherence
+            ? _value.coherence
+            : coherence // ignore: cast_nullable_to_non_nullable
+                  as IdentityCoherence,
       ),
     );
   }
@@ -962,6 +1223,7 @@ class _$TemplateImportPreviewImpl implements _TemplateImportPreview {
     required this.detection,
     required this.currentCompany,
     required this.currentBrand,
+    required this.coherence,
   });
 
   factory _$TemplateImportPreviewImpl.fromJson(Map<String, dynamic> json) =>
@@ -975,10 +1237,12 @@ class _$TemplateImportPreviewImpl implements _TemplateImportPreview {
   final Company currentCompany;
   @override
   final BrandProfile currentBrand;
+  @override
+  final IdentityCoherence coherence;
 
   @override
   String toString() {
-    return 'TemplateImportPreview(analysis: $analysis, detection: $detection, currentCompany: $currentCompany, currentBrand: $currentBrand)';
+    return 'TemplateImportPreview(analysis: $analysis, detection: $detection, currentCompany: $currentCompany, currentBrand: $currentBrand, coherence: $coherence)';
   }
 
   @override
@@ -993,7 +1257,9 @@ class _$TemplateImportPreviewImpl implements _TemplateImportPreview {
             (identical(other.currentCompany, currentCompany) ||
                 other.currentCompany == currentCompany) &&
             (identical(other.currentBrand, currentBrand) ||
-                other.currentBrand == currentBrand));
+                other.currentBrand == currentBrand) &&
+            (identical(other.coherence, coherence) ||
+                other.coherence == coherence));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1004,6 +1270,7 @@ class _$TemplateImportPreviewImpl implements _TemplateImportPreview {
     detection,
     currentCompany,
     currentBrand,
+    coherence,
   );
 
   /// Create a copy of TemplateImportPreview
@@ -1030,6 +1297,7 @@ abstract class _TemplateImportPreview implements TemplateImportPreview {
     required final DetectionResult detection,
     required final Company currentCompany,
     required final BrandProfile currentBrand,
+    required final IdentityCoherence coherence,
   }) = _$TemplateImportPreviewImpl;
 
   factory _TemplateImportPreview.fromJson(Map<String, dynamic> json) =
@@ -1043,6 +1311,8 @@ abstract class _TemplateImportPreview implements TemplateImportPreview {
   Company get currentCompany;
   @override
   BrandProfile get currentBrand;
+  @override
+  IdentityCoherence get coherence;
 
   /// Create a copy of TemplateImportPreview
   /// with the given fields replaced by the non-null parameter values.

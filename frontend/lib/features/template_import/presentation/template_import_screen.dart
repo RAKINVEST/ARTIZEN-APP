@@ -10,6 +10,7 @@ import '../../../core/utils/web_file_input.dart';
 import '../../../core/widgets/app_components.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../data/template_import_models.dart';
+import 'recognition_sequence.dart';
 import 'template_import_providers.dart';
 
 /// "Importer un ancien devis PDF" (Étape 8): upload -> analyse ->
@@ -258,10 +259,19 @@ class _PreviewReadyView extends StatefulWidget {
 }
 
 class _PreviewReadyViewState extends State<_PreviewReadyView> {
+  bool _seenRecognition = false;
   bool _editing = false;
 
   @override
   Widget build(BuildContext context) {
+    // First, the recognition story — the moment ARTIZEN recognises the company
+    // (Décision 8). Played once, then it leads into the devis à leur image.
+    if (!_seenRecognition) {
+      return RecognitionSequence(
+        preview: widget.preview,
+        onContinue: () => setState(() => _seenRecognition = true),
+      );
+    }
     if (_editing) {
       return _PreviewForm(
         preview: widget.preview,

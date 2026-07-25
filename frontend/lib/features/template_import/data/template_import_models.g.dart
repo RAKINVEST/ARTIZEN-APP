@@ -68,6 +68,30 @@ Map<String, dynamic> _$$DetectionResultImplToJson(
   'confidence_score': instance.confidenceScore,
 };
 
+_$IdentityCoherenceImpl _$$IdentityCoherenceImplFromJson(
+  Map<String, dynamic> json,
+) => _$IdentityCoherenceImpl(
+  verdict: $enumDecode(_$IdentityVerdictEnumMap, json['verdict']),
+  siretMatches: json['siret_matches'] as bool?,
+  extractedSiret: json['extracted_siret'] as String?,
+  extractedName: json['extracted_name'] as String?,
+);
+
+Map<String, dynamic> _$$IdentityCoherenceImplToJson(
+  _$IdentityCoherenceImpl instance,
+) => <String, dynamic>{
+  'verdict': _$IdentityVerdictEnumMap[instance.verdict]!,
+  if (instance.siretMatches case final value?) 'siret_matches': value,
+  if (instance.extractedSiret case final value?) 'extracted_siret': value,
+  if (instance.extractedName case final value?) 'extracted_name': value,
+};
+
+const _$IdentityVerdictEnumMap = {
+  IdentityVerdict.recognized: 'recognized',
+  IdentityVerdict.mismatch: 'mismatch',
+  IdentityVerdict.unverified: 'unverified',
+};
+
 _$TemplateImportPreviewImpl _$$TemplateImportPreviewImplFromJson(
   Map<String, dynamic> json,
 ) => _$TemplateImportPreviewImpl(
@@ -83,6 +107,9 @@ _$TemplateImportPreviewImpl _$$TemplateImportPreviewImplFromJson(
   currentBrand: BrandProfile.fromJson(
     json['current_brand'] as Map<String, dynamic>,
   ),
+  coherence: IdentityCoherence.fromJson(
+    json['coherence'] as Map<String, dynamic>,
+  ),
 );
 
 Map<String, dynamic> _$$TemplateImportPreviewImplToJson(
@@ -92,6 +119,7 @@ Map<String, dynamic> _$$TemplateImportPreviewImplToJson(
   'detection': instance.detection,
   'current_company': instance.currentCompany,
   'current_brand': instance.currentBrand,
+  'coherence': instance.coherence,
 };
 
 _$TemplateImportValidateInputImpl _$$TemplateImportValidateInputImplFromJson(

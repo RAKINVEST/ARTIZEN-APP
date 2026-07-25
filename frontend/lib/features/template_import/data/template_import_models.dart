@@ -52,6 +52,32 @@ class DetectionResult with _$DetectionResult {
       _$DetectionResultFromJson(json);
 }
 
+/// Does the imported devis's identity look like the account's own
+/// (Décision 8) ? Never a fraud verdict — the signal the recognition screen
+/// turns into an artisan-language story ("Nous avons reconnu votre entreprise").
+enum IdentityVerdict {
+  @JsonValue('recognized')
+  recognized,
+  @JsonValue('mismatch')
+  mismatch,
+  @JsonValue('unverified')
+  unverified,
+}
+
+/// Mirrors `IdentityCoherence`.
+@freezed
+class IdentityCoherence with _$IdentityCoherence {
+  const factory IdentityCoherence({
+    required IdentityVerdict verdict,
+    bool? siretMatches,
+    String? extractedSiret,
+    String? extractedName,
+  }) = _IdentityCoherence;
+
+  factory IdentityCoherence.fromJson(Map<String, dynamic> json) =>
+      _$IdentityCoherenceFromJson(json);
+}
+
 /// Mirrors `TemplateImportPreviewRead`: detected values *and* the
 /// company's current values side by side, so the user can compare
 /// before validating.
@@ -62,6 +88,7 @@ class TemplateImportPreview with _$TemplateImportPreview {
     required DetectionResult detection,
     required Company currentCompany,
     required BrandProfile currentBrand,
+    required IdentityCoherence coherence,
   }) = _TemplateImportPreview;
 
   factory TemplateImportPreview.fromJson(Map<String, dynamic> json) =>
