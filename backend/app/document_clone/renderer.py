@@ -184,9 +184,13 @@ def _draw_page(
         try:
             reader = ImageReader(io.BytesIO(base64.b64decode(data_b64)))
             r = img.rect
+            # Fill the extracted rect exactly (no aspect preservation): the rect
+            # comes from get_image_info, i.e. the image's *actual drawn extent* in
+            # the source. Preserving aspect would shrink it inside the box and
+            # shift the placement — the render must occupy the same footprint.
             c.drawImage(
                 reader, r.x, flip(r.y, r.h), r.w, r.h,
-                mask="auto", preserveAspectRatio=True, anchor="nw",
+                mask="auto", preserveAspectRatio=False,
             )
         except Exception:
             logger.warning("artizen_renderer.image_failed ref=%s", img.asset_ref)

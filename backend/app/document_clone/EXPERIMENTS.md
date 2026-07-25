@@ -321,6 +321,22 @@ Mesuré sur les **4 devis natifs (P1)** — Fenêtre exclue (P2, image).
 | **Décision** | **Confirmée → gardée.** U-013 largement résolue. Budget P1 recomposé : Images 50 % · Typographie 41 % (résidu faible) · Structure 5 %. |
 | **Ouverte / Décidée** | 2026-07-25 / 2026-07-25 |
 
+### E-013 — fidélité graphique : remplir la bbox image (résidu SJE)
+
+Nuit d'autonomie. Le résidu images de SJE (87,5 %) venait du **renderer** :
+`preserveAspectRatio=True` rétrécissait l'image dans sa bbox quand les ratios
+différaient. Or la bbox de `get_image_info` **est** l'étendue réellement
+dessinée → il faut la **remplir** (`preserveAspectRatio=False`).
+
+| Résultat mesuré | **SJE 99,2 → 100 % (Platine)** ; images 87,5 → 100, perceptuel 96,1 → 100. **Aucune régression** : Chapot 99,8 · Pneu 99,6 · Poêle 99,9 · Fenêtre 100. **33 tests moteur verts.** |
+|---|---|
+
+**Reste — non actionnable (consigné).** Le logo de la **page 2 de Chapot** n'est
+localisé par **aucune** méthode fitz (`get_image_rects` et `get_image_info` vides
+des *deux* côtés) → l'oracle est aveugle **symétriquement** (donc non pénalisé).
+Le reproduire exigerait d'**inventer** des coordonnées — interdit
+([EXTRACTION_SPEC §3](EXTRACTION_SPEC.md)). Laissé tel quel.
+
 | Exp | Inconnue | Hypothèse | N docs | Résultat (mesuré) | Décision | Statut |
 |---|---|---|---|---|---|---|
 | _(gabarit — expériences futures ici)_ | U-xxx | … | N | — | — | — |

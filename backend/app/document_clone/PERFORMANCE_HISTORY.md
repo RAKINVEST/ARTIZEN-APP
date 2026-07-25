@@ -39,12 +39,13 @@ Après E-012, l'oracle **actuel** appliqué aux 4 devis natifs :
 | Devis | Fidélité | Structure | Typographie | Images | Badge |
 |---|---|---|---|---|---|
 | Chapot (Mediabat) | 99,8 % | 100 | 98,5 | 100 | **Platine** |
-| SJE (Solabaie) | 99,2 % | 100 | 100 | 87,5 | Or |
+| SJE (Solabaie) | **100 %** | 100 | 100 | 100 | **Platine** |
 | Pneu | 99,6 % | 100 | 97,7 | 100 | **Platine** |
 | Poêle à bois | 99,9 % | 99,8 | 100 | 99,9 | **Platine** |
 
-Prochain contributeur au budget d'erreur P1 (désigné par la donnée) : **Images
-50 %** (résidu de SJE) · **Typographie 41 %** (résidu faible) · Structure 5 %.
+Après E-013 (bbox image remplie) : **4 devis natifs sur 4 en Platine ou à 99,6 %+**.
+Les résidus restants sont infimes et diffus — quelques spans de largeur
+(Typographie Pneu/Chapot) et 3 textes (Poêle). Le moteur P1 est **à son plateau**.
 
 > **Deux sous-programmes, deux KPI (ne jamais mélanger).**
 > **P1 — PDF natif** (ce tableau) : objectif *reproduction parfaite*.
