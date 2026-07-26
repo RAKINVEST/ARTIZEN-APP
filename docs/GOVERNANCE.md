@@ -49,6 +49,7 @@ On les fait évoluer sans jamais toucher aux fondations.
 | [TYPOGRAPHY_STRATEGY.md](../backend/app/document_clone/TYPOGRAPHY_STRATEGY.md) | Comment reproduire les **polices** ? (étude → décision E) |
 | [ETUDE-SECURISATION-JURIDIQUE.md](ETUDE-SECURISATION-JURIDIQUE.md) | Comment **protéger** l'identité contre un usage tiers ? (→ Décision 8) |
 | [PERFORMANCE_HISTORY.md](../backend/app/document_clone/PERFORMANCE_HISTORY.md) | Où en est la **qualité**, étape après étape ? (E-004 → E-012) |
+| [P1_FINAL_REPORT.md](P1_FINAL_REPORT.md) | **Rapport de clôture du programme P1** — l'histoire complète, réussites et échecs (référence historique) |
 
 ## L'ordre de lecture
 
