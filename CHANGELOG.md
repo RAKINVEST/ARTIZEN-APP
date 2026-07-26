@@ -6,6 +6,29 @@ Ce fichier commence à la V2 : la V1 a été construite en 10 étapes dont
 commit — un changelog rétroactif n'apporterait rien que `README.md` ne dise
 déjà mieux.
 
+## [Non publié]
+
+Parcours **« Reproduire un devis »** enrichi côté produit.
+
+### Ajouté
+- **Écran de reconnaissance à l'import** (Décision 8 — [docs/DECISIONS.md](docs/DECISIONS.md)).
+  Au premier import, ARTIZEN *reconnaît* l'entreprise plutôt que d'importer un
+  PDF : séquence animée (analyse → identité retrouvée → logo/couleurs/typographie/
+  mise en page/signature), puis *« Nous avons reconnu votre entreprise »*. Si le
+  devis semble appartenir à une autre entreprise, message **rassurant** et
+  déclaration sur l'honneur (rachat, franchise…) — jamais de blocage brutal, jamais
+  de vocabulaire de contrôle.
+- **Vérification de cohérence d'identité** au backend (raison sociale, SIREN/SIRET
+  extraits vs compte) qui alimente cet écran, sans persistance ni décision automatisée.
+- **Aperçu du rendu à l'import** : l'artisan voit son devis à son image (identité
+  appliquée, Mode 1) avant de valider le modèle.
+
+### Note interne (R&D, non produit)
+- Le **programme P1** (moteur de reproduction des PDF natifs) est arrivé à
+  maturité et **clôturé** — rapport : [docs/P1_FINAL_REPORT.md](docs/P1_FINAL_REPORT.md).
+  Ce moteur est la brique de R&D derrière la promesse de restitution ; son
+  intégration dans le flux d'import livré reste une étape produit à venir.
+
 ## [v1.0.0-beta] — 2026-07-19 (branche `develop/v3`)
 
 Première version prête pour une **bêta privée** commerciale : le devis conforme
