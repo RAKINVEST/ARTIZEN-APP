@@ -115,9 +115,12 @@ Le renderer redessine.                  →  il RESTITUE, à l'identique (ce doc
 
 Le renderer est **descriptif et déterministe**, comme l'extracteur : il rejoue une
 description graphique (`.artizen`), il n'invente aucune forme, aucune couleur,
-aucune position. Même `.artizen` → même PDF, octet pour octet
-([Replay](EXTRACTION_SPEC.md#6-reproductibilité--le-replay)). Aucune créativité
-n'entre ici : c'est précisément ce qui la rend reproductible et mesurable.
+aucune position. Même `.artizen` → même PDF, de façon **déterministe** (moteur
+sans horloge ni aléa, [Replay](EXTRACTION_SPEC.md#6-reproductibilité--le-replay)).
+L'**identité binaire** du PDF suppose la neutralisation des métadonnées de
+génération (horodatage, identifiant) ; à défaut, l'identité est **perceptuelle** —
+au rendu, non à l'octet. Aucune créativité n'entre ici : c'est précisément ce qui
+la rend reproductible et mesurable.
 
 ---
 

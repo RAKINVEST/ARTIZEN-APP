@@ -91,6 +91,9 @@ Ces règles traversent tout le code. Les enfreindre casse la promesse du produit
 3. **`quotes/calculator.py` est le seul endroit où un montant est calculé.** Tout en `Decimal`,
    jamais `float`. Arrondi `ROUND_HALF_UP` **par ligne**, puis somme des lignes (convention française).
    Ne jamais recalculer un montant ailleurs, ni côté Flutter — le client affiche ce que le backend renvoie.
+   **Aucune autre couche ne calcule un montant.** Cela inclut la couche comportementale du `.artizen`
+   (`CalcRule`) : elle *décrit* comment un document calcule, elle ne l'**exécute jamais** dans le produit.
+   Un seul lieu calcule, partout (ADR-023).
 4. **Une réponse d'IA n'est jamais crue sur parole.** `match_validator.py` re-valide chaque article
    proposé contre le vrai catalogue (existe / bonne entreprise / actif / non-doublon), même si le prompt
    restreignait déjà Claude. Un article invalide est écarté sans faire échouer la suggestion entière,

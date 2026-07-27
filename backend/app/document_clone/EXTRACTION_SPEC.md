@@ -29,7 +29,8 @@ frontière est la raison d'être du découpage : *l'extracteur décrit, l'IA
 comprend, le renderer redessine*. Chacune est vérifiable isolément.
 
 Corollaire : l'extracteur est une **fonction pure et déterministe** du PDF.
-Même PDF → même `.artizen`, octet pour octet (cf. §6, Replay).
+Même PDF → même `.artizen`, de façon **déterministe** — sérialisation canonique,
+sans horloge ni aléa (cf. §6, Replay).
 
 ---
 
@@ -100,9 +101,9 @@ la source n°1 de fausses détections.
    `TextRun`. Un regroupement n'existe que sous forme de structure dérivée
    explicite et réversible (§1.2), avec sa règle enregistrée.
 5. **Aucune interprétation métier.** Rôles, champs, montants, calculs → Brique 5.
-6. **Déterminisme.** Même entrée → même sortie, octet pour octet. L'ordre de
-   sérialisation est canonique (tri stable), jamais dépendant de l'itération d'un
-   ensemble.
+6. **Déterminisme.** Même entrée → même sortie, de façon **déterministe**. L'ordre
+   de sérialisation est canonique (tri stable), jamais dépendant de l'itération
+   d'un ensemble — d'où une sortie `.artizen` (JSON) stable, reproductible.
 7. **Traçabilité.** Toute structure dérivée pointe vers ses primitives sources.
 
 ---

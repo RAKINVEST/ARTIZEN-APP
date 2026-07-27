@@ -91,6 +91,20 @@ deux tests widget échouent si un libellé non adossé réapparaît.
 | 13 | **Cycle de modules `users ↔ branding`** (`Company` vit dans `branding`, mais l'inscription en crée une). Aucun cycle à l'import (l'app démarre, toute la suite le prouve) ; seule entorse au « sens unique ». | 🔵/🟢 | V3 (extraire `companies`) |
 | 14 | **Tests backend sans isolation** : ils tournent contre la vraie base, sans rollback par test ; les lignes persistent entre exécutions. Limite assumée. | 🔵 | V3 |
 | 15 | **Commentaire périmé** dans `branding_providers.dart` (affirme que Paramètres surveille `brandingProfileNotifierProvider` — faux ; ce provider n'est consommé que par l'import de modèle). | 🟢 | V2.x |
+| 18 | **Reproductibilité binaire du PDF non garantie par défaut** : reportlab/weasyprint embarquent des métadonnées de génération (horodatage, identifiant). Le déterminisme est **fonctionnel** ; l'identité **octet-pour-octet** exige la neutralisation des métadonnées (MEP G5-T01), sinon l'identité est **perceptuelle**. Ne jamais dédupliquer par hash de PDF sans ce durcissement. | 🔵/🟢 | G5 (durcissement) |
+
+## Dettes techniques acceptées au gel d'architecture (2026-07)
+
+Au gel de l'architecture, les dettes suivantes sont **formellement acceptées** —
+bornées, sans blocage du développement, avec propriétaire — plutôt que corrigées.
+Les geler explicitement évite de les bénir silencieusement comme « correctes ».
+
+| Dette | Pourquoi acceptable | Propriétaire |
+|---|---|---|
+| Cycle `users ↔ branding` (#13) | Aucun cycle à l'import ; l'app démarre, toute la suite le prouve. Correction = refactoring (`Company` hors `branding`), coûteux, non urgent. | V3 |
+| Tests backend sans isolation (#14) | Documenté ; les tests passent ; l'isolation par test est un confort, pas une exigence de correction. | V3 |
+| Rate-limit en mémoire par worker (#9) | Ferme le trou d'énumération ; suffisant en mono-worker. Redis attend l'échelle. | V3 / déploiement |
+| Reproductibilité binaire du PDF (#18) | Le déterminisme fonctionnel suffit au produit ; l'identité binaire est un durcissement d'industrialisation, pas une refonte. | G5 |
 
 ## Non éprouvé (ni un défaut, ni une garantie)
 
