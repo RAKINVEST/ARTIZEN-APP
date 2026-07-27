@@ -10,6 +10,14 @@ import '../data/template_import_models.dart';
 ///
 /// Never a control, never a check: a recognition. The words are the artisan's
 /// (BRAND.md, deux langues) — no "fraude", "contrôle", "blocage", "vérification".
+///
+/// Honesty contract: the "éléments retrouvés" list shows ONLY what the import
+/// truly captures and re-applies to future devis — logo, colours, coordinates.
+/// It never claims typography, page layout or a signature: the detection
+/// pipeline captures none of them, so promising them would be theatre and would
+/// break the golden rule ("je ne vois pas la différence avec le mien") at the
+/// very moment the artisan trusts us. Keep the list data-driven (see initState).
+///
 /// The screen plays a short sequence — analyse → on retrouve votre identité →
 /// les éléments retrouvés — then lands on the verdict:
 /// * recognised / unverifiable → *« Nous avons reconnu votre entreprise »* and
@@ -53,15 +61,25 @@ class _RecognitionSequenceState extends State<RecognitionSequence>
       duration: const Duration(seconds: 2),
     );
 
+    // Honesty contract (Décision 8 / promesse de marque): each row claims an
+    // identity element ARTIZEN has ACTUALLY retrouvé and will restituer on the
+    // generated devis. The import captures the logo, the colours and the
+    // company's coordinates — it does NOT capture typography, page layout or a
+    // signature (the detection model carries no such fields). Three hard-coded
+    // labels used to promise exactly those, backed by no data: a promise/reality
+    // gap at the most emotional moment. We only show what is true.
     final detection = widget.preview.detection;
+    bool present(String? value) => value != null && value.trim().isNotEmpty;
+    final hasCoordinates = present(detection.companyName) ||
+        present(detection.siret) ||
+        present(detection.address);
     _found = [
       if (detection.logoDetected)
         const _Found(Icons.image_outlined, 'Votre logo retrouvé'),
       if (detection.dominantColors.isNotEmpty)
         const _Found(Icons.palette_outlined, 'Vos couleurs retrouvées'),
-      const _Found(Icons.text_fields_rounded, 'Votre typographie retrouvée'),
-      const _Found(Icons.dashboard_outlined, 'Votre mise en page retrouvée'),
-      const _Found(Icons.fingerprint, 'Votre signature documentaire retrouvée'),
+      if (hasCoordinates)
+        const _Found(Icons.badge_outlined, 'Vos coordonnées retrouvées'),
     ];
   }
 

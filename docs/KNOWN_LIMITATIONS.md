@@ -25,6 +25,46 @@ sont planifiées pour une V2.x ou la V3 ; **aucune n'est appliquée sur RC1**
 | 6 | **Aucune édition d'un devis en place** : modification = suppression-recréation (brouillon) ou duplication. | 🔵 | — |
 | 7 | **Écran Paramètres minimal** (serveur, version, import, déconnexion) — pas de préférences, thème, langue. | 🟢 | V3 |
 
+## Restitution d'identité — écart promesse / moteur (découverte 2026-07-27)
+
+Découvert en traçant le flux d'identité de bout en bout (import → stockage →
+devis généré). **Deux mondes coexistent et ne sont pas connectés :**
+
+- **Le produit live** (parcours de l'artisan) : `document_analysis` +
+  `document_detection` (pypdf + Pillow). Il capture et restitue réellement, sur
+  chaque devis généré : le **logo** (`template_import/service.py:141-144` →
+  `BrandProfile.logo_path` → `html_renderer.py:252`), les **couleurs** primaire/
+  secondaire (`service.py:130-132` → renderer) et les **coordonnées** de
+  l'entreprise (nom, SIRET, TVA, adresse… → en-tête/pied). Rien d'autre.
+- **Le moteur P1 de clonage** (Platine sur 4 familles) — extracteur `.artizen`,
+  comparateur, renderer déterministe de `document_clone/` — est **hors-ligne** :
+  aucun routeur HTTP ne l'appelle, il ne sert qu'au corpus/benchmark. La
+  typographie, la mise en page et le gabarit du document importé qu'il sait
+  reproduire **ne sont ni captés, ni stockés, ni restitués par le produit**
+  (le modèle `DetectionResult` n'a aucun champ police / signature ; le layout du
+  PDF généré est un gabarit figé, `html_renderer.py:126-247`).
+
+**Défaut corrigé (autonome, car vrai quel que soit le futur).** L'écran de
+reconnaissance affichait en dur « Votre typographie retrouvée / Votre mise en
+page retrouvée / Votre signature documentaire retrouvée » — trois promesses sans
+aucune donnée derrière, au moment le plus émotionnel du parcours. C'était une
+violation directe de la règle d'or (« je ne vois pas la différence avec le
+mien »). La liste est désormais **pilotée par les données** : elle ne montre que
+le logo, les couleurs et les coordonnées réellement retrouvés. Garde-fous :
+deux tests widget échouent si un libellé non adossé réapparaît.
+
+| # | Limitation | Classe | Suite |
+|---|---|---|---|
+| 16 | **Le produit restitue le logo, les couleurs et les coordonnées — pas la typographie, la mise en page ni la signature.** Le moteur qui sait les reproduire est hors-ligne (gelé jusqu'au Starter Corpus, ADR-021). L'écran ne promet plus que le réel. | 🔵 | **Décision PO** |
+| 17 | **Couleur claire silencieusement remplacée** : `html_renderer.py:105-109` rebascule sur le navy/doré maison si la luminance sort d'une fenêtre (lisibilité). Une charte pastel importée peut donc ne pas être restituée alors que l'écran annonce « couleurs retrouvées ». | 🟢 | **Décision PO** (lisibilité vs fidélité) |
+
+> **Ce qui reste à décider (stratégique, t'appartient).** Deux forks ouverts par
+> cette découverte : **(A)** câbler le moteur P1 au produit pour restituer
+> vraiment typographie + mise en page (majeur, dépend du Starter Corpus) ou
+> **(B)** assumer un produit « logo + couleurs + coordonnées » et garder l'écran
+> honnête tel qu'il est ; et la **politique couleur** du #17 (adapter
+> lisiblement la couleur de l'artisan vs la remplacer par la charte maison).
+
 ## Cohérence des numéros de version (métadonnées)
 
 | # | Limitation | Classe | Suite |
