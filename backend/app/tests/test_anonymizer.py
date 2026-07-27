@@ -9,6 +9,7 @@ data from the file (re-extracted text no longer contains it).
 import io
 
 import fitz  # PyMuPDF
+from PIL import Image as PILImage
 from reportlab.pdfgen import canvas
 
 from app.document_clone.anonymizer import anonymize_pdf, anonymize_text
@@ -104,3 +105,23 @@ def test_pdf_redaction_removes_the_data_from_the_file() -> None:
     assert "ATLANTIC" in text
     assert result.counts.get("iban") == 1
     assert result.counts.get("phone") == 1
+
+
+def test_image_only_pdf_does_not_crash_and_is_returned() -> None:
+    """A scan carries its PII in pixels: the anonymiser must not crash on a
+    text-less page and must return the file, its empty structured tally flagging
+    that a semantic/OCR pass is still owed — never pretending it is clean."""
+    photo = PILImage.new("RGB", (200, 100), (120, 120, 120))
+    buffer = io.BytesIO()
+    photo.save(buffer, format="PNG")
+    doc = fitz.open()
+    doc.new_page(width=300, height=200).insert_image(
+        fitz.Rect(10, 10, 210, 110), stream=buffer.getvalue()
+    )
+    content = doc.tobytes()
+    doc.close()
+
+    result = anonymize_pdf(content)
+
+    assert result.content  # returned, no exception
+    assert result.counts == {}  # nothing structured caught → the OCR pass is owed

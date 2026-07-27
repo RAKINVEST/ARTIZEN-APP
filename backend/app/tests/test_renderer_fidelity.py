@@ -16,6 +16,7 @@ from PIL import Image as PILImage
 from app.document_clone.artizen_format import (
     ArtizenTemplate,
     GraphicLayer,
+    HAlign,
     ImageBlock,
     FixedText,
     PageGeometry,
@@ -92,3 +93,38 @@ def test_image_fills_the_extracted_rect_even_with_a_different_aspect() -> None:
     x0, y0, x1, y1 = infos[0]["bbox"]
     assert abs((x1 - x0) - 180) < 2.0, (x1 - x0)  # filled the width, not 50 (aspect)
     assert abs((y1 - y0) - 50) < 2.0, (y1 - y0)
+
+
+def test_right_and_centre_aligned_runs_anchor_to_their_rect() -> None:
+    # Table columns / a right-aligned "DEVIS" anchor to the rect; these runs are
+    # not horizontally scaled (only left-aligned reproduction runs are, E-012).
+    template = ArtizenTemplate(
+        graphic=GraphicLayer(
+            page=PageGeometry(width=595, height=842),
+            fixed_texts=[
+                FixedText(
+                    text="RIGHT",
+                    rect=Rect(x=100, y=100, w=200, h=12),
+                    style=TextStyle(font="Arial", size=10, align=HAlign.RIGHT),
+                ),
+                FixedText(
+                    text="CENTER",
+                    rect=Rect(x=100, y=200, w=200, h=12),
+                    style=TextStyle(font="Arial", size=10, align=HAlign.CENTER),
+                ),
+            ],
+        )
+    )
+    doc = fitz.open(stream=render_artizen(template, {}, []), filetype="pdf")
+    try:
+        boxes = {}
+        for block in doc[0].get_text("dict")["blocks"]:
+            for line in block.get("lines", []):
+                for span in line["spans"]:
+                    boxes[span["text"].strip()] = span["bbox"]
+    finally:
+        doc.close()
+
+    assert abs(boxes["RIGHT"][2] - 300) < 3.0, boxes["RIGHT"]  # right edge at x+w
+    center_x = (boxes["CENTER"][0] + boxes["CENTER"][2]) / 2
+    assert abs(center_x - 200) < 3.0, boxes["CENTER"]  # centred on the rect
