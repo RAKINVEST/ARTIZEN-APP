@@ -56,6 +56,34 @@ void main() {
     expect(find.text('Voir mon devis'), findsOneWidget);
   });
 
+  testWidgets('reduce motion: the recognition is shown at once, no timed reveal', (tester) async {
+    var continued = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: RecognitionSequence(
+              preview: _preview(IdentityVerdict.recognized),
+              onContinue: () => continued = true,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // No pumping of the timeline: the verdict and its action are there at once…
+    expect(find.textContaining('reconnu votre entreprise'), findsOneWidget);
+    expect(find.text('Voir mon devis'), findsOneWidget);
+
+    // …and with no repeating pulse the tree settles — it would hang otherwise.
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Voir mon devis'));
+    await tester.pump();
+    expect(continued, isTrue);
+  });
+
   testWidgets('mismatch: reassuring, never accusatory, gated by the declaration', (tester) async {
     var continued = false;
     await _play(tester, IdentityVerdict.mismatch, () => continued = true);

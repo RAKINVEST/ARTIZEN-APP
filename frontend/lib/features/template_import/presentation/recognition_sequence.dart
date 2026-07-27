@@ -42,6 +42,7 @@ class _RecognitionSequenceState extends State<RecognitionSequence>
   late final AnimationController _pulse;
   int _step = 0;
   bool _declared = false;
+  bool _started = false;
   Timer? _timer;
 
   @override
@@ -50,7 +51,7 @@ class _RecognitionSequenceState extends State<RecognitionSequence>
     _pulse = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    );
 
     final detection = widget.preview.detection;
     _found = [
@@ -62,7 +63,24 @@ class _RecognitionSequenceState extends State<RecognitionSequence>
       const _Found(Icons.dashboard_outlined, 'Votre mise en page retrouvée'),
       const _Found(Icons.fingerprint, 'Votre signature documentaire retrouvée'),
     ];
+  }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+
+    // Respect the OS "reduce motion" setting (vestibular accessibility, and
+    // WCAG 2.2.1 on timed content): no breathing orb, no staggered reveal — the
+    // whole recognition is shown at once, already settled on its verdict.
+    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduceMotion) {
+      _step = 2 + _found.length;
+      return;
+    }
+
+    _pulse.repeat(reverse: true);
     // Timeline: step 1 = "Analyse…", 2 = "Nous retrouvons…", 3.. = each found
     // element, last = the verdict (the pulse settles, the action appears).
     _timer = Timer.periodic(const Duration(milliseconds: 640), (timer) {
@@ -160,9 +178,20 @@ class _IdentityOrb extends StatelessWidget {
     final accent = mismatch && settled
         ? const Color(0xFFB98900)
         : theme.colorScheme.primary;
-    return AnimatedBuilder(
-      animation: pulse,
-      builder: (context, child) {
+    // The orb is a decorative status indicator; give a screen reader one clear
+    // label for its state and hide the shifting icon underneath.
+    final label = !settled
+        ? 'Recherche de votre identité en cours'
+        : (mismatch
+              ? 'Cette identité est à confirmer'
+              : 'Votre identité est reconnue');
+    return Semantics(
+      label: label,
+      container: true,
+      child: ExcludeSemantics(
+        child: AnimatedBuilder(
+          animation: pulse,
+          builder: (context, child) {
         final glow = settled ? 0.35 : 0.18 + 0.22 * pulse.value;
         final scale = settled ? 1.0 : 0.96 + 0.06 * pulse.value;
         return Transform.scale(
@@ -200,7 +229,9 @@ class _IdentityOrb extends StatelessWidget {
             ),
           ),
         );
-      },
+          },
+        ),
+      ),
     );
   }
 }
@@ -214,16 +245,21 @@ class _Line extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 350),
-      opacity: visible ? 1 : 0,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+    // A line still in the tree at opacity 0 would be read out before it appears;
+    // keep it out of the semantics tree until it is actually shown.
+    return ExcludeSemantics(
+      excluding: !visible,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 350),
+        opacity: visible ? 1 : 0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       ),
@@ -244,13 +280,18 @@ class _FoundRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSlide(
-      duration: const Duration(milliseconds: 380),
-      offset: visible ? Offset.zero : const Offset(0, 0.35),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 380),
-        opacity: visible ? 1 : 0,
-        child: Padding(
+    // Read as one line ("Votre logo retrouvé") — the two icons are decorative —
+    // and only once it has actually appeared.
+    return ExcludeSemantics(
+      excluding: !visible,
+      child: MergeSemantics(
+        child: AnimatedSlide(
+          duration: const Duration(milliseconds: 380),
+          offset: visible ? Offset.zero : const Offset(0, 0.35),
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 380),
+            opacity: visible ? 1 : 0,
+            child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -277,6 +318,8 @@ class _FoundRow extends StatelessWidget {
               Text(item.label, style: theme.textTheme.bodyLarge),
             ],
           ),
+            ),
+          ),
         ),
       ),
     );
@@ -292,34 +335,44 @@ class _Verdict extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final verdict = preview.coherence.verdict;
+    // The verdict is the payload of the whole screen. It appears after the
+    // reveal, so announce it as a live region and mark it a header for
+    // screen-reader landmark navigation.
     if (verdict == IdentityVerdict.mismatch) {
-      return Column(
-        children: [
-          Text(
-            'Ce document semble appartenir à une autre entreprise.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
+      return Semantics(
+        liveRegion: true,
+        header: true,
+        child: Column(
+          children: [
+            Text(
+              'Ce document semble appartenir à une autre entreprise.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            "Si vous êtes autorisé à l'utiliser — rachat, franchise, changement de "
-            'société… — vous pouvez continuer après confirmation.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(height: 10),
+            Text(
+              "Si vous êtes autorisé à l'utiliser — rachat, franchise, changement de "
+              'société… — vous pouvez continuer après confirmation.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     }
 
     final title = verdict == IdentityVerdict.recognized
         ? 'Nous avons reconnu votre entreprise.'
         : 'Votre identité documentaire a été retrouvée.';
-    return Column(
-      children: [
+    return Semantics(
+      liveRegion: true,
+      header: true,
+      child: Column(
+        children: [
         ShaderMask(
           shaderCallback: (bounds) => LinearGradient(
             colors: [theme.colorScheme.primary, theme.colorScheme.tertiary],
@@ -341,7 +394,8 @@ class _Verdict extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -373,24 +427,28 @@ class _ActionBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (mismatch)
-                InkWell(
-                  onTap: () => onDeclaredChanged(!declared),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Checkbox(
-                          value: declared,
-                          onChanged: (value) =>
-                              onDeclaredChanged(value ?? false),
-                        ),
-                        const Expanded(
-                          child: Text(
-                            'Je certifie être autorisé à utiliser ce document.',
+                // Checkbox + label as a single control, so a screen reader reads
+                // "Je certifie… case à cocher, non cochée" — not two nodes.
+                MergeSemantics(
+                  child: InkWell(
+                    onTap: () => onDeclaredChanged(!declared),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: declared,
+                            onChanged: (value) =>
+                                onDeclaredChanged(value ?? false),
                           ),
-                        ),
-                      ],
+                          const Expanded(
+                            child: Text(
+                              'Je certifie être autorisé à utiliser ce document.',
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
