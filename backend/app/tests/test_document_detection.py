@@ -112,6 +112,23 @@ async def test_vat_detector_finds_french_vat() -> None:
 
 
 @pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("TVA : FR 12 948 081 807", "FR12948081807"),  # grouped SIREN (U-011, Chapot)
+        ("N° TVA FR12 948 081 807", "FR12948081807"),  # key glued, SIREN grouped
+        ("FR12948081807", "FR12948081807"),            # contiguous still works
+    ],
+)
+async def test_vat_detector_reads_a_space_grouped_siren(text: str, expected: str) -> None:
+    """Real quotes print the SIREN in readable 3-3-3 groups; a contiguous-only
+    ``\\d{9}`` missed it. Regression guard for U-011 (observed on a Chapot devis)."""
+    result = await VatDetector().detect(text)
+
+    assert result.detected is True
+    assert result.data["vat_number"] == expected
+
+
+@pytest.mark.parametrize(
     "word",
     ["DESIGNATION", "PLOMBERIE", "ELECTRICITE", "SERRURERIE"],
 )

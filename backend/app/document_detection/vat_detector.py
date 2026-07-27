@@ -11,7 +11,12 @@ import re
 
 from app.document_detection.interfaces import DetectorResult, TextDetector
 
-_FR_PATTERN = re.compile(r"\bFR\s?[0-9A-Z]{2}\s?\d{9}\b", re.IGNORECASE)
+# The 9-digit SIREN body is ``\d(?: ?\d){8}``, not ``\d{9}``: real quotes group
+# it for readability ("FR 12 948 081 807", seen on a Chapot devis — U-011), and
+# contiguous-only digits missed it entirely. A single optional space between
+# digits stays anchored by the literal ``FR`` + 2-char key, so it does not widen
+# false positives; the result is space-stripped below either way.
+_FR_PATTERN = re.compile(r"\bFR\s?[0-9A-Z]{2}\s?\d(?: ?\d){8}\b", re.IGNORECASE)
 _EU_COUNTRY_CODES = {
     "AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "EL", "ES", "FI", "FR",
     "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO",
