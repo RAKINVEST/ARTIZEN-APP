@@ -228,7 +228,10 @@ def _drawn_images(page: "fitz.Page") -> list[tuple[float, float, float, float]]:
     typography (Sprint 4): measure the render, not the technical artefact."""
     placements: list[tuple[float, float, float, float]] = []
     try:
-        infos = page.get_image_info(xrefs=True)
+        # Not ``xrefs=True``: matching each drawing back to its XObject xref makes
+        # PyMuPDF MD5-hash every pixmap (the dominant cost on image-heavy pages),
+        # and we only read ``bbox`` here — the xref is never used.
+        infos = page.get_image_info()
     except Exception:
         infos = []
     for info in infos:
@@ -263,12 +266,21 @@ def compare_pdfs(reference: bytes, candidate: bytes) -> FidelityReport:
         used = [False] * len(cand_spans)
         diag = ref_page["diag"]
 
+        # Index candidate spans by text so each ref span only scans its own
+        # same-text bucket, not every span on the page (O(ref·cand) → O(ref·k),
+        # k = duplicates of one string). Indices stay ascending, so the nearest
+        # unused candidate — and ties — resolve exactly as the flat scan did.
+        by_text: dict[str, list[int]] = {}
+        for index, cand_span in enumerate(cand_spans):
+            by_text.setdefault(cand_span.text, []).append(index)
+
         for ref_span in ref_page["spans"]:
             reference_texts += 1
             best_index, best_distance = -1, None
-            for index, cand_span in enumerate(cand_spans):
-                if used[index] or cand_span.text != ref_span.text:
+            for index in by_text.get(ref_span.text, ()):
+                if used[index]:
                     continue
+                cand_span = cand_spans[index]
                 distance = (
                     (ref_span.cx - cand_span.cx) ** 2 + (ref_span.cy - cand_span.cy) ** 2
                 ) ** 0.5
