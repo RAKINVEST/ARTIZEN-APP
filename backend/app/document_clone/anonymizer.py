@@ -16,6 +16,12 @@ Deliberately honest about its limits: **names, postal addresses, BIC and
 signatures are not auto-redacted** (they need the semantic/AI pass or a human).
 :data:`MANUAL_REVIEW_PII` lists them so the ingest flow flags them instead of
 pretending the file is clean.
+
+Second known gap (U-006): some software (Mediabat) draws text **glyph by glyph**,
+so the extracted PII reads ``9 4 8  0 8 1  8 0 7`` — the digit-group patterns need
+*contiguous* digits and so miss it. Collapsing that spacing before scanning would
+break the word→box mapping the PDF redaction relies on, so letter-spaced PII is
+**left for the manual/semantic pass**, not silently trusted as clean.
 """
 
 import logging
@@ -33,7 +39,9 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ("email", re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b"), "contact@exemple.fr"),
     ("iban", re.compile(r"\bFR\d{2}(?:\s?[0-9A-Z]){23}\b", re.I), "FR76 3000 0000 0000 0000 0000 000"),
     ("siret", re.compile(r"\b\d{3}[ .]?\d{3}[ .]?\d{3}[ .]?\d{5}\b"), "000 000 000 00000"),
-    ("phone", re.compile(r"\b(?:\+33\s?|0)\d(?:[ .]?\d{2}){4}\b"), "00 00 00 00 00"),
+    # ``(?<![\w+])`` not ``\b``: a leading ``\b`` never matches before "+" (a
+    # non-word char), so the +33 international form slipped through entirely.
+    ("phone", re.compile(r"(?<![\w+])(?:\+33\s?|0)\d(?:[ .]?\d{2}){4}\b"), "00 00 00 00 00"),
     ("siren", re.compile(r"\b\d{3}[ .]?\d{3}[ .]?\d{3}\b"), "000 000 000"),
 )
 

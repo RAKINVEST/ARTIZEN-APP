@@ -16,7 +16,7 @@ des briques.
 | U-003 | Quelle **couverture** moyenne obtient-on sur des **scans** ? | Construire un sous-corpus `Scan/`, mesurer Analyzer + extraction OCR | Ouverte |
 | U-004 | Combien de **familles de mise en page** existe-t-il par logiciel ? | Cataloguer `layout_family` au fil de l'ingest | Ouverte |
 | U-005 | Les polices sont-elles **embarquées** dans les exports réels, ou substituées ? | Mesurer `embedded_font_count` sur tout le corpus | Ouverte |
-| U-006 | L'anonymiseur **laisse-t-il passer** de la PII (noms, adresses) sur de vrais devis ? | Relecture manuelle d'un échantillon, taux de PII résiduelle | Ouverte |
+| U-006 | L'anonymiseur **laisse-t-il passer** de la PII ? | Mécanique **testée sur PII synthétique** (email/IBAN/tél/SIRET/SIREN) ; **bug `+33` corrigé** (fuite fermée). 2 gaps *connus et flaggés* : noms/adresses/BIC (revue manuelle, par conception) et PII **lettre-espacée** (Mediabat). Reste : taux de PII résiduelle sur de vrais devis (relecture, sous supervision PO) | **Partielle** — mécanique prouvée ; validation sur vrais devis ouverte |
 | U-007 | Sur les PDF **hybrides**, quel pipeline gagne (structurel vs OCR) ? | Comparer les deux sur un sous-corpus `Hybrides/` | Ouverte |
 | U-008 | La convention d'arrondi **par ligne** (française) est-elle respectée par tous les logiciels ? | Comparer les totaux reconstruits aux originaux réels | Ouverte |
 | U-009 | La quantification couleur 16 niveaux suffit-elle, ou faut-il un vrai **ΔE\*ab** ? | Mesurer les faux positifs/négatifs couleur sur le corpus | Ouverte |

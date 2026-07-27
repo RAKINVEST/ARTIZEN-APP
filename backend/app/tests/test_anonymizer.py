@@ -49,6 +49,31 @@ def test_result_never_echoes_the_original_pii() -> None:
     assert "4567 8901" not in "".join(map(str, result.counts))
 
 
+def test_international_phone_is_redacted() -> None:
+    """The +33 international form used to slip through: a leading ``\\b`` never
+    matches before "+". Regression guard for that leak."""
+    result = anonymize_text("Appelez le +33 6 59 19 25 95 svp")
+
+    assert "+33 6 59 19 25 95" not in result.text
+    assert result.counts.get("phone") == 1
+
+
+def test_siren_alone_is_caught_but_a_siret_is_not_double_counted() -> None:
+    # A bare 9-digit SIREN is redacted…
+    assert anonymize_text("SIREN 812 345 678 ici").counts == {"siren": 1}
+    # …and inside a 14-digit SIRET the longer pattern wins — no double count.
+    assert anonymize_text("SIRET 812 345 678 00012").counts == {"siret": 1}
+
+
+def test_letter_spaced_pii_is_a_known_gap_left_for_manual_review() -> None:
+    """Documented limit (U-006): glyph-by-glyph digits (Mediabat) are *not*
+    caught by the deterministic pass. The test pins the behaviour so it is a
+    conscious, flagged gap — not a surprise regression."""
+    result = anonymize_text("S i r e t 9 4 8  0 8 1  8 0 7  0 0 0 1 8")
+
+    assert result.counts == {}  # surfaced for the semantic/manual pass, not trusted clean
+
+
 def _pdf_with_pii() -> bytes:
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=(595, 842))
