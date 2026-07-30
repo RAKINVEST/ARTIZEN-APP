@@ -17,15 +17,15 @@ Dernière mise à jour : session 15.
 | Domaine | État | Terminé / Manque (bloquant) — Dépend de |
 |---|---|---|
 | Produit | ✅ Prêt | Tous les parcours artisan livrés (dont le lien légal à l'inscription). Rien de bloquant côté produit. |
-| Backend | ✅ Prêt prod (code) | API complète, 592 tests. Purge rétention → **décision PO**. |
+| Backend | ✅ Prêt prod (code) | API complète, 600 tests. Purge rétention → **décision PO**. |
 | Flutter | ✅ Prêt | Écrans V1 + suppression compte + écrans légaux (infra + lien à l'inscription). Rien de bloquant. |
 | API | ✅ Prêt prod | REST + erreurs typées + isolation tenant (404). Rien de bloquant. |
 | Base de données | ✅ Prêt | Migrations up/down, cascades FK, index. Purge → **décision PO**. |
-| Sécurité | 🟡 En cours | Rate-limit actif, bcrypt, JWT, isolation, validation upload. Posture JWT web (statu quo localStorage, dette documentée) → **décision PO**. |
+| Sécurité | ✅ Prêt (code) | Rate-limit actif, bcrypt, JWT (alg allow-list, exp), isolation tenant (404), validation upload (magic bytes). **Audit sécurité : 0 CRITICAL/HIGH.** Durcissement T3 appliqué : CORS='*' interdit en prod, `--proxy-headers` (vraie IP client), `/docs` off en prod, assets en `attachment`. Reste hors code : HSTS au routeur Scalingo. Posture JWT web (localStorage, dette documentée) → **décision PO**. |
 | Juridique | 🟡 Infra prête | Écrans + routes `/legal/*` + lien à l'inscription ; **moteur de rétention config-driven** (`app/retention`, testé). Reste : **contenu validé** + **durées de rétention** (juriste), + activation cron. |
-| Déploiement | 🟡 Cible décidée, code prêt | **PaaS managé souverain : Scalingo** (gouvernance *Build Product, Not Infrastructure*, [DECISIONS.md](../DECISIONS.md) §9). Docker + `deploy.yml.example` + **`S3StorageProvider` livré** (FS conteneur éphémère). Reste : **activation** (deploy, TLS auto, Postgres managé, backups, bucket + credentials S3 EU) → **Exploitation**. |
-| Monitoring | 🟡 En cours | `/health` réel + **sonde `scripts/healthcheck.sh`** (testée). Reste : **moniteur externe + canal d'alerte** → **Exploitation**. |
-| Sauvegardes | 🟡 En cours | Procédures manuelles + **script versionné testé** (`scripts/backup.sh`). Reste : **activation** (cron, hors-site chiffré) → **Exploitation**. |
+| Déploiement | 🟢 Code prêt (T3) | **Topologie T3 figée** : front statique CDN EU + backend Scalingo + Postgres/Redis managés + S3 + Brevo. **Tout le code écrit** : `Procfile`, `scalingo.json`, `Dockerfile` ($PORT + proxy-headers), `DATABASE_URL_OVERRIDE`, scripts `build_frontend`/`deploy_frontend`/`restore`, `.env.production.example`, runbook [DEPLOYMENT-T3.md](../DEPLOYMENT-T3.md). Reste : **activation pure** (comptes Scalingo/S3/Brevo, DNS) → **Exploitation/PO**. |
+| Monitoring | 🟡 Code prêt | `/health` réel + **sonde `scripts/healthcheck.sh`** (testée). Reste : **moniteur externe** (UptimeRobot) → **Exploitation**. |
+| Sauvegardes | 🟡 Code prêt | **Scripts testés** : `backup.sh` **+ `restore.sh`** (pendant de restauration). Reste : **activation** (backups managés Scalingo + versioning bucket + test de restauration) → **Exploitation**. |
 | Performance | ✅ Prêt | Oracle O(n), détection bornée. **Smoke de charge** (`scripts/smoke_load.sh`) : 100/100 sur `/health`. Épreuve de charge complète (flux auth) = post-lancement. |
 | Documentation | ✅ Prêt | README, architecture, specs, MEP, KNOWN_LIMITATIONS, gabarits légaux. |
 | Support | 🟢 Prêt (mécanisme) | Décision PO : **Option A** — adresse de support, pas de formulaire in-app (→ V1.x). Livré **config-driven** : endpoint public `/config`, tuile Paramètres (copiable), pages légales (`{email}`). Reste : valeur de prod `SUPPORT_EMAIL` + boîte relevée ; FAQ post-lancement. |
@@ -36,7 +36,7 @@ Dernière mise à jour : session 15.
 
 - **Cluster 1 — Juridique** : principe de rétention **piloté par configuration** validé (moteur `app/retention` livré, no-op par défaut) ; durées + contenu = juriste.
 - **Cluster 2 — Business** : support **Option A** (adresse, pas de formulaire → V1.x), **source unique config-driven** (`SUPPORT_EMAIL` + endpoint public `/config`) — **livré**.
-- **Cluster 3 — Infrastructure** : **Scalingo** (PaaS managé souverain, France). Gouvernance *Build Product, Not Infrastructure* ([DECISIONS.md](../DECISIONS.md) §9). **Audit d'abstraction fournisseur : ✅ aucun couplage** dans le code métier (email / stockage / IA derrière interface ; `anthropic` seul SDK, confiné ; monitoring & backup sans SDK ; notification N/A). **`S3StorageProvider` livré** ; reste l'activation (bucket + credentials S3 EU).
+- **Cluster 3 — Infrastructure** : **Scalingo** (PaaS managé souverain, France). Gouvernance *Build Product, Not Infrastructure* ([DECISIONS.md](../DECISIONS.md) §9). **Audit d'abstraction fournisseur : ✅ aucun couplage** dans le code métier (email / stockage / IA derrière interface ; `anthropic` seul SDK, confiné ; monitoring & backup sans SDK ; notification N/A). **`S3StorageProvider` livré** ; reste l'activation (bucket + credentials S3 EU). **Topologie T3 retenue et figée** ; tout le code de déploiement est écrit (runbook [DEPLOYMENT-T3.md](../DEPLOYMENT-T3.md)).
 
 ---
 
@@ -52,7 +52,7 @@ réellement terminée.*
 | ☑ | Créer / gérer un devis + PDF |
 | ☑ | Modifier son identité · téléverser son logo |
 | ☑ | Supprimer son compte et ses données |
-| ☑ | La suite de tests passe (592 backend + 192 Flutter) |
+| ☑ | La suite de tests passe (600 backend + 192 Flutter) |
 | ☐ | CGU accessibles *(écran+route+lien à l'inscription prêts ; reste UNIQUEMENT le contenu validé par un juriste)* |
 | ☐ | Politique de confidentialité accessible *(idem)* |
 | ☐ | Politique de rétention RGPD définie et appliquée *(moteur config-driven `app/retention` testé, no-op par défaut ; reste la POLITIQUE — durées/juriste — et l'activation cron)* |
@@ -78,7 +78,10 @@ réellement terminée.*
 | **Moyen** | Pas de pipeline CD → déploiement manuel risqué | Moyenne | Erreur de déploiement | Squelette CD |
 | **Moyen** | JWT en localStorage (XSS web) | Faible | Vol de session | Token court + dette documentée (cookie HttpOnly V2) |
 | **Faible** | Performance non éprouvée sous charge | Faible | Lenteur | Smoke de charge |
-| **Faible** | Contenu légal brouillon visible | Faible | Confusion | Bandeau « provisoire » + pas de lien en app tant que non validé |
+| **Faible** | Contenu légal brouillon visible (désormais lié dans Paramètres) | Faible | Confusion | Bandeau « Document provisoire » sur chaque page ; contenu à valider (juriste) avant ouverture |
+| **Moyen** | Devis passe à « Envoyé » même si l'envoi SMTP échoue (contrat `EmailProvider` avale l'échec — **gelé**) | Faible | Devis cru envoyé, non reçu | Alerte d'exploitation sur le log `email.smtp_send_failed` ; le PDF reste renvoyable *(découvert à l'audit)* |
+| **Faible** | Rate-limit collapsé en un seul bucket derrière le routeur PaaS | — | Faux 429 / brute-force non bridé | **Corrigé** (`--proxy-headers`) ; dépend du `X-Forwarded-For` de Scalingo *(découvert à l'audit)* |
+| **Faible** | TLS base managée : `sslmode` retiré de l'URL asyncpg | Faible | Connexion refusée si TLS forcé | Documenté ([DEPLOYMENT-T3.md](../DEPLOYMENT-T3.md)) ; `connect_args` si requis |
 
 ---
 
@@ -143,7 +146,7 @@ opérationnelle** conforme pour un **premier client payant**.
 > ## 🔴 NO GO (à ce jour)
 
 **Justification.** Le **produit et le code sont prêts** (parcours artisan complet,
-592 + 192 tests verts, API et base de données prêtes production). Le go-live est
+600 + 192 tests verts, API et base de données prêtes production). Le go-live est
 bloqué non par du développement mais par **des décisions (PO/Juriste) et des
 activations d'exploitation** : 11/19 conditions checklist cochées, et 3 bloquants
 d'exploitation ouverts (sauvegardes auto, alerting, TLS). Les items restants sont
