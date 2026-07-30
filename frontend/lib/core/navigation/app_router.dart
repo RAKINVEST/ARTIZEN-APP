@@ -7,6 +7,7 @@ import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
+import '../../features/legal/presentation/legal_screen.dart';
 import '../../features/branding/presentation/branding_sample_preview_screen.dart';
 import '../../features/branding/presentation/company_profile_screen.dart';
 import '../../features/catalog/presentation/catalog_screen.dart';
@@ -40,6 +41,11 @@ const _publicRoutes = {
   '/register',
   '/forgot-password',
   '/reset-password',
+  // Legal pages must be reachable while signed out (a visitor reads them before
+  // creating an account; a regulator reaches them by URL).
+  '/legal/mentions',
+  '/legal/cgu',
+  '/legal/confidentialite',
 };
 
 /// Routes a signed-in user is sent away from (they've already authenticated).
@@ -106,6 +112,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         // token arrives as a query parameter, not a path segment.
         builder: (context, state) =>
             ResetPasswordScreen(token: state.uri.queryParameters['token']),
+      ),
+      GoRoute(
+        path: '/legal/mentions',
+        builder: (context, state) => const LegalDocumentScreen(doc: legalMentions),
+      ),
+      GoRoute(
+        path: '/legal/cgu',
+        builder: (context, state) => const LegalDocumentScreen(doc: legalCgu),
+      ),
+      GoRoute(
+        path: '/legal/confidentialite',
+        builder: (context, state) =>
+            const LegalDocumentScreen(doc: legalConfidentialite),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
