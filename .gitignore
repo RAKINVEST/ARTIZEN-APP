@@ -11,3 +11,6 @@ docker-compose.override.yml
 .ruff_cache/
 *.db
 .DS_Store
+
+# Local backup artifacts (scripts/backup.sh)
+backups/

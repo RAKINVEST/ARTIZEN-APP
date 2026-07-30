@@ -1,10 +1,30 @@
 # Sauvegarde &amp; restauration — ARTIZEN V2
 
-> **État de départ, dit honnêtement :** le dépôt ne fournit **aucune**
-> stratégie de sauvegarde automatisée. Ce guide donne les procédures
-> **manuelles**, dont les commandes ont été **réellement exécutées** contre
-> la pile Docker de validation (2026-07-17). Les mettre en place (cron,
-> rétention, stockage hors-site) reste à faire côté exploitation.
+> **État :** le dépôt fournit un **script de sauvegarde versionné et testé**
+> (`scripts/backup.sh`, voir ci-dessous) ; il reste à l'**activer** côté
+> exploitation (cron, rétention, stockage hors-site) — de la *configuration*, pas
+> du code. Les procédures manuelles détaillées plus bas ont été **réellement
+> exécutées** contre la pile Docker de validation (2026-07-17) et restent la
+> référence de restauration.
+
+## Script versionné (`scripts/backup.sh`)
+
+Sauvegarde **cohérente** base + stockage, forme scriptée des procédures manuelles
+ci-dessous : arrêt du backend (point-in-time cohérent) → `pg_dump -Fc` → `tar` du
+volume storage → redémarrage (via un `trap`, même en cas d'erreur). Produit
+`backups/db_<stamp>.dump` + `backups/storage_<stamp>.tgz` (le dossier `backups/`
+est ignoré par git). **Testé de bout en bout** (dump `PGDMP` de 13 Mo + archive de
+25 Mo, backend sain après coup).
+
+```bash
+./scripts/backup.sh                     # sauvegarde cohérente base + stockage
+RETENTION_DAYS=30 ./scripts/backup.sh   # + purge des sauvegardes > 30 jours
+```
+
+Variables : `BACKUP_DIR`, `STORAGE_VOLUME`, `DB_USER`, `DB_NAME`, `RETENTION_DAYS`
+(0 par défaut = tout garder, tant que la politique de rétention RGPD n'est pas
+fixée). **Activation de production** (config, hors code) : ordonnancement
+(cron/systemd timer), copie hors-site chiffrée, test de restauration régulier.
 
 ## Ce qu'il faut sauvegarder
 

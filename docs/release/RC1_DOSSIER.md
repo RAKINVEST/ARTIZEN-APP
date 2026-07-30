@@ -8,7 +8,7 @@ terminée (pas « en cours »).
 Rôles : **PO** (décisions produit/juridique/business, l'utilisateur) · **Dev**
 (développement, Claude) · **Exploitation** (infra/hébergement) · **Juriste**.
 
-Dernière mise à jour : session 11.
+Dernière mise à jour : session 12.
 
 ---
 
@@ -25,7 +25,7 @@ Dernière mise à jour : session 11.
 | Juridique | 🟡 Infra prête | Écrans + routes `/legal/*` + **lien à l'inscription** (accessibles en app). Reste : **contenu validé + rétention RGPD** → **décision PO/Juriste**. Swap contenu → **Dev**. |
 | Déploiement | 🟡 En cours | Docker compose + CI (validation). **Pipeline CD + cible prod** → **décision Exploitation**. Squelette CD → **Dev**. |
 | Monitoring | 🟡 En cours | `/health` réel (SELECT 1). **Supervision externe** → **Exploitation**. |
-| Sauvegardes | 🟡 En cours | Procédures manuelles testées. **Automatisation** → **décision Exploitation** ; script → **Dev**. |
+| Sauvegardes | 🟡 En cours | Procédures manuelles + **script versionné testé** (`scripts/backup.sh`). Reste : **activation** (cron, hors-site chiffré) → **Exploitation**. |
 | Performance | ✅ Prêt (à confirmer) | Oracle O(n), détection bornée. Épreuve de charge (non éprouvé, non bloquant) → **Dev** (smoke). |
 | Documentation | ✅ Prêt | README, architecture, specs, MEP, KNOWN_LIMITATIONS, gabarits légaux. |
 | Support | ⬜ Non commencé | **Canal de support (contact) + FAQ** → **décision PO** ; page → **Dev**. |
@@ -50,7 +50,7 @@ réellement terminée.*
 | ☐ | Politique de rétention RGPD définie et appliquée |
 | ☐ | Canal de support utilisateur |
 | ☐ | E-mails réels (SMTP configuré) |
-| ☐ | Sauvegardes automatisées et testées |
+| ☐ | Sauvegardes automatisées et testées *(script `scripts/backup.sh` testé bout-en-bout ; reste l'activation cron + hors-site — déploiement)* |
 | ☐ | Alertes de production |
 | ☐ | Pipeline de déploiement |
 | ☐ | HTTPS/TLS actif en production |
@@ -80,7 +80,7 @@ réellement terminée.*
 
 | Point | État | Responsable | Procédure | Bloquant go-live ? |
 |---|---|---|---|---|
-| **Sauvegardes** | 🟡 Partiel | Exploitation | `docs/BACKUP_RESTORE.md` (pg_dump + tar, manuel, testé 2026-07-17). À automatiser (cron + hors-site chiffré). | **Oui** |
+| **Sauvegardes** | 🟡 Partiel | Exploitation / Dev | **`scripts/backup.sh`** (versionné, testé bout-en-bout) + `docs/BACKUP_RESTORE.md`. Reste l'**activation** (cron + hors-site chiffré). | **Oui** |
 | **Restauration** | 🟡 Testée (manuel) | Exploitation | `docs/BACKUP_RESTORE.md`. Manque : test de restauration régulier ordonnancé. | Non |
 | **Rotation des secrets** | ⬜ Non commencé | Exploitation | Secrets via `.env` (JWT, DB, SMTP). Procédure de rotation à écrire. | Non (mais à documenter) |
 | **Rotation TLS** | ⬜ Non commencé | Exploitation | Dépend du reverse-proxy (ex. Let's Encrypt auto-renew). | **Oui** (HTTPS requis) |
