@@ -8,7 +8,7 @@ terminée (pas « en cours »).
 Rôles : **PO** (décisions produit/juridique/business, l'utilisateur) · **Dev**
 (développement, Claude) · **Exploitation** (infra/hébergement) · **Juriste**.
 
-Dernière mise à jour : session 14.
+Dernière mise à jour : session 15.
 
 ---
 
@@ -28,7 +28,7 @@ Dernière mise à jour : session 14.
 | Sauvegardes | 🟡 En cours | Procédures manuelles + **script versionné testé** (`scripts/backup.sh`). Reste : **activation** (cron, hors-site chiffré) → **Exploitation**. |
 | Performance | ✅ Prêt | Oracle O(n), détection bornée. **Smoke de charge** (`scripts/smoke_load.sh`) : 100/100 sur `/health`. Épreuve de charge complète (flux auth) = post-lancement. |
 | Documentation | ✅ Prêt | README, architecture, specs, MEP, KNOWN_LIMITATIONS, gabarits légaux. |
-| Support | ⬜ Non commencé | **Canal de support (contact) + FAQ** → **décision PO** ; page → **Dev**. |
+| Support | 🟢 Prêt (mécanisme) | Décision PO : **Option A** — adresse de support, pas de formulaire in-app (→ V1.x). Livré **config-driven** : endpoint public `/config`, tuile Paramètres (copiable), pages légales (`{email}`). Reste : valeur de prod `SUPPORT_EMAIL` + boîte relevée ; FAQ post-lancement. |
 
 ---
 
@@ -44,11 +44,11 @@ réellement terminée.*
 | ☑ | Créer / gérer un devis + PDF |
 | ☑ | Modifier son identité · téléverser son logo |
 | ☑ | Supprimer son compte et ses données |
-| ☑ | La suite de tests passe (586 backend + 189 Flutter) |
+| ☑ | La suite de tests passe (589 backend + 192 Flutter) |
 | ☐ | CGU accessibles *(écran+route+lien à l'inscription prêts ; reste UNIQUEMENT le contenu validé par un juriste)* |
 | ☐ | Politique de confidentialité accessible *(idem)* |
 | ☐ | Politique de rétention RGPD définie et appliquée *(moteur config-driven `app/retention` testé, no-op par défaut ; reste la POLITIQUE — durées/juriste — et l'activation cron)* |
-| ☐ | Canal de support utilisateur |
+| ☐ | Canal de support utilisateur *(mécanisme config-driven livré : `/config` + tuile Paramètres + pages légales ; reste UNIQUEMENT la valeur de prod `SUPPORT_EMAIL` + boîte relevée)* |
 | ☐ | E-mails réels (SMTP configuré) |
 | ☐ | Sauvegardes automatisées et testées *(script `scripts/backup.sh` testé bout-en-bout ; reste l'activation cron + hors-site — déploiement)* |
 | ☐ | Alertes de production *(sonde `scripts/healthcheck.sh` testée ; reste le moniteur externe + canal — déploiement)* |
@@ -135,7 +135,7 @@ opérationnelle** conforme pour un **premier client payant**.
 > ## 🔴 NO GO (à ce jour)
 
 **Justification.** Le **produit et le code sont prêts** (parcours artisan complet,
-586 + 189 tests verts, API et base de données prêtes production). Le go-live est
+589 + 192 tests verts, API et base de données prêtes production). Le go-live est
 bloqué non par du développement mais par **des décisions (PO/Juriste) et des
 activations d'exploitation** : 11/19 conditions checklist cochées, et 3 bloquants
 d'exploitation ouverts (sauvegardes auto, alerting, TLS). Les items restants sont
