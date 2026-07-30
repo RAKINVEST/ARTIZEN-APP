@@ -12,5 +12,13 @@ docker-compose.override.yml
 *.db
 .DS_Store
 
+# Test coverage data
+.coverage
+coverage.xml
+
+# Build artifacts (never commit compiled output)
+*.tgz
+frontend/build/
+
 # Local backup artifacts (scripts/backup.sh)
 backups/

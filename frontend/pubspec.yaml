@@ -14,7 +14,6 @@ dependencies:
   # email link) — see main.dart. Ships with the Flutter SDK.
   flutter_web_plugins:
     sdk: flutter
-  cupertino_icons: ^1.0.8
 
   # State management
   flutter_riverpod: ^2.6.1
@@ -60,12 +59,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # Landing-page screenshots. Drop real images under frontend/assets/landing/,
-  # then uncomment the line below and run `flutter pub get`. See
-  # lib/features/landing/presentation/landing_screen.dart (_ScreenshotsSection)
-  # for how to swap the placeholders for Image.asset(...).
-  # assets:
-  #   - assets/landing/
   fonts:
     # Exo 2 — the geometric, technical, modern app font (ENR-inspired).
     # Variable font: Flutter applies fontWeight along the weight axis.

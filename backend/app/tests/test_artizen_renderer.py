@@ -6,8 +6,6 @@ back with PyMuPDF and assert the texts, their positions and the fills are where
 they should be — a first, concrete taste of the fidelity comparator to come.
 """
 
-import io
-
 import fitz  # PyMuPDF
 
 from app.document_clone.artizen_format import (

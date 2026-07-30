@@ -7,7 +7,6 @@ step, never on ingest. Built on a temp corpus, no real PDFs needed.
 """
 
 import io
-import json
 
 import fitz  # PyMuPDF
 from reportlab.pdfgen import canvas
