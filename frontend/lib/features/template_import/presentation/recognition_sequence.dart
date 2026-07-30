@@ -385,7 +385,7 @@ class _Verdict extends StatelessWidget {
 
     final title = verdict == IdentityVerdict.recognized
         ? 'Nous avons reconnu votre entreprise.'
-        : 'Votre identité documentaire a été retrouvée.';
+        : 'Nous avons reconnu votre identité.';
     return Semantics(
       liveRegion: true,
       header: true,

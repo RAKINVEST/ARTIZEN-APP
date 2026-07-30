@@ -101,7 +101,7 @@ void main() {
 
   testWidgets('unverified: identity found, soft continuation', (tester) async {
     await _play(tester, IdentityVerdict.unverified, () {});
-    expect(find.textContaining('identité documentaire a été retrouvée'), findsOneWidget);
+    expect(find.textContaining('reconnu votre identité'), findsOneWidget);
     expect(find.text('Voir mon devis'), findsOneWidget);
   });
 
