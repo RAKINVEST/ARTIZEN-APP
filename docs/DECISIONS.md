@@ -5,7 +5,7 @@
 > répartition des responsabilités et les garanties juridiques du produit.
 >
 > Tout le reste — écrans, dossiers, fonctionnalités, prix, libellés — peut évoluer librement.
-> Ces huit décisions, non.
+> Ces neuf décisions, non.
 >
 > Chaque décision indique **la règle**, **le pourquoi** (le raisonnement, pas seulement le
 > choix) et **ce qu'elle implique dans le code**. Un développeur qui arrive doit pouvoir
@@ -255,6 +255,49 @@ client honnête) coûte plus qu'un vrai négatif rare. Étude complète :
 
 ---
 
+## Décision 9 — Build Product, Not Infrastructure : l'hébergeur est un fournisseur remplaçable
+
+**Règle.** La production tourne sur un **PaaS managé souverain** (**Scalingo**, France) :
+TLS, PostgreSQL, sauvegardes, restaurations, mises à jour système, redémarrages et
+supervision sont **délégués**. ARTIZEN **n'exploite pas de serveurs**. Corollaire non
+négociable : **aucun composant métier ne dépend directement d'un fournisseur externe.**
+Tout service tiers — e-mail, stockage, IA, et demain notification / monitoring — passe par
+une **interface** (`*Provider`) sélectionnée par configuration ; le fournisseur concret est
+un détail d'`.env`, jamais un `import` dans un module métier. L'hébergeur n'est **qu'un
+hébergeur** : on doit pouvoir en changer avec un `pg_dump` et un `Dockerfile`.
+
+**Pourquoi.** Pendant les premières années, la ressource rare n'est pas l'argent, c'est le
+**temps de cerveau du fondateur**. Chaque heure passée à renouveler un certificat, patcher un
+OS ou restaurer une base est une heure qui ne vend pas le produit. Payer un PaaS pour
+supprimer ces tâches est un **échange délibéré** : quelques dizaines d'euros par mois contre
+des journées d'exploitation — et contre le risque le plus dangereux d'un lanceur solo (une
+sauvegarde oubliée = perte irréversible). Et la seule protection réelle contre le *lock-in*
+n'est pas de choisir « le bon » fournisseur, c'est de rendre le fait d'**en changer trivial** :
+c'est l'abstraction, pas le contrat, qui garantit la liberté.
+
+**Conséquences.**
+- Toute décision d'exploitation privilégie le **gain de temps de développement** sur
+  l'économie de quelques euros par mois — *« nous achetons du temps de cerveau »*.
+- Les seams existent déjà et sont **vérifiés par audit** : `EmailProvider`, `StorageProvider`,
+  `AIProvider` sont des ABC + factory sélectionnées par `settings.*`. Le seul SDK fournisseur
+  du backend (`anthropic`) est **confiné** à `ai/providers/anthropic_provider.py`, derrière
+  `AIProvider`, avec repli sur un mock déterministe.
+- Les services **sans SDK** le restent volontairement : e-mail via `smtplib` standard
+  (Brevo / Postmark / SES = un `.env`), base via SQLAlchemy + `pg_dump` (PostgreSQL standard),
+  **monitoring** via `/health` + logs stdout (n'importe quelle sonde), **sauvegardes** via
+  `pg_dump` / `tar` (destination configurable). Aucun ne verrouille ARTIZEN à un fournisseur.
+- **Notification** : aucune fonctionnalité en V1 → aucun couplage. Le jour venu, un
+  `NotificationProvider` suit le même patron.
+- **Un seul ajout à l'activation**, et c'est un *usage* de la règle, pas une entorse : le
+  système de fichiers d'un conteneur PaaS est **éphémère**, donc `LocalStorageProvider` doit
+  céder la place à un `S3StorageProvider` (API S3, standard multi-fournisseurs EU) — une
+  **nouvelle classe derrière `StorageProvider`** + `STORAGE_PROVIDER=s3`, exactement ce que le
+  seam prévoit, **zéro** code appelant modifié.
+- Ajouter un fournisseur = **une classe derrière l'interface + une ligne de config**. Jamais
+  un `import` de vendor dans un module métier.
+
+---
+
 ## Ce que ces décisions excluent volontairement
 
 - ❌ Un catalogue partagé entre artisans.
@@ -268,6 +311,8 @@ client honnête) coûte plus qu'un vrai négatif rare. Étude complète :
 - ❌ La reproduction assumée de l'identité documentaire d'un tiers.
 - ❌ Un vocabulaire de fraude ou de contrôle face à l'artisan.
 - ❌ La détection inter-comptes par empreinte en Phase 1 (différée, sensible RGPD).
+- ❌ Un composant métier qui importe directement le SDK d'un fournisseur externe.
+- ❌ L'auto-exploitation de serveurs (OS, TLS, sauvegardes manuelles) en V1.
 
 ---
 

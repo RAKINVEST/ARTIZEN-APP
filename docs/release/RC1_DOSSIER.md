@@ -17,18 +17,26 @@ Dernière mise à jour : session 15.
 | Domaine | État | Terminé / Manque (bloquant) — Dépend de |
 |---|---|---|
 | Produit | ✅ Prêt | Tous les parcours artisan livrés (dont le lien légal à l'inscription). Rien de bloquant côté produit. |
-| Backend | ✅ Prêt prod (code) | API complète, 586 tests. Purge rétention → **décision PO**. |
+| Backend | ✅ Prêt prod (code) | API complète, 589 tests. Purge rétention → **décision PO**. |
 | Flutter | ✅ Prêt | Écrans V1 + suppression compte + écrans légaux (infra + lien à l'inscription). Rien de bloquant. |
 | API | ✅ Prêt prod | REST + erreurs typées + isolation tenant (404). Rien de bloquant. |
 | Base de données | ✅ Prêt | Migrations up/down, cascades FK, index. Purge → **décision PO**. |
 | Sécurité | 🟡 En cours | Rate-limit actif, bcrypt, JWT, isolation, validation upload. Posture JWT web (statu quo localStorage, dette documentée) → **décision PO**. |
 | Juridique | 🟡 Infra prête | Écrans + routes `/legal/*` + lien à l'inscription ; **moteur de rétention config-driven** (`app/retention`, testé). Reste : **contenu validé** + **durées de rétention** (juriste), + activation cron. |
-| Déploiement | 🟡 En cours | Docker compose + CI (validation) + **squelette `deploy.yml.example`**. Reste : **cible prod (registry/host)** → **Exploitation**. |
+| Déploiement | 🟡 Cible décidée | **PaaS managé souverain : Scalingo** (gouvernance *Build Product, Not Infrastructure*, [DECISIONS.md](../DECISIONS.md) §9). Docker + `deploy.yml.example`. Reste : activation (deploy, TLS auto, Postgres managé, backups) + **1 tâche code** : `S3StorageProvider` (FS conteneur éphémère) derrière l'abstraction existante. |
 | Monitoring | 🟡 En cours | `/health` réel + **sonde `scripts/healthcheck.sh`** (testée). Reste : **moniteur externe + canal d'alerte** → **Exploitation**. |
 | Sauvegardes | 🟡 En cours | Procédures manuelles + **script versionné testé** (`scripts/backup.sh`). Reste : **activation** (cron, hors-site chiffré) → **Exploitation**. |
 | Performance | ✅ Prêt | Oracle O(n), détection bornée. **Smoke de charge** (`scripts/smoke_load.sh`) : 100/100 sur `/health`. Épreuve de charge complète (flux auth) = post-lancement. |
 | Documentation | ✅ Prêt | README, architecture, specs, MEP, KNOWN_LIMITATIONS, gabarits légaux. |
 | Support | 🟢 Prêt (mécanisme) | Décision PO : **Option A** — adresse de support, pas de formulaire in-app (→ V1.x). Livré **config-driven** : endpoint public `/config`, tuile Paramètres (copiable), pages légales (`{email}`). Reste : valeur de prod `SUPPORT_EMAIL` + boîte relevée ; FAQ post-lancement. |
+
+---
+
+## Décisions de lancement (clusters)
+
+- **Cluster 1 — Juridique** : principe de rétention **piloté par configuration** validé (moteur `app/retention` livré, no-op par défaut) ; durées + contenu = juriste.
+- **Cluster 2 — Business** : support **Option A** (adresse, pas de formulaire → V1.x), **source unique config-driven** (`SUPPORT_EMAIL` + endpoint public `/config`) — **livré**.
+- **Cluster 3 — Infrastructure** : **Scalingo** (PaaS managé souverain, France). Gouvernance *Build Product, Not Infrastructure* ([DECISIONS.md](../DECISIONS.md) §9). **Audit d'abstraction fournisseur : ✅ aucun couplage** dans le code métier (email / stockage / IA derrière interface ; `anthropic` seul SDK, confiné ; monitoring & backup sans SDK ; notification N/A). Seule tâche code restante : `S3StorageProvider`.
 
 ---
 
