@@ -347,6 +347,19 @@ class FakeBrandingRepository implements BrandingRepository {
   }
 
   @override
+  Future<String> uploadLogo({
+    required String filename,
+    required List<int> bytes,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteLogo() async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<String> uploadSignature({
     required String filename,
     required List<int> bytes,

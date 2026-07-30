@@ -42,6 +42,13 @@ class AuthNotifier extends AsyncNotifier<bool> {
     await ref.read(authRepositoryProvider).logout();
     state = const AsyncValue.data(false);
   }
+
+  /// RGPD erasure: delete the account and all its data, then drop the session
+  /// so the router redirects to login (same effect as logout).
+  Future<void> deleteAccount() async {
+    await ref.read(authRepositoryProvider).deleteAccount();
+    state = const AsyncValue.data(false);
+  }
 }
 
 final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, bool>(AuthNotifier.new);

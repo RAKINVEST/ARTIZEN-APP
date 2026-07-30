@@ -99,6 +99,21 @@ void main() {
     expect(await tokenStorage.readToken(), isNull);
   });
 
+  test('deleteAccount() DELETEs /auth/me and clears the stored token', () async {
+    await tokenStorage.saveToken('jwt-token');
+    when(() => dio.delete<void>('/auth/me')).thenAnswer(
+      (_) async => Response(
+        requestOptions: RequestOptions(path: '/auth/me'),
+        statusCode: 204,
+      ),
+    );
+
+    await repository.deleteAccount();
+
+    verify(() => dio.delete<void>('/auth/me')).called(1);
+    expect(await tokenStorage.readToken(), isNull);
+  });
+
   test('requestPasswordReset() posts the email and ignores the (204) body', () async {
     when(() => dio.post<void>(
           '/auth/forgot-password',

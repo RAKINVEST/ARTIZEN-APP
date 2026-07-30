@@ -60,6 +60,14 @@ class AuthRepository {
     await _dio.post<void>('/auth/reset-password', data: {'token': token, 'password': password});
   }
 
+  /// Permanently deletes the account and all its data (RGPD right to erasure)
+  /// via `DELETE /auth/me`, then clears the local token so the app returns to a
+  /// logged-out state.
+  Future<void> deleteAccount() async {
+    await _dio.delete<void>('/auth/me');
+    await _tokenStorage.clearToken();
+  }
+
   Future<void> logout() => _tokenStorage.clearToken();
 }
 

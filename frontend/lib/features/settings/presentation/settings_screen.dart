@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/api/api_config.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_surfaces.dart';
+import '../../../shared/widgets/confirm_dialog.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../branding/data/branding_models.dart';
 import '../../branding/presentation/branding_providers.dart';
@@ -125,6 +126,40 @@ class SettingsScreen extends ConsumerWidget {
                 onTap: () async {
                   await ref.read(authNotifierProvider.notifier).logout();
                   if (context.mounted) context.go('/login');
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: ArtizenSpacing.sm),
+          // RGPD right to erasure — irreversible, so gated by a confirmation.
+          _SettingsGroup(
+            children: [
+              _SettingsTile(
+                icon: Icons.delete_forever_outlined,
+                accent: ArtizenAccents.red,
+                title: 'Supprimer mon compte',
+                subtitle: 'Efface définitivement votre compte et toutes vos données',
+                onTap: () async {
+                  final confirmed = await showConfirmDialog(
+                    context,
+                    title: 'Supprimer votre compte ?',
+                    message:
+                        'Cette action est définitive. Votre compte et toutes vos '
+                        'données (devis, clients, catalogue, identité) seront '
+                        'supprimés sans possibilité de récupération.',
+                    confirmLabel: 'Supprimer définitivement',
+                  );
+                  if (!confirmed || !context.mounted) return;
+                  try {
+                    await ref.read(authNotifierProvider.notifier).deleteAccount();
+                    if (context.mounted) context.go('/login');
+                  } catch (error) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Suppression impossible : $error')),
+                      );
+                    }
+                  }
                 },
               ),
             ],
