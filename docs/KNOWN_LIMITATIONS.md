@@ -17,13 +17,22 @@ sont planifiées pour une V2.x ou la V3 ; **aucune n'est appliquée sur RC1**
 
 | # | Limitation | Classe | Suite |
 |---|---|---|---|
-| 1 | **Pas d'écran d'édition directe de l'identité d'entreprise** (raison sociale, SIRET, N° TVA, coordonnées, couleurs). Possible seulement via le flux « Importer un ancien devis ». L'API, elle, l'expose (`PUT /api/branding/company`, `/brand`). La promesse « renommer depuis Paramètres » de l'inscription n'est pas tenue en UI. | 🟢 | V3 |
-| 2 | **Pas de téléversement de logo depuis l'app** (le logo est seulement *détecté* à l'import). L'API le permet (`POST /api/branding/logo`). | 🟢 | V3 |
-| 3 | **Pas d'écran de détail client** : l'appui ouvre directement l'édition. | 🟢 | V2.x/V3 |
-| 4 | **Catégories** : création + liste seulement, ni édition ni suppression en UI. | 🟢 | V2.x/V3 |
-| 5 | **Pas de « mot de passe oublié » / réinitialisation.** | 🟢 | V3 |
-| 6 | **Aucune édition d'un devis en place** : modification = suppression-recréation (brouillon) ou duplication. | 🔵 | — |
-| 7 | **Écran Paramètres minimal** (serveur, version, import, déconnexion) — pas de préférences, thème, langue. | 🟢 | V3 |
+| 1 | ~~**Pas d'écran d'édition directe de l'identité d'entreprise**~~ — **✅ Résolu (déjà livré, constat 2026-07)** : l'écran « Mon entreprise » (`/company-profile`, atteignable depuis Paramètres, dashboard, app-shell, readiness gate) édite raison sociale, forme juridique, SIRET, RCS, APE, TVA, coordonnées, régime TVA, assurance décennale, RGE, conditions, validité + signature/tampon. Reste hors écran : **logo et couleurs** (→ #2). | 🟢 | **Fait** |
+| 2 | **Pas de téléversement de logo ni d'édition des couleurs depuis l'app** (logo et couleurs seulement *détectés* à l'import ; `BrandAssetsSection` exclut explicitement le logo). L'API le permet (`POST /api/branding/logo`, `PUT /api/branding/brand`). À ajouter en section « Marque » de l'écran « Mon entreprise » (mirroir du pattern signature/tampon). | 🟢 | **V1 (requis)** |
+| 3 | **Pas d'écran de détail client** : l'appui ouvre directement l'édition. | 🟢 | V1.x |
+| 4 | **Catégories** : création + liste seulement, ni édition ni suppression en UI. | 🟢 | V1.x |
+| 5 | **Pas de « mot de passe oublié » / réinitialisation.** | 🟢 | **V1 (requis)** |
+| 6 | **Aucune édition d'un devis en place** : modification = suppression-recréation (brouillon) ou duplication. | 🔵 | — (par conception) |
+| 7 | **Écran Paramètres minimal** (serveur, version, import, déconnexion) — pas de préférences, thème, langue. | 🟢 | V1.x |
+
+> **Règle de périmètre V1 (décision PO, 2026-07 — MEP G2-T01).** *Une fonctionnalité
+> est requise en V1 si son absence empêche un artisan honnête d'utiliser ARTIZEN
+> seul, de bout en bout, sans contacter le support ; sinon elle relève de la V1.x.*
+> Appliquée au backlog : **#1 édition d'identité**, **#2 upload logo**, **#5 mot de
+> passe oublié** → **V1 requis** (sans eux, l'artisan est bloqué : identité mal
+> détectée non corrigeable, logo absent non ajoutable, compte verrouillé). #3, #4,
+> #7 → V1.x (conforts, contournables). #6 est un choix de conception (dupliquer /
+> recréer), pas un manque.
 
 ## Restitution d'identité — écart promesse / moteur (découverte 2026-07-27)
 

@@ -11,15 +11,10 @@ import 'package:flutter_test/flutter_test.dart';
 /// This test scans `lib/` and fails on any new occurrence, so the promise on
 /// screen can never silently drift ahead of the engine again.
 void main() {
-  // Occurrences awaiting the brand-promise decision (MEP G1-T04 — product /
-  // strategic). They are the founding tagline / value-prop, not a stray word, so
-  // rewording them is the founder's call. Once decided, they move to Mode-1 copy
-  // and are removed from this allowlist.
-  const pendingBrandDecision = <String>{
-    'ARTIZEN restitue la vôtre.',
-    'Une seule importation. Une identité retrouvée. ',
-    'Votre identité retrouvée une seule fois.',
-  };
+  // G1-T04 decided (2026-07): the login copy was reworded to Mode-1 language, so
+  // there is nothing left to allow. The guard now enforces zero Mode-2 reserved
+  // words in the UI. Any new occurrence — anywhere in lib/ — fails this test.
+  const pendingBrandDecision = <String>{};
 
   final reserved = RegExp(
     r"à l'identique|a l'identique|restitu|fidèl|fidelit|fidélit"

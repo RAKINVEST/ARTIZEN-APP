@@ -258,7 +258,7 @@ class _Hero extends StatelessWidget {
         const SizedBox(height: 6),
         // THE phrase — larger, luminous. What must stay in mind.
         const Text(
-          'ARTIZEN restitue la vôtre.',
+          'ARTIZEN reprend la vôtre.',
           style: TextStyle(
             color: _Lux.goldLight,
             fontSize: 27,
@@ -315,7 +315,7 @@ class _Hero extends StatelessWidget {
                       height: 1.35,
                     ),
                     children: [
-                      TextSpan(text: 'Une seule importation. Une identité retrouvée. '),
+                      TextSpan(text: 'Une seule importation. Votre identité sur chaque devis. '),
                       TextSpan(
                         text: 'Des devis en quelques minutes.',
                         style: TextStyle(color: _Lux.goldLight, fontWeight: FontWeight.w800),
@@ -797,7 +797,7 @@ class _StatChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const chips = [
-      _StatChip(icon: Icons.file_upload_outlined, title: 'Import unique', sub: 'Votre identité retrouvée une seule fois.', accent: _Lux.violetLight),
+      _StatChip(icon: Icons.file_upload_outlined, title: 'Import unique', sub: 'Votre identité reprise dès l\'import.', accent: _Lux.violetLight),
       _StatChip(icon: Icons.bolt, title: 'Devis en quelques minutes', sub: 'Plus besoin de repartir de zéro.', accent: _Lux.gold),
       _StatChip(icon: Icons.palette_outlined, title: '100 % à votre image', sub: 'Logo, couleurs, présentation.', accent: _Lux.goldLight),
       _StatChip(icon: Icons.shield_outlined, title: 'Vos données protégées', sub: 'Sécurisées et confidentielles.', accent: _Lux.success),
