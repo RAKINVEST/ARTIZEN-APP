@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/support_config.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_components.dart';
 
@@ -12,13 +14,17 @@ import '../../../core/widgets/app_components.dart';
 /// legal validation and ARTIZEN's own company details (the `{…}` fields). The
 /// screen and routes are final; publishing the validated text is a one-const
 /// swap. The banner keeps the provisional status honest until then.
-class LegalDocumentScreen extends StatelessWidget {
+class LegalDocumentScreen extends ConsumerWidget {
   const LegalDocumentScreen({required this.doc, super.key});
 
   final LegalDoc doc;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // The contact address comes from the single backend source; substitute it
+    // into the {email} placeholder (other {…} await the validated content).
+    final email = ref.watch(supportEmailProvider).valueOrNull;
+    final body = email == null ? doc.body : doc.body.replaceAll('{email}', email);
     return Scaffold(
       appBar: AppBar(title: Text(doc.title)),
       body: SafeArea(
@@ -35,7 +41,7 @@ class LegalDocumentScreen extends StatelessWidget {
                     'avant l’ouverture commerciale.',
               ),
               const SizedBox(height: ArtizenSpacing.md),
-              SelectableText(doc.body),
+              SelectableText(body),
               const SizedBox(height: ArtizenSpacing.lg),
             ],
           ),

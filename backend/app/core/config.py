@@ -196,6 +196,12 @@ class Settings(BaseSettings):
     # contract (same pattern as the AI/storage abstractions).
     EMAIL_PROVIDER: Literal["mock", "smtp"] = "mock"
     EMAIL_FROM: str = "no-reply@artizen.app"
+
+    # --- Support ---
+    # SINGLE source of truth for the support/contact address, used everywhere:
+    # the Paramètres tile, the legal pages ({email}), and future e-mails/forms.
+    # Never hard-coded in the app — set SUPPORT_EMAIL in the environment.
+    SUPPORT_EMAIL: str = "support@artizen.app"
     # Public URL of the web app, used to build links inside emails (the reset
     # link points at <APP_BASE_URL>/reset-password?token=…). Override in prod.
     APP_BASE_URL: str = "http://localhost:3000"

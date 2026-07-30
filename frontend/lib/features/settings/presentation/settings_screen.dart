@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../../core/config/support_config.dart';
 import '../../../core/navigation/section_nav_arrows.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -116,6 +118,8 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
+          const _SectionLabel('Aide'),
+          const _SettingsGroup(children: [_SupportTile()]),
           const SizedBox(height: ArtizenSpacing.sm),
           _SettingsGroup(
             children: [
@@ -265,6 +269,46 @@ class _ActiveModelTile extends StatelessWidget {
       title: identity ?? 'Modèle par défaut',
       subtitle: details.join(' · '),
     );
+  }
+}
+
+/// "Contacter le support" — reads the address from the single backend source
+/// (supportEmailProvider), so it is never hard-coded, and lets the artisan copy it.
+class _SupportTile extends ConsumerWidget {
+  const _SupportTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(supportEmailProvider).when(
+          data: (address) => _SettingsTile(
+            icon: Icons.support_agent_outlined,
+            accent: ArtizenAccents.blue,
+            title: 'Contacter le support',
+            subtitle: address,
+            trailing: IconButton(
+              icon: const Icon(Icons.copy_outlined, size: 18),
+              tooltip: 'Copier l\'adresse',
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: address));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Adresse copiée')),
+                );
+              },
+            ),
+          ),
+          loading: () => const _SettingsTile(
+            icon: Icons.support_agent_outlined,
+            accent: ArtizenAccents.blue,
+            title: 'Contacter le support',
+            subtitle: 'Chargement…',
+          ),
+          error: (_, _) => const _SettingsTile(
+            icon: Icons.support_agent_outlined,
+            accent: ArtizenAccents.blue,
+            title: 'Contacter le support',
+            subtitle: 'Adresse indisponible',
+          ),
+        );
   }
 }
 
