@@ -76,6 +76,10 @@ class DocumentAnalysis(Base, UUIDMixin, TimestampMixin):
         index=True,
     )
     processing_time_ms: Mapped[int | None] = mapped_column(default=None)
+    # Actionable reason set when ``status`` is FAILED, so a failed import is
+    # never silent to the artisan. A safe category message (never a stack trace
+    # or internal detail — that goes to the logs). NULL while pending/on success.
+    failure_reason: Mapped[str | None] = mapped_column(default=None)
     extracted_text: Mapped[str | None] = mapped_column(default=None)
     extracted_metadata: Mapped[dict[str, object] | None] = mapped_column(JSONB, default=None)
     detected_layout: Mapped[dict[str, object] | None] = mapped_column(JSONB, default=None)

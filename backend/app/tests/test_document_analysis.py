@@ -185,6 +185,10 @@ async def test_structurally_broken_pdf_fails_at_process(
     assert body["status"] == "failed"
     assert body["page_count"] is None
     assert body["blueprint"] is None
+    # A1: a failed import is no longer silent — it carries an actionable reason,
+    # persisted and exposed through the read schema (not just logged).
+    assert body["failure_reason"] is not None
+    assert "n'a pas pu être analysé" in body["failure_reason"]
 
 
 async def test_list_analyses(client: AsyncClient, company_id: str) -> None:

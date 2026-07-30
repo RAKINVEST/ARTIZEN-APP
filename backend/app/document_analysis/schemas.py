@@ -28,6 +28,7 @@ class DocumentAnalysisRead(BaseModel):
     page_count: int | None
     status: DocumentStatus
     processing_time_ms: int | None
+    failure_reason: str | None
     extracted_text: str | None
     extracted_metadata: dict[str, object] | None
     detected_layout: dict[str, object] | None

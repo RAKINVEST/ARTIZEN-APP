@@ -15,6 +15,7 @@ from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
+from app.document_analysis.exceptions import InvalidDocumentError
 from app.document_analysis.models import DocumentAnalysis, DocumentStatus, DocumentType
 from app.document_analysis.hashing import sha256_hex
 from app.document_analysis.pipeline import DocumentPipeline
@@ -26,6 +27,18 @@ logger = logging.getLogger(__name__)
 
 _PDF_CONTENT_TYPES = {"application/pdf"}
 _PDF_MAX_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB
+
+
+def _describe_failure(exc: Exception) -> str:
+    """A safe, artisan-actionable reason for a failed analysis — never a stack
+    trace or internal detail (those go to the logs). Distinguishes "the document
+    is the problem" (the artisan can fix it) from "our problem" (retry/support)."""
+    if isinstance(exc, InvalidDocumentError):
+        return (
+            "Le document n'a pas pu être analysé : fichier illisible, protégé "
+            "par mot de passe, ou trop volumineux. Vérifiez le PDF et réessayez."
+        )
+    return "Une erreur inattendue est survenue pendant l'analyse. Réessayez plus tard."
 
 
 class DocumentAnalysisService:
@@ -96,10 +109,16 @@ class DocumentAnalysisService:
         started_at = time.perf_counter()
         try:
             result = await self._pipeline.run(analysis)
-        except Exception:
+        except Exception as exc:
             analysis.status = DocumentStatus.FAILED
+            analysis.failure_reason = _describe_failure(exc)
             analysis.processing_time_ms = int((time.perf_counter() - started_at) * 1000)
-            logger.warning("document_analysis.process.failed analysis_id=%s", analysis_id)
+            # Full detail (type + traceback) goes to the logs; only a safe,
+            # actionable reason is persisted/surfaced. A silent FAILED used to
+            # lose the cause entirely (the exception wasn't even bound).
+            logger.warning(
+                "document_analysis.process.failed analysis_id=%s", analysis_id, exc_info=True
+            )
             await self._session.flush()
             await self._session.refresh(analysis)
             return analysis
