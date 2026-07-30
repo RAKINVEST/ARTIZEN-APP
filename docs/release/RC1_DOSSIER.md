@@ -17,13 +17,13 @@ Dernière mise à jour : session 15.
 | Domaine | État | Terminé / Manque (bloquant) — Dépend de |
 |---|---|---|
 | Produit | ✅ Prêt | Tous les parcours artisan livrés (dont le lien légal à l'inscription). Rien de bloquant côté produit. |
-| Backend | ✅ Prêt prod (code) | API complète, 589 tests. Purge rétention → **décision PO**. |
+| Backend | ✅ Prêt prod (code) | API complète, 592 tests. Purge rétention → **décision PO**. |
 | Flutter | ✅ Prêt | Écrans V1 + suppression compte + écrans légaux (infra + lien à l'inscription). Rien de bloquant. |
 | API | ✅ Prêt prod | REST + erreurs typées + isolation tenant (404). Rien de bloquant. |
 | Base de données | ✅ Prêt | Migrations up/down, cascades FK, index. Purge → **décision PO**. |
 | Sécurité | 🟡 En cours | Rate-limit actif, bcrypt, JWT, isolation, validation upload. Posture JWT web (statu quo localStorage, dette documentée) → **décision PO**. |
 | Juridique | 🟡 Infra prête | Écrans + routes `/legal/*` + lien à l'inscription ; **moteur de rétention config-driven** (`app/retention`, testé). Reste : **contenu validé** + **durées de rétention** (juriste), + activation cron. |
-| Déploiement | 🟡 Cible décidée | **PaaS managé souverain : Scalingo** (gouvernance *Build Product, Not Infrastructure*, [DECISIONS.md](../DECISIONS.md) §9). Docker + `deploy.yml.example`. Reste : activation (deploy, TLS auto, Postgres managé, backups) + **1 tâche code** : `S3StorageProvider` (FS conteneur éphémère) derrière l'abstraction existante. |
+| Déploiement | 🟡 Cible décidée, code prêt | **PaaS managé souverain : Scalingo** (gouvernance *Build Product, Not Infrastructure*, [DECISIONS.md](../DECISIONS.md) §9). Docker + `deploy.yml.example` + **`S3StorageProvider` livré** (FS conteneur éphémère). Reste : **activation** (deploy, TLS auto, Postgres managé, backups, bucket + credentials S3 EU) → **Exploitation**. |
 | Monitoring | 🟡 En cours | `/health` réel + **sonde `scripts/healthcheck.sh`** (testée). Reste : **moniteur externe + canal d'alerte** → **Exploitation**. |
 | Sauvegardes | 🟡 En cours | Procédures manuelles + **script versionné testé** (`scripts/backup.sh`). Reste : **activation** (cron, hors-site chiffré) → **Exploitation**. |
 | Performance | ✅ Prêt | Oracle O(n), détection bornée. **Smoke de charge** (`scripts/smoke_load.sh`) : 100/100 sur `/health`. Épreuve de charge complète (flux auth) = post-lancement. |
@@ -36,7 +36,7 @@ Dernière mise à jour : session 15.
 
 - **Cluster 1 — Juridique** : principe de rétention **piloté par configuration** validé (moteur `app/retention` livré, no-op par défaut) ; durées + contenu = juriste.
 - **Cluster 2 — Business** : support **Option A** (adresse, pas de formulaire → V1.x), **source unique config-driven** (`SUPPORT_EMAIL` + endpoint public `/config`) — **livré**.
-- **Cluster 3 — Infrastructure** : **Scalingo** (PaaS managé souverain, France). Gouvernance *Build Product, Not Infrastructure* ([DECISIONS.md](../DECISIONS.md) §9). **Audit d'abstraction fournisseur : ✅ aucun couplage** dans le code métier (email / stockage / IA derrière interface ; `anthropic` seul SDK, confiné ; monitoring & backup sans SDK ; notification N/A). Seule tâche code restante : `S3StorageProvider`.
+- **Cluster 3 — Infrastructure** : **Scalingo** (PaaS managé souverain, France). Gouvernance *Build Product, Not Infrastructure* ([DECISIONS.md](../DECISIONS.md) §9). **Audit d'abstraction fournisseur : ✅ aucun couplage** dans le code métier (email / stockage / IA derrière interface ; `anthropic` seul SDK, confiné ; monitoring & backup sans SDK ; notification N/A). **`S3StorageProvider` livré** ; reste l'activation (bucket + credentials S3 EU).
 
 ---
 
@@ -52,7 +52,7 @@ réellement terminée.*
 | ☑ | Créer / gérer un devis + PDF |
 | ☑ | Modifier son identité · téléverser son logo |
 | ☑ | Supprimer son compte et ses données |
-| ☑ | La suite de tests passe (589 backend + 192 Flutter) |
+| ☑ | La suite de tests passe (592 backend + 192 Flutter) |
 | ☐ | CGU accessibles *(écran+route+lien à l'inscription prêts ; reste UNIQUEMENT le contenu validé par un juriste)* |
 | ☐ | Politique de confidentialité accessible *(idem)* |
 | ☐ | Politique de rétention RGPD définie et appliquée *(moteur config-driven `app/retention` testé, no-op par défaut ; reste la POLITIQUE — durées/juriste — et l'activation cron)* |
@@ -143,7 +143,7 @@ opérationnelle** conforme pour un **premier client payant**.
 > ## 🔴 NO GO (à ce jour)
 
 **Justification.** Le **produit et le code sont prêts** (parcours artisan complet,
-589 + 192 tests verts, API et base de données prêtes production). Le go-live est
+592 + 192 tests verts, API et base de données prêtes production). Le go-live est
 bloqué non par du développement mais par **des décisions (PO/Juriste) et des
 activations d'exploitation** : 11/19 conditions checklist cochées, et 3 bloquants
 d'exploitation ouverts (sauvegardes auto, alerting, TLS). Les items restants sont
