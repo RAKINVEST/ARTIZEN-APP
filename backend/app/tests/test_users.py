@@ -100,6 +100,25 @@ async def test_me_returns_the_authenticated_user(client: AsyncClient) -> None:
     assert body["is_active"] is True
 
 
+async def test_delete_me_erases_the_account_and_cascades(client: AsyncClient) -> None:
+    """RGPD right to erasure: DELETE /auth/me removes the tenant and everything
+    that references it. The company row is deleted and the database cascades
+    (ON DELETE CASCADE on companies.id) to the user, branding and all data — so
+    a successful 204 with a referencing branding row present is itself the
+    cascade proof: a missing cascade would raise a FK violation, not 204."""
+    # Touch branding so a BrandProfile row referencing the company exists —
+    # deleting the company must cascade through it, not fail on its FK.
+    profile = await client.get("/api/branding/profile")
+    assert profile.status_code == 200
+
+    deleted = await client.delete("/api/auth/me")
+    assert deleted.status_code == 204
+
+    # The account is gone: the token no longer resolves to a live user.
+    after = await client.get("/api/auth/me")
+    assert after.status_code == 401
+
+
 async def test_protected_endpoint_requires_a_token() -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as anonymous:

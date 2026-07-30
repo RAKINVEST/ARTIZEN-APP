@@ -14,6 +14,7 @@ import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.security import (
@@ -66,6 +67,14 @@ class AuthService:
             )
         )
         return self._issue_token(user)
+
+    async def delete_account(self, user: User) -> None:
+        """Erase the account and ALL its data — the RGPD right to erasure.
+        Deletes the tenant ``Company``; the database cascades to the user,
+        documents, quotes, clients, catalogue and branding (ON DELETE CASCADE on
+        ``companies.id``). Irreversible, and scoped to the caller's own tenant."""
+        await self._session.execute(delete(Company).where(Company.id == user.company_id))
+        await self._session.flush()
 
     async def login(self, data: UserLogin) -> TokenRead:
         user = await self._users.get_by_email(data.email)

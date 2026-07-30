@@ -47,3 +47,10 @@ async def reset_password(service: AuthServiceDep, payload: ResetPasswordRequest)
 @router.get("/me", response_model=UserRead)
 async def get_me(current_user: CurrentUserDep) -> UserRead:
     return UserRead.model_validate(current_user)
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_me(service: AuthServiceDep, current_user: CurrentUserDep) -> None:
+    """RGPD right to erasure: permanently delete the account and ALL its data
+    (company, documents, quotes, clients, catalogue, branding). Irreversible."""
+    await service.delete_account(current_user)
