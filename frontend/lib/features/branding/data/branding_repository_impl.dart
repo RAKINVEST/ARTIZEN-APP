@@ -42,6 +42,15 @@ class BrandingRepositoryImpl implements BrandingRepository {
   }
 
   @override
+  Future<String> uploadLogo({required String filename, required List<int> bytes}) =>
+      _uploadAsset('/branding/logo', filename: filename, bytes: bytes);
+
+  @override
+  Future<void> deleteLogo() async {
+    await _dio.delete<void>('/branding/logo');
+  }
+
+  @override
   Future<String> uploadSignature({required String filename, required List<int> bytes}) =>
       _uploadAsset('/branding/signature', filename: filename, bytes: bytes);
 

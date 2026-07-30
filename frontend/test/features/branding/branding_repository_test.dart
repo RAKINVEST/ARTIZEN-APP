@@ -22,6 +22,47 @@ void main() {
     repository = BrandingRepositoryImpl(dio);
   });
 
+  group('uploadLogo', () {
+    test('POSTs a multipart body and returns the stored path', () async {
+      when(
+        () => dio.post<Map<String, dynamic>>('/branding/logo', data: any(named: 'data')),
+      ).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/branding/logo'),
+          statusCode: 201,
+          data: {
+            'filename': 'logo.png',
+            'content_type': 'image/png',
+            'size_bytes': 3,
+            'path': 'brand/logo/abc.png',
+          },
+        ),
+      );
+
+      final path = await repository.uploadLogo(filename: 'logo.png', bytes: [1, 2, 3]);
+
+      expect(path, 'brand/logo/abc.png');
+      verify(
+        () => dio.post<Map<String, dynamic>>('/branding/logo', data: any(named: 'data')),
+      ).called(1);
+    });
+  });
+
+  group('deleteLogo', () {
+    test('DELETEs the logo endpoint', () async {
+      when(() => dio.delete<void>('/branding/logo')).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/branding/logo'),
+          statusCode: 204,
+        ),
+      );
+
+      await repository.deleteLogo();
+
+      verify(() => dio.delete<void>('/branding/logo')).called(1);
+    });
+  });
+
   group('uploadSignature', () {
     test('POSTs a multipart body and returns the stored path', () async {
       when(

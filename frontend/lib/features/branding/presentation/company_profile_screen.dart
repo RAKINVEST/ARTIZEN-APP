@@ -499,7 +499,7 @@ class _CompanyFormState extends ConsumerState<_CompanyForm> {
             ),
             const SizedBox(height: ArtizenSpacing.md),
 
-            const _SectionHeader('Signature & tampon'),
+            const _SectionHeader('Logo, signature & tampon'),
             const BrandAssetsSection(),
             const SizedBox(height: ArtizenSpacing.md),
 

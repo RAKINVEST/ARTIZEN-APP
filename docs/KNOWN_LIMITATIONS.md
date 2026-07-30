@@ -18,7 +18,7 @@ sont planifiées pour une V2.x ou la V3 ; **aucune n'est appliquée sur RC1**
 | # | Limitation | Classe | Suite |
 |---|---|---|---|
 | 1 | ~~**Pas d'écran d'édition directe de l'identité d'entreprise**~~ — **✅ Résolu (déjà livré, constat 2026-07)** : l'écran « Mon entreprise » (`/company-profile`, atteignable depuis Paramètres, dashboard, app-shell, readiness gate) édite raison sociale, forme juridique, SIRET, RCS, APE, TVA, coordonnées, régime TVA, assurance décennale, RGE, conditions, validité + signature/tampon. Reste hors écran : **logo et couleurs** (→ #2). | 🟢 | **Fait** |
-| 2 | **Pas de téléversement de logo ni d'édition des couleurs depuis l'app** (logo et couleurs seulement *détectés* à l'import ; `BrandAssetsSection` exclut explicitement le logo). L'API le permet (`POST /api/branding/logo`, `PUT /api/branding/brand`). À ajouter en section « Marque » de l'écran « Mon entreprise » (mirroir du pattern signature/tampon). | 🟢 | **V1 (requis)** |
+| 2 | ~~Pas de téléversement de logo~~ **✅ Logo livré** : import/remplacement/suppression du logo depuis « Mon entreprise » (section « Logo, signature & tampon »), en miroir du pattern signature/tampon. Reste : **édition des couleurs** (primaire/secondaire) détectées à l'import mais non ré-éditables — `updateBrandProfile` (PUT /branding/brand) existe déjà côté repository, seule l'UI manque. | 🟢 | Logo **fait** ; couleurs → **V1.x** |
 | 3 | **Pas d'écran de détail client** : l'appui ouvre directement l'édition. | 🟢 | V1.x |
 | 4 | **Catégories** : création + liste seulement, ni édition ni suppression en UI. | 🟢 | V1.x |
 | 5 | **Pas de « mot de passe oublié » / réinitialisation.** | 🟢 | **V1 (requis)** |

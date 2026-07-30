@@ -37,6 +37,21 @@ class BrandingProfileNotifier extends AsyncNotifier<BrandingProfile> {
     return updated;
   }
 
+  /// Imports a logo image and reflects the new `logoPath` in the cached brand,
+  /// then drops the cached preview bytes so the aperçu refetches.
+  Future<void> uploadLogo({required String filename, required List<int> bytes}) async {
+    final path =
+        await ref.read(brandingRepositoryProvider).uploadLogo(filename: filename, bytes: bytes);
+    _setBrandPaths(logoPath: path);
+    ref.invalidate(brandAssetProvider(BrandAssetKind.logo));
+  }
+
+  Future<void> deleteLogo() async {
+    await ref.read(brandingRepositoryProvider).deleteLogo();
+    _setBrandPaths(clearLogo: true);
+    ref.invalidate(brandAssetProvider(BrandAssetKind.logo));
+  }
+
   /// Imports a signature image and reflects the new `signaturePath` in the
   /// cached brand, then drops the cached preview bytes so the aperçu refetches.
   Future<void> uploadSignature({required String filename, required List<int> bytes}) async {
@@ -66,12 +81,15 @@ class BrandingProfileNotifier extends AsyncNotifier<BrandingProfile> {
     ref.invalidate(brandAssetProvider(BrandAssetKind.stamp));
   }
 
-  /// Patches `brand.signaturePath` / `brand.stampPath` in the cached aggregate
-  /// without a round-trip. The `clear*` flags exist because `copyWith` cannot
-  /// tell "leave unchanged" from "set to null" through a single optional arg.
+  /// Patches `brand.logoPath` / `brand.signaturePath` / `brand.stampPath` in the
+  /// cached aggregate without a round-trip. The `clear*` flags exist because
+  /// `copyWith` cannot tell "leave unchanged" from "set to null" through a
+  /// single optional arg.
   void _setBrandPaths({
+    String? logoPath,
     String? signaturePath,
     String? stampPath,
+    bool clearLogo = false,
     bool clearSignature = false,
     bool clearStamp = false,
   }) {
@@ -81,6 +99,7 @@ class BrandingProfileNotifier extends AsyncNotifier<BrandingProfile> {
     state = AsyncValue.data(
       current.copyWith(
         brand: brand.copyWith(
+          logoPath: clearLogo ? null : (logoPath ?? brand.logoPath),
           signaturePath: clearSignature ? null : (signaturePath ?? brand.signaturePath),
           stampPath: clearStamp ? null : (stampPath ?? brand.stampPath),
         ),

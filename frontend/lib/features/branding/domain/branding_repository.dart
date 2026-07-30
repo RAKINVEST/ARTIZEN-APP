@@ -10,6 +10,13 @@ abstract class BrandingRepository {
   Future<Company> updateCompany(CompanyUpdateInput input);
   Future<BrandProfile> updateBrandProfile(BrandProfileUpdateInput input);
 
+  /// Uploads a logo image (multipart, `png`/`jpeg`) and returns the stored
+  /// path the backend now reports as `brand.logoPath`.
+  Future<String> uploadLogo({required String filename, required List<int> bytes});
+
+  /// Removes the stored logo image (e.g. a wrongly detected one at import).
+  Future<void> deleteLogo();
+
   /// Uploads a signature image (multipart, `png`/`jpeg`) and returns the
   /// stored path the backend now reports as `brand.signaturePath`.
   Future<String> uploadSignature({required String filename, required List<int> bytes});

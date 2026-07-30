@@ -7,9 +7,15 @@ import 'package:artizen/features/branding/presentation/branding_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-BrandingProfile _profile({String? signaturePath, String? stampPath}) => BrandingProfile(
+BrandingProfile _profile({String? logoPath, String? signaturePath, String? stampPath}) =>
+    BrandingProfile(
       company: const Company(id: 'co1'),
-      brand: BrandProfile(id: 'b1', signaturePath: signaturePath, stampPath: stampPath),
+      brand: BrandProfile(
+        id: 'b1',
+        logoPath: logoPath,
+        signaturePath: signaturePath,
+        stampPath: stampPath,
+      ),
       templates: const [],
     );
 
@@ -22,6 +28,13 @@ class _RecordingBrandingRepository implements BrandingRepository {
 
   @override
   Future<BrandingProfile> getProfile() async => profile;
+
+  @override
+  Future<String> uploadLogo({required String filename, required List<int> bytes}) async =>
+      'brand/logo/new.png';
+
+  @override
+  Future<void> deleteLogo() async {}
 
   @override
   Future<String> uploadSignature({required String filename, required List<int> bytes}) async =>
@@ -82,5 +95,34 @@ void main() {
     final brand = container.read(brandingProfileNotifierProvider).value!.brand;
     expect(brand.stampPath, isNull);
     expect(brand.signaturePath, 'keep/sig.png');
+  });
+
+  test('uploadLogo reflects the new logoPath in the cached brand', () async {
+    final container = containerFor(_profile());
+    await container.read(brandingProfileNotifierProvider.future);
+
+    await container
+        .read(brandingProfileNotifierProvider.notifier)
+        .uploadLogo(filename: 'logo.png', bytes: [1, 2, 3]);
+
+    final brand = container.read(brandingProfileNotifierProvider).value!.brand;
+    expect(brand.logoPath, 'brand/logo/new.png');
+    // Signature and stamp must stay untouched by a logo upload.
+    expect(brand.signaturePath, isNull);
+    expect(brand.stampPath, isNull);
+  });
+
+  test('deleteLogo clears logoPath while leaving signature and stamp intact', () async {
+    final container = containerFor(
+      _profile(logoPath: 'old/logo.png', signaturePath: 'keep/sig.png', stampPath: 'keep/stamp.png'),
+    );
+    await container.read(brandingProfileNotifierProvider.future);
+
+    await container.read(brandingProfileNotifierProvider.notifier).deleteLogo();
+
+    final brand = container.read(brandingProfileNotifierProvider).value!.brand;
+    expect(brand.logoPath, isNull);
+    expect(brand.signaturePath, 'keep/sig.png');
+    expect(brand.stampPath, 'keep/stamp.png');
   });
 }

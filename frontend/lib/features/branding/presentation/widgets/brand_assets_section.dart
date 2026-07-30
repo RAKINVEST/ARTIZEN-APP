@@ -26,8 +26,15 @@ class BrandAssetsSection extends ConsumerWidget {
           icon: Icons.info_outline,
           title: 'Appliqués immédiatement',
           description:
-              "L'import et la suppression d'une signature ou d'un tampon sont enregistrés "
-              'aussitôt — ils ne dépendent pas du bouton « Enregistrer » ci-dessus.',
+              "L'import et la suppression d'un logo, d'une signature ou d'un tampon sont "
+              'enregistrés aussitôt — ils ne dépendent pas du bouton « Enregistrer » ci-dessus.',
+        ),
+        const SizedBox(height: ArtizenSpacing.sm),
+        _BrandAssetTile(
+          kind: BrandAssetKind.logo,
+          title: 'Logo',
+          emptyLabel: 'Aucun logo importé',
+          hasAsset: brand?.logoPath != null,
         ),
         const SizedBox(height: ArtizenSpacing.sm),
         _BrandAssetTile(
@@ -93,7 +100,7 @@ class _BrandAssetTileState extends ConsumerState<_BrandAssetTile> {
         case BrandAssetKind.stamp:
           await _notifier.uploadStamp(filename: file.name, bytes: file.bytes!);
         case BrandAssetKind.logo:
-          break; // Not managed from this section.
+          await _notifier.uploadLogo(filename: file.name, bytes: file.bytes!);
       }
       _toast('${widget.title} importé$_e');
     } catch (error) {
@@ -122,7 +129,7 @@ class _BrandAssetTileState extends ConsumerState<_BrandAssetTile> {
         case BrandAssetKind.stamp:
           await _notifier.deleteStamp();
         case BrandAssetKind.logo:
-          break;
+          await _notifier.deleteLogo();
       }
       _toast('${widget.title} supprimé$_e');
     } catch (error) {
@@ -152,9 +159,11 @@ class _BrandAssetTileState extends ConsumerState<_BrandAssetTile> {
             Row(
               children: [
                 Icon(
-                  widget.kind == BrandAssetKind.signature
-                      ? Icons.draw_outlined
-                      : Icons.approval_outlined,
+                  switch (widget.kind) {
+                    BrandAssetKind.logo => Icons.image_outlined,
+                    BrandAssetKind.signature => Icons.draw_outlined,
+                    BrandAssetKind.stamp => Icons.approval_outlined,
+                  },
                   color: ArtizenColors.nightBlue,
                 ),
                 const SizedBox(width: ArtizenSpacing.xs),
