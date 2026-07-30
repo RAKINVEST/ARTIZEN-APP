@@ -8,7 +8,7 @@ terminée (pas « en cours »).
 Rôles : **PO** (décisions produit/juridique/business, l'utilisateur) · **Dev**
 (développement, Claude) · **Exploitation** (infra/hébergement) · **Juriste**.
 
-Dernière mise à jour : session 12.
+Dernière mise à jour : session 13.
 
 ---
 
@@ -23,10 +23,10 @@ Dernière mise à jour : session 12.
 | Base de données | ✅ Prêt | Migrations up/down, cascades FK, index. Purge → **décision PO**. |
 | Sécurité | 🟡 En cours | Rate-limit actif, bcrypt, JWT, isolation, validation upload. Posture JWT web (statu quo localStorage, dette documentée) → **décision PO**. |
 | Juridique | 🟡 Infra prête | Écrans + routes `/legal/*` + **lien à l'inscription** (accessibles en app). Reste : **contenu validé + rétention RGPD** → **décision PO/Juriste**. Swap contenu → **Dev**. |
-| Déploiement | 🟡 En cours | Docker compose + CI (validation). **Pipeline CD + cible prod** → **décision Exploitation**. Squelette CD → **Dev**. |
-| Monitoring | 🟡 En cours | `/health` réel (SELECT 1). **Supervision externe** → **Exploitation**. |
+| Déploiement | 🟡 En cours | Docker compose + CI (validation) + **squelette `deploy.yml.example`**. Reste : **cible prod (registry/host)** → **Exploitation**. |
+| Monitoring | 🟡 En cours | `/health` réel + **sonde `scripts/healthcheck.sh`** (testée). Reste : **moniteur externe + canal d'alerte** → **Exploitation**. |
 | Sauvegardes | 🟡 En cours | Procédures manuelles + **script versionné testé** (`scripts/backup.sh`). Reste : **activation** (cron, hors-site chiffré) → **Exploitation**. |
-| Performance | ✅ Prêt (à confirmer) | Oracle O(n), détection bornée. Épreuve de charge (non éprouvé, non bloquant) → **Dev** (smoke). |
+| Performance | ✅ Prêt | Oracle O(n), détection bornée. **Smoke de charge** (`scripts/smoke_load.sh`) : 100/100 sur `/health`. Épreuve de charge complète (flux auth) = post-lancement. |
 | Documentation | ✅ Prêt | README, architecture, specs, MEP, KNOWN_LIMITATIONS, gabarits légaux. |
 | Support | ⬜ Non commencé | **Canal de support (contact) + FAQ** → **décision PO** ; page → **Dev**. |
 
@@ -51,8 +51,8 @@ réellement terminée.*
 | ☐ | Canal de support utilisateur |
 | ☐ | E-mails réels (SMTP configuré) |
 | ☐ | Sauvegardes automatisées et testées *(script `scripts/backup.sh` testé bout-en-bout ; reste l'activation cron + hors-site — déploiement)* |
-| ☐ | Alertes de production |
-| ☐ | Pipeline de déploiement |
+| ☐ | Alertes de production *(sonde `scripts/healthcheck.sh` testée ; reste le moniteur externe + canal — déploiement)* |
+| ☐ | Pipeline de déploiement *(squelette `deploy.yml.example` prêt ; reste la cible registry/host — déploiement)* |
 | ☐ | HTTPS/TLS actif en production |
 
 **Score : 11 / 19 conditions terminées.**
@@ -84,8 +84,8 @@ réellement terminée.*
 | **Restauration** | 🟡 Testée (manuel) | Exploitation | `docs/BACKUP_RESTORE.md`. Manque : test de restauration régulier ordonnancé. | Non |
 | **Rotation des secrets** | ⬜ Non commencé | Exploitation | Secrets via `.env` (JWT, DB, SMTP). Procédure de rotation à écrire. | Non (mais à documenter) |
 | **Rotation TLS** | ⬜ Non commencé | Exploitation | Dépend du reverse-proxy (ex. Let's Encrypt auto-renew). | **Oui** (HTTPS requis) |
-| **Monitoring** | 🟡 Partiel | Exploitation | `GET /health` (SELECT 1 + Redis + `queue_depth`). Manque : sonde externe qui l'interroge. | Non |
-| **Alerting** | ⬜ Non commencé | Exploitation | Aucun. À brancher sur `/health` + taux d'erreur. | **Oui** |
+| **Monitoring** | 🟡 Partiel | Exploitation | `GET /health` + **`scripts/healthcheck.sh`** (sonde testée). Reste : moniteur externe qui l'appelle. | Non |
+| **Alerting** | 🟡 Partiel | Exploitation / Dev | **`scripts/healthcheck.sh`** (sonde testée, exit 0/1). Reste : moniteur externe qui l'appelle + canal d'alerte. | **Oui** |
 | **Logs** | ✅ Prêt | Dev/Exploitation | Logging structuré (`logger.warning/exception`, `exc_info`). Agrégation = plateforme d'hébergement. | Non |
 | **Rollback** | 🟡 Partiel | Exploitation | Migrations Alembic réversibles (`downgrade`) + redéploiement image précédente (avec CD). | Non |
 | **Mises à jour** | 🟡 Partiel | Exploitation | `docker compose up` (migrations auto au démarrage) ; à formaliser via CD. | Non |

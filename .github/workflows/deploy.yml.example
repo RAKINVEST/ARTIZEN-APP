@@ -1,0 +1,51 @@
+# ARTIZEN — deployment pipeline TEMPLATE (skeleton).
+#
+# This is a *.example* file on purpose: GitHub does NOT run it. It is the
+# decision-free skeleton of the go-live line "Pipeline de déploiement". To
+# activate: copy to `.github/workflows/deploy.yml`, fill in the {…} deployment
+# target (registry, host/orchestrator, secrets) and choose the trigger.
+# Everything marked {…} below is DEPLOYMENT config, not code.
+#
+# The CI workflow (ci.yml) already validates backend + frontend on every push;
+# this pipeline is what SHIPS a validated build. Gate it on CI / a version tag.
+name: deploy (template — rename to deploy.yml to activate)
+
+on:
+  workflow_dispatch: {} # manual only until a target is configured
+  # push:
+  #   tags: ['v*']       # e.g. deploy on a version tag, after CI passes
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1) Build the backend image (Dockerfile already in ./backend).
+      - name: Build backend image
+        run: docker build -t artizen-backend:${{ github.sha }} ./backend
+
+      # 2) Build the Flutter web bundle (served as static files).
+      # - uses: subosito/flutter-action@v2
+      # - run: cd frontend && flutter build web --release
+
+      # 3) Push the image to your registry — {à compléter : registry + creds}.
+      # - name: Log in to registry
+      #   run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login {registry} -u {user} --password-stdin
+      # - name: Push
+      #   run: docker push {registry}/artizen-backend:${{ github.sha }}
+
+      # 4) Apply DB migrations to production (Alembic, forward-only in prod).
+      # - name: Migrate
+      #   run: {ssh|kubectl|compose} exec backend alembic upgrade head
+
+      # 5) Roll out — {à compléter : host / orchestrateur}. Rollback = redeploy
+      #    the previous image tag + `alembic downgrade` if needed (migrations
+      #    are reversible).
+      # - name: Deploy backend
+      #   run: {ssh deploy | kubectl set image | compose pull && up -d}
+      # - name: Publish web bundle
+      #   run: {rsync|aws s3 sync|netlify deploy} frontend/build/web {target}
+
+      - name: Reminder
+        run: echo "Template — configure registry, migrations, target, then rename to deploy.yml."
