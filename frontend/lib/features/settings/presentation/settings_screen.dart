@@ -120,6 +120,29 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const _SectionLabel('Aide'),
           const _SettingsGroup(children: [_SupportTile()]),
+          const _SectionLabel('Informations légales'),
+          _SettingsGroup(
+            children: [
+              _SettingsTile(
+                icon: Icons.gavel_outlined,
+                accent: ArtizenAccents.slate,
+                title: 'Mentions légales',
+                onTap: () => context.push('/legal/mentions'),
+              ),
+              _SettingsTile(
+                icon: Icons.description_outlined,
+                accent: ArtizenAccents.slate,
+                title: "Conditions générales d'utilisation",
+                onTap: () => context.push('/legal/cgu'),
+              ),
+              _SettingsTile(
+                icon: Icons.privacy_tip_outlined,
+                accent: ArtizenAccents.slate,
+                title: 'Politique de confidentialité',
+                onTap: () => context.push('/legal/confidentialite'),
+              ),
+            ],
+          ),
           const SizedBox(height: ArtizenSpacing.sm),
           _SettingsGroup(
             children: [
