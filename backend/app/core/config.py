@@ -127,6 +127,15 @@ class Settings(BaseSettings):
     # redis backend degrades to the in-memory one if Redis is unreachable.
     RATE_LIMIT_BACKEND: Literal["memory", "redis"] = "memory"
 
+    # --- Rétention RGPD (moteur : app/retention) ---
+    # La POLITIQUE (durées, périmètre, exceptions) est définie par le juriste et
+    # fournie ICI comme configuration ; le moteur de purge ne code JAMAIS une
+    # valeur en dur. `None` = désactivé : tant qu'aucune durée n'est fixée, le
+    # moteur est un no-op strict — rien n'est jamais purgé par défaut. Un compte
+    # est « inactif » si aucun utilisateur ne s'est connecté depuis ce nombre de
+    # jours (voir Company.last_active_at).
+    RETENTION_INACTIVE_ACCOUNT_DAYS: int | None = None
+
     # --- AI providers (abstraction layer, see app/ai) ---
     DEFAULT_AI_PROVIDER: Literal["openai", "anthropic", "mistral"] = "anthropic"
     OPENAI_API_KEY: str | None = None

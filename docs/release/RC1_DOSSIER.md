@@ -8,7 +8,7 @@ terminée (pas « en cours »).
 Rôles : **PO** (décisions produit/juridique/business, l'utilisateur) · **Dev**
 (développement, Claude) · **Exploitation** (infra/hébergement) · **Juriste**.
 
-Dernière mise à jour : session 13.
+Dernière mise à jour : session 14.
 
 ---
 
@@ -22,7 +22,7 @@ Dernière mise à jour : session 13.
 | API | ✅ Prêt prod | REST + erreurs typées + isolation tenant (404). Rien de bloquant. |
 | Base de données | ✅ Prêt | Migrations up/down, cascades FK, index. Purge → **décision PO**. |
 | Sécurité | 🟡 En cours | Rate-limit actif, bcrypt, JWT, isolation, validation upload. Posture JWT web (statu quo localStorage, dette documentée) → **décision PO**. |
-| Juridique | 🟡 Infra prête | Écrans + routes `/legal/*` + **lien à l'inscription** (accessibles en app). Reste : **contenu validé + rétention RGPD** → **décision PO/Juriste**. Swap contenu → **Dev**. |
+| Juridique | 🟡 Infra prête | Écrans + routes `/legal/*` + lien à l'inscription ; **moteur de rétention config-driven** (`app/retention`, testé). Reste : **contenu validé** + **durées de rétention** (juriste), + activation cron. |
 | Déploiement | 🟡 En cours | Docker compose + CI (validation) + **squelette `deploy.yml.example`**. Reste : **cible prod (registry/host)** → **Exploitation**. |
 | Monitoring | 🟡 En cours | `/health` réel + **sonde `scripts/healthcheck.sh`** (testée). Reste : **moniteur externe + canal d'alerte** → **Exploitation**. |
 | Sauvegardes | 🟡 En cours | Procédures manuelles + **script versionné testé** (`scripts/backup.sh`). Reste : **activation** (cron, hors-site chiffré) → **Exploitation**. |
@@ -47,7 +47,7 @@ réellement terminée.*
 | ☑ | La suite de tests passe (586 backend + 189 Flutter) |
 | ☐ | CGU accessibles *(écran+route+lien à l'inscription prêts ; reste UNIQUEMENT le contenu validé par un juriste)* |
 | ☐ | Politique de confidentialité accessible *(idem)* |
-| ☐ | Politique de rétention RGPD définie et appliquée |
+| ☐ | Politique de rétention RGPD définie et appliquée *(moteur config-driven `app/retention` testé, no-op par défaut ; reste la POLITIQUE — durées/juriste — et l'activation cron)* |
 | ☐ | Canal de support utilisateur |
 | ☐ | E-mails réels (SMTP configuré) |
 | ☐ | Sauvegardes automatisées et testées *(script `scripts/backup.sh` testé bout-en-bout ; reste l'activation cron + hors-site — déploiement)* |

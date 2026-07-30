@@ -14,7 +14,7 @@ import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import delete
+from sqlalchemy import delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.security import (
@@ -57,7 +57,9 @@ class AuthService:
         if existing is not None:
             raise EmailAlreadyRegisteredError(f"Email {data.email} is already registered.")
 
-        company = await self._companies.create(Company(name=data.company_name))
+        company = await self._companies.create(
+            Company(name=data.company_name, last_active_at=datetime.now(timezone.utc))
+        )
         user = await self._users.create(
             User(
                 company_id=company.id,
@@ -88,6 +90,12 @@ class AuthService:
             raise UnauthorizedError("Invalid email or password.")
         if not user.is_active:
             raise UnauthorizedError("This account has been deactivated.")
+        # Activity signal for RGPD retention (app/retention purges inactive tenants).
+        await self._session.execute(
+            update(Company)
+            .where(Company.id == user.company_id)
+            .values(last_active_at=datetime.now(timezone.utc))
+        )
         return self._issue_token(user)
 
     async def request_password_reset(self, email: str) -> None:

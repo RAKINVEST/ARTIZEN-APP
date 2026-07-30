@@ -14,7 +14,9 @@ traversal yet.
 
 import enum
 import uuid
+from datetime import datetime
 
+from sqlalchemy import DateTime
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
@@ -34,6 +36,14 @@ class Company(Base, UUIDMixin, TimestampMixin):
     name: Mapped[str | None] = mapped_column(default=None)
     legal_name: Mapped[str | None] = mapped_column(default=None)
     siret: Mapped[str | None] = mapped_column(default=None)
+
+    # Last time any user of this tenant authenticated — the "activity" signal the
+    # RGPD retention engine (app/retention) reads to purge inactive accounts. Set
+    # on register and login; NULL only for pre-existing rows (never purged until
+    # they log in). Indexed for the purge query.
+    last_active_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None, index=True
+    )
 
     # What the company DOES, and what it is CERTIFIED to do — see
     # docs/DECISIONS.md, décision 7. Slugs name code-defined packs, not rows,
