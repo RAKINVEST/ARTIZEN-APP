@@ -183,9 +183,18 @@ class Settings(BaseSettings):
             )
         return value
 
-    # --- Storage (abstraction layer, see app/branding/storage.py) ---
-    STORAGE_PROVIDER: Literal["local"] = "local"
+    # --- Storage (abstraction layer, see app/storage.py) ---
+    STORAGE_PROVIDER: Literal["local", "s3"] = "local"
     STORAGE_LOCAL_ROOT: str = "/data/storage"
+    # S3-compatible object storage (used when STORAGE_PROVIDER=s3). Endpoint-driven,
+    # so any EU provider works (Scaleway, OVH Object Storage, MinIO…) — the host is
+    # a config value, never a code dependency (DECISIONS.md §9). Required on a PaaS,
+    # whose container filesystem is ephemeral.
+    STORAGE_S3_ENDPOINT_URL: str = ""
+    STORAGE_S3_REGION: str = ""
+    STORAGE_S3_BUCKET: str = ""
+    STORAGE_S3_ACCESS_KEY: str = ""
+    STORAGE_S3_SECRET_KEY: str = ""
 
     # --- Email (transactional: password reset, welcome, receipts) ---
     # "mock" (default) logs the message and never fails — the app runs and the

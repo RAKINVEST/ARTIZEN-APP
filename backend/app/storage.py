@@ -90,6 +90,18 @@ class LocalStorageProvider(StorageProvider):
 def get_storage_provider() -> StorageProvider:
     if settings.STORAGE_PROVIDER == "local":
         return LocalStorageProvider(Path(settings.STORAGE_LOCAL_ROOT))
+    if settings.STORAGE_PROVIDER == "s3":
+        # Lazy import: boto3 is only pulled in when object storage is actually
+        # selected, so the default "local" mode stays dependency-light.
+        from app.storage_s3 import S3StorageProvider
+
+        return S3StorageProvider(
+            endpoint_url=settings.STORAGE_S3_ENDPOINT_URL,
+            region=settings.STORAGE_S3_REGION,
+            bucket=settings.STORAGE_S3_BUCKET,
+            access_key=settings.STORAGE_S3_ACCESS_KEY,
+            secret_key=settings.STORAGE_S3_SECRET_KEY,
+        )
     raise ValueError(f"Unsupported storage provider: {settings.STORAGE_PROVIDER}")
 
 

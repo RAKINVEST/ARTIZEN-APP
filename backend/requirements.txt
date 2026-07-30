@@ -41,5 +41,10 @@ anthropic==0.40.0
 # worker to bolt on). Both degrade gracefully when Redis is absent.
 redis==5.2.1
 arq==0.26.3
+# S3-compatible object storage client for the production StorageProvider
+# (app/storage_s3.py). Endpoint-driven → works with any EU provider (Scaleway,
+# OVH, MinIO…); the host is config, never a code dependency (DECISIONS.md §9).
+# Only imported when STORAGE_PROVIDER=s3 — local dev stays on the filesystem.
+boto3==1.43.60
 pytest==8.3.4
 pytest-asyncio==0.25.0
