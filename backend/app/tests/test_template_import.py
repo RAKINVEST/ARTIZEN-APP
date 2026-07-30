@@ -132,6 +132,30 @@ async def test_preview_requires_completed_analysis(client: AsyncClient, company_
     assert response.json()["error"]["code"] == "document_not_processed"
 
 
+async def test_preview_surfaces_the_failure_reason_for_a_broken_pdf(
+    client: AsyncClient, company_id: str
+) -> None:
+    """A1b: when the analysis failed, the import preview returns the artisan-
+    actionable reason (not the developer 'must process' message), so a failed
+    import tells the artisan what to do instead of sending them to support."""
+    truncated = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n"
+    upload_response = await client.post(
+        "/api/document-analysis/upload",
+        data={"company_id": company_id, "document_type": "quote"},
+        files={"file": ("broken.pdf", io.BytesIO(truncated), "application/pdf")},
+    )
+    analysis_id = upload_response.json()["id"]
+    process_response = await client.post(f"/api/document-analysis/{analysis_id}/process")
+    assert process_response.json()["status"] == "failed"
+
+    response = await client.get(f"/api/template-import/{analysis_id}/preview")
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "document_not_processed"
+    # The message is the actionable reason, not the developer 'must process' one.
+    assert "n'a pas pu être analysé" in response.json()["error"]["message"]
+
+
 async def test_preview_rejects_invoice_document(client: AsyncClient, company_id: str) -> None:
     analysis_id = await _upload_and_process(client, company_id, document_type="invoice")
 

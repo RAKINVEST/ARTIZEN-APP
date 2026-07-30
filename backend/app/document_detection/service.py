@@ -81,6 +81,12 @@ class DocumentDetectionService:
             )
 
         if analysis.status != DocumentStatus.COMPLETED:
+            # A failed analysis carries an actionable reason (A1) — surface it to
+            # the artisan instead of the developer-oriented "must process"
+            # message, so a failed import tells them what to do (the import flow
+            # displays this exception's message verbatim).
+            if analysis.status == DocumentStatus.FAILED and analysis.failure_reason:
+                raise DocumentNotProcessedError(analysis.failure_reason)
             raise DocumentNotProcessedError(
                 f"Document analysis {analysis_id} must be processed "
                 "(POST /document-analysis/{id}/process) before detection can run."
