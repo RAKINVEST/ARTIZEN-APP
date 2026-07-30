@@ -9,7 +9,7 @@ should read ``os.environ`` directly: every other layer depends on the
 from functools import lru_cache
 from typing import Annotated, Literal
 
-from pydantic import ValidationInfo, field_validator
+from pydantic import ValidationInfo, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 # Kept in sync with .env.example by hand: the point is to catch the exact
@@ -61,13 +61,34 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
+    # A managed platform (Scalingo…) hands the database over as ONE connection
+    # URL rather than discrete parts. When set, it wins over the POSTGRES_* fields.
+    # Set it to the addon's URL (e.g. Scalingo's SCALINGO_POSTGRESQL_URL). Both the
+    # app engine and Alembic read settings.DATABASE_URL, so the override flows to
+    # migrations too. See docs/DEPLOYMENT-T3.md for the TLS note.
+    DATABASE_URL_OVERRIDE: str = ""
 
     @property
     def DATABASE_URL(self) -> str:
+        if self.DATABASE_URL_OVERRIDE:
+            return self._to_asyncpg_url(self.DATABASE_URL_OVERRIDE)
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
+
+    @staticmethod
+    def _to_asyncpg_url(url: str) -> str:
+        # Managed providers hand out postgres:// or postgresql:// URLs; SQLAlchemy's
+        # async engine needs the +asyncpg driver. libpq query params (sslmode=…) use
+        # a syntax asyncpg rejects, so they're stripped — asyncpg negotiates TLS with
+        # the server directly. If a provider ever REQUIRES forced TLS, add it via
+        # connect_args (documented in docs/DEPLOYMENT-T3.md), not the URL.
+        base = url.split("?", 1)[0]
+        _, sep, rest = base.partition("://")
+        if not sep:
+            return base
+        return f"postgresql+asyncpg://{rest}"
 
     # --- Security / JWT ---
     SECRET_KEY: str
@@ -233,6 +254,35 @@ class Settings(BaseSettings):
     # feature degrades gracefully (in-memory rate limit, tasks refused with a
     # clear error). "redis" is the compose service name; override for local.
     REDIS_URL: str = "redis://redis:6379/0"
+
+    @model_validator(mode="after")
+    def _require_selected_provider_credentials(self) -> "Settings":
+        # A provider selected but left unconfigured fails only at first use (a lost
+        # upload, an unsent reset email) — surface it at boot instead. Defaults
+        # (local, mock) skip both checks, so dev/tests stay copy-.env.example-and-go.
+        if self.STORAGE_PROVIDER == "s3" and not (
+            self.STORAGE_S3_ENDPOINT_URL
+            and self.STORAGE_S3_BUCKET
+            and self.STORAGE_S3_ACCESS_KEY
+            and self.STORAGE_S3_SECRET_KEY
+        ):
+            raise ValueError(
+                "STORAGE_PROVIDER=s3 requires STORAGE_S3_ENDPOINT_URL, "
+                "STORAGE_S3_BUCKET, STORAGE_S3_ACCESS_KEY and STORAGE_S3_SECRET_KEY."
+            )
+        if self.EMAIL_PROVIDER == "smtp" and not self.SMTP_HOST:
+            raise ValueError(
+                "EMAIL_PROVIDER=smtp requires SMTP_HOST (and SMTP credentials)."
+            )
+        # A wildcard origin with allow_credentials=True (main.py) lets ANY site
+        # make credentialed cross-origin calls — reject it in production, where the
+        # frontend origin is a single known value (https://app.<domain>).
+        if self.ENVIRONMENT == "production" and "*" in self.CORS_ORIGINS:
+            raise ValueError(
+                "CORS_ORIGINS must not be '*' in production. Set the exact frontend "
+                "origin (e.g. https://app.artizen.fr)."
+            )
+        return self
 
 
 @lru_cache

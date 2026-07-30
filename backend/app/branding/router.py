@@ -81,7 +81,16 @@ async def get_asset(
     """Serve a stored brand asset so the app can preview it. Tenant-scoped: the
     key is resolved from the caller's own company, never taken from the URL."""
     content, content_type = await service.load_asset(current_user.company_id, kind)
-    return Response(content=content, media_type=content_type)
+    # Content-Disposition: attachment so a browser navigated straight at this URL
+    # downloads the file instead of rendering it. Harmless to the app (the client
+    # fetches the bytes over Dio and shows them via Image.memory), but it defuses a
+    # stored-active-content vector: an uploaded SVG can carry script, and served
+    # inline it would execute in this origin. nosniff (global) + attachment here.
+    return Response(
+        content=content,
+        media_type=content_type,
+        headers={"Content-Disposition": "attachment"},
+    )
 
 
 @router.post(

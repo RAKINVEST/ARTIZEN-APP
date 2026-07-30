@@ -1,0 +1,13 @@
+# Scalingo process types (T3 production — backend API only).
+#
+# For a Dockerfile deploy the image CMD already binds to $PORT through
+# entrypoint.sh; this file declares the web process explicitly and stays robust
+# even if the platform runs the command directly: it calls entrypoint.sh itself,
+# so `alembic upgrade head` runs before the server starts. $PORT is injected by
+# the platform; WEB_CONCURRENCY tunes the worker count.
+web: bash entrypoint.sh uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers ${WEB_CONCURRENCY:-4} --proxy-headers --forwarded-allow-ips='*'
+
+# The async task worker is a V3 concern (STT / LLM / OCR / mass PDF). It is NOT
+# needed for the V1 critical path (PDF and email are synchronous). Enable it only
+# when V3 async features land:  scalingo --app <app> scale worker:1
+# worker: bash entrypoint.sh arq app.tasks.worker.WorkerSettings

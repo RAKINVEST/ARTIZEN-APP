@@ -37,11 +37,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await close_redis()
 
 
+# Interactive API docs (/docs, /redoc, /openapi.json) expose the full endpoint
+# schema; useful in dev, needless information disclosure in front of real users.
+_docs_enabled = settings.ENVIRONMENT != "production"
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     debug=settings.DEBUG,
     lifespan=lifespan,
+    docs_url="/docs" if _docs_enabled else None,
+    redoc_url="/redoc" if _docs_enabled else None,
+    openapi_url="/openapi.json" if _docs_enabled else None,
 )
 
 if settings.CORS_ORIGINS:

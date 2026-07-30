@@ -57,4 +57,13 @@ ENTRYPOINT ["bash", "entrypoint.sh"]
 # docker-compose.yml overrides this with --reload for local development —
 # the safe default belongs in the image, the convenience in the compose
 # file, not the other way round.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+#
+# Shell form (not exec form) so ${PORT} expands: a managed PaaS (Scalingo)
+# injects the port to bind on via $PORT; locally it defaults to 8000. This
+# still runs through entrypoint.sh (ENTRYPOINT above), so migrations run first.
+# --proxy-headers + --forwarded-allow-ips='*': behind a PaaS router (Scalingo),
+# the socket peer is always the router, so the rate limiter must read the real
+# client IP from X-Forwarded-For — otherwise every request shares one bucket. The
+# app is only reachable through the platform, so trusting the forwarded header is
+# safe here. (docker-compose.yml overrides this command for local dev.)
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-4} --proxy-headers --forwarded-allow-ips='*'"]

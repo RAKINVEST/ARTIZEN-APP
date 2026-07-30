@@ -1,0 +1,41 @@
+{
+  "name": "artizen-api",
+  "description": "ARTIZEN — backend API (FastAPI). T3 topology: the Flutter Web frontend is a separate static deploy (object storage + CDN), not part of this app.",
+  "env": {
+    "ENVIRONMENT": { "value": "production" },
+    "PROJECT_DIR": {
+      "value": "backend",
+      "description": "Monorepo: build from the backend/ subdirectory (Dockerfile deploy)."
+    },
+    "SECRET_KEY": {
+      "required": true,
+      "description": "JWT signing key. Generate one (python -c \"import secrets; print(secrets.token_urlsafe(64))\"); must be >= 32 chars and never the .env.example placeholder — the app refuses to boot otherwise."
+    },
+    "DATABASE_URL_OVERRIDE": {
+      "required": true,
+      "description": "Set to the managed Postgres addon URL ($SCALINGO_POSTGRESQL_URL)."
+    },
+    "STORAGE_PROVIDER": { "value": "s3" },
+    "STORAGE_S3_ENDPOINT_URL": { "required": true, "description": "S3-compatible EU endpoint (Scaleway/OVH)." },
+    "STORAGE_S3_REGION": { "required": true, "description": "e.g. fr-par." },
+    "STORAGE_S3_BUCKET": { "required": true, "description": "Object storage bucket name." },
+    "STORAGE_S3_ACCESS_KEY": { "required": true, "description": "Object storage access key." },
+    "STORAGE_S3_SECRET_KEY": { "required": true, "description": "Object storage secret key." },
+    "EMAIL_PROVIDER": { "value": "smtp" },
+    "SMTP_HOST": { "required": true, "description": "Brevo SMTP host, e.g. smtp-relay.brevo.com." },
+    "SMTP_PORT": { "value": "587" },
+    "SMTP_USERNAME": { "required": true, "description": "Brevo SMTP login." },
+    "SMTP_PASSWORD": { "required": true, "description": "Brevo SMTP key." },
+    "EMAIL_FROM": { "required": true, "description": "Verified sender address, e.g. no-reply@artizen.fr." },
+    "RATE_LIMIT_BACKEND": { "value": "redis" },
+    "CORS_ORIGINS": { "required": true, "description": "Frontend origin, e.g. https://app.artizen.fr." },
+    "APP_BASE_URL": { "required": true, "description": "Public web-app URL, e.g. https://app.artizen.fr (used in email links)." },
+    "SUPPORT_EMAIL": { "required": true, "description": "Real, monitored support address." },
+    "RETENTION_INACTIVE_ACCOUNT_DAYS": { "description": "Optional. Left unset = retention purge disabled (no-op) until the legal policy fixes a duration." }
+  },
+  "addons": ["postgresql", "redis"],
+  "formation": { "web": { "amount": 1, "size": "M" } },
+  "scripts": {
+    "postdeploy": "alembic upgrade head"
+  }
+}
