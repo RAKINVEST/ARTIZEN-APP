@@ -146,6 +146,49 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     loading: _loading,
                     onPressed: _submit,
                   ),
+                  const SizedBox(height: ArtizenSpacing.sm),
+                  // Consent + legal access: the CGU and privacy policy must be
+                  // reachable before a visitor commits to an account.
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      const Text(
+                        'En créant un compte, vous acceptez les ',
+                        style: TextStyle(fontSize: 12, color: ArtizenColors.textSecondary),
+                      ),
+                      InkWell(
+                        onTap: () => context.push('/legal/cgu'),
+                        child: Text(
+                          'CGU',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.primary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      const Text(
+                        ' et la ',
+                        style: TextStyle(fontSize: 12, color: ArtizenColors.textSecondary),
+                      ),
+                      InkWell(
+                        onTap: () => context.push('/legal/confidentialite'),
+                        child: Text(
+                          'politique de confidentialité',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.primary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      const Text(
+                        '.',
+                        style: TextStyle(fontSize: 12, color: ArtizenColors.textSecondary),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: ArtizenSpacing.xs),
                   AppLink(
                     label: 'J\'ai déjà un compte',

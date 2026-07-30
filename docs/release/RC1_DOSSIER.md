@@ -8,7 +8,7 @@ terminée (pas « en cours »).
 Rôles : **PO** (décisions produit/juridique/business, l'utilisateur) · **Dev**
 (développement, Claude) · **Exploitation** (infra/hébergement) · **Juriste**.
 
-Dernière mise à jour : session 10.
+Dernière mise à jour : session 11.
 
 ---
 
@@ -16,13 +16,13 @@ Dernière mise à jour : session 10.
 
 | Domaine | État | Terminé / Manque (bloquant) — Dépend de |
 |---|---|---|
-| Produit | ✅ Prêt | Tous les parcours artisan livrés. Manque : lien légal en app → **Dev**. |
+| Produit | ✅ Prêt | Tous les parcours artisan livrés (dont le lien légal à l'inscription). Rien de bloquant côté produit. |
 | Backend | ✅ Prêt prod (code) | API complète, 586 tests. Purge rétention → **décision PO**. |
-| Flutter | ✅ Prêt | Écrans V1 + suppression compte + écrans légaux (infra). Lien légal → **Dev**. |
+| Flutter | ✅ Prêt | Écrans V1 + suppression compte + écrans légaux (infra + lien à l'inscription). Rien de bloquant. |
 | API | ✅ Prêt prod | REST + erreurs typées + isolation tenant (404). Rien de bloquant. |
 | Base de données | ✅ Prêt | Migrations up/down, cascades FK, index. Purge → **décision PO**. |
 | Sécurité | 🟡 En cours | Rate-limit actif, bcrypt, JWT, isolation, validation upload. Posture JWT web (statu quo localStorage, dette documentée) → **décision PO**. |
-| Juridique | 🟡 Infra prête | Écrans + routes `/legal/*` (brouillon). **Contenu validé + rétention RGPD** → **décision PO/Juriste**. Swap contenu → **Dev**. |
+| Juridique | 🟡 Infra prête | Écrans + routes `/legal/*` + **lien à l'inscription** (accessibles en app). Reste : **contenu validé + rétention RGPD** → **décision PO/Juriste**. Swap contenu → **Dev**. |
 | Déploiement | 🟡 En cours | Docker compose + CI (validation). **Pipeline CD + cible prod** → **décision Exploitation**. Squelette CD → **Dev**. |
 | Monitoring | 🟡 En cours | `/health` réel (SELECT 1). **Supervision externe** → **Exploitation**. |
 | Sauvegardes | 🟡 En cours | Procédures manuelles testées. **Automatisation** → **décision Exploitation** ; script → **Dev**. |
@@ -45,7 +45,7 @@ réellement terminée.*
 | ☑ | Modifier son identité · téléverser son logo |
 | ☑ | Supprimer son compte et ses données |
 | ☑ | La suite de tests passe (586 backend + 189 Flutter) |
-| ☐ | CGU accessibles *(écran+route prêts ; reste contenu validé + lien en app)* |
+| ☐ | CGU accessibles *(écran+route+lien à l'inscription prêts ; reste UNIQUEMENT le contenu validé par un juriste)* |
 | ☐ | Politique de confidentialité accessible *(idem)* |
 | ☐ | Politique de rétention RGPD définie et appliquée |
 | ☐ | Canal de support utilisateur |
