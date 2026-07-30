@@ -21,7 +21,7 @@ sont planifiées pour une V2.x ou la V3 ; **aucune n'est appliquée sur RC1**
 | 2 | ~~Pas de téléversement de logo~~ **✅ Logo livré** : import/remplacement/suppression du logo depuis « Mon entreprise » (section « Logo, signature & tampon »), en miroir du pattern signature/tampon. Reste : **édition des couleurs** (primaire/secondaire) détectées à l'import mais non ré-éditables — `updateBrandProfile` (PUT /branding/brand) existe déjà côté repository, seule l'UI manque. | 🟢 | Logo **fait** ; couleurs → **V1.x** |
 | 3 | **Pas d'écran de détail client** : l'appui ouvre directement l'édition. | 🟢 | V1.x |
 | 4 | **Catégories** : création + liste seulement, ni édition ni suppression en UI. | 🟢 | V1.x |
-| 5 | **Pas de « mot de passe oublié » / réinitialisation.** | 🟢 | **V1 (requis)** |
+| 5 | ~~Pas de « mot de passe oublié »~~ **✅ Livré (constat 2026-07)** : bouton « Mot de passe oublié ? » (login) → `/forgot-password`, puis `/reset-password?token=`. Backend `app/email/` (providers **mock + smtp**, repli sans config), migration `add_user_password_reset_token`, `test_password_reset.py` + `test_email_smtp.py` ; 12 tests Flutter verts. Reste : activer un vrai SMTP au déploiement (config, pas code). | 🟢 | **Fait** (SMTP réel → G5) |
 | 6 | **Aucune édition d'un devis en place** : modification = suppression-recréation (brouillon) ou duplication. | 🔵 | — (par conception) |
 | 7 | **Écran Paramètres minimal** (serveur, version, import, déconnexion) — pas de préférences, thème, langue. | 🟢 | V1.x |
 
