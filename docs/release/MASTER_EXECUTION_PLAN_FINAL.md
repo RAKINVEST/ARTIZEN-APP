@@ -87,7 +87,7 @@ mécanique de contenu déjà écrit) · **Marketing** · **Support**.
 | **T13** | Swap du contenu légal validé + poser `RETENTION_INACTIVE_ACCOUNT_DAYS` | Code | 1 h | T11,T12 | non | Oui (retrait bandeau) |
 | **T20** | Ouvrir compte Scalingo (osc-fr1) | Infra | 0,5 j | T01 | oui | Oui |
 | **T21** | Bucket object-storage EU + clés + versioning | Infra | 0,5 j | T01 | oui | Oui |
-| **T22** | Ouvrir Brevo + vérifier SPF/DKIM | Infra/PO | 0,5–2 j | T01 | oui | Oui (e-mails) |
+| **T22** ✅ | **Fait (2026-07-31)** : domaine `artizenapp.com` authentifié Brevo — Code Brevo + DKIM1 + DKIM2 + DMARC **verts** | Infra | — | T01 | — | **Fait** |
 | **T23** | DNS — **domaine `artizenapp.com` acquis** ✅ ; reste la **configuration des enregistrements** `api.`/`app.` (vers les cibles Scalingo/CDN) | Infra | 0,25 j +propag. | T20,T34 | oui | Oui (TLS/CORS) |
 | **T24** | Compte supervision (UptimeRobot) | Infra | 0,5 j | — | oui | non |
 | **T30** | App Scalingo + addons Postgres + Redis | Infra | 0,5 j | T20 | non | Oui |
