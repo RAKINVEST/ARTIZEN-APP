@@ -20,10 +20,10 @@ mécanique de contenu déjà écrit) · **Marketing** · **Support**.
 - **Dépendances** : —. **Risques** : indécision PO (bloque tout l'aval).
 - **GO** : les 3 décisions restantes posées. **NO GO** : une décision manquante → Phase 2 ne peut démarrer.
 
-### Phase 1 — Activation juridique *(parallèle à Phases 2-4)*
+### Phase 1 — Activation juridique *(reportée après la bêta — décision PO 2026-07-31)*
 - **Objectif** : contenu légal opposable + politique de rétention.
 - **Livrables** : Mentions légales, CGU, Confidentialité validées ; durée de rétention fixée.
-- **Prérequis** : gabarits fournis (`docs/legal/GABARITS-LEGAUX.md`). **Responsable** : Juriste. **Durée** : 5–10 j ouvrés (externe).
+- **Prérequis** : gabarits fournis (`docs/legal/GABARITS-LEGAUX.md`) **+ V1 stabilisée** (déploiement + recette + bêta réalisés). **Responsable** : Juriste. **Durée** : 5–10 j ouvrés (externe). **Séquencement (décision PO 2026-07-31)** : le juriste n'intervient que sur une **V1 éprouvée**, donc **sérielle après la Phase 5** — la bêta privée (testeurs informés, bandeau « provisoire ») **n'est pas bloquée** par le légal ; le **premier client payant (T62)** le reste.
 - **Dépendances** : T10. **Risques** : délai juriste = pôle long du calendrier.
 - **GO** : contenu signé + durée posée. **NO GO** : contenu non validé → interdiction d'**ouverture commerciale** (le déploiement technique, lui, n'est pas bloqué).
 
@@ -160,7 +160,9 @@ T50 (PO — process paiement + support)   ← branche PARALLÈLE
 
 ## Chemin critique (le vrai — vers le premier client payant, pas le dev)
 
-Deux pôles longs convergent sur **T62**, à mener **en parallèle** :
+> **Amendement (décision PO 2026-07-31)** : la **validation juridique est reportée après la bêta** (Phase 1 séquencée post-Phase 5, sur V1 stabilisée). Le chemin critique n'a donc **plus deux pôles parallèles** mais une **séquence** : décisions PO → déploiement → recette → **bêta privée** → **légal** → paiement → **T62**. La bêta est atteignable **sans** le juriste ; le premier client **payant** ne l'est pas.
+
+Structure initiale (avant amendement) — deux pôles longs convergeant sur **T62**, menés **en parallèle** :
 
 - **Pôle juridique** (externe) : `T10 → T11/T12 → T13 → T61` — **5 à 10 jours ouvrés**, dicté par le juriste. **Bloque la commercialisation** (bandeau provisoire).
 - **Pôle technique + bêta** : `T01 → T20 → T30 → T31 → T32 → T33 → T34 → T35 → T45 → T51 → T62` — **≈ 5 à 12 jours** (déploiement 2-3 j + bêta 3-7 j).
