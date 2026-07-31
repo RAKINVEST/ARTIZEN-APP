@@ -61,3 +61,23 @@ technique. Ensuite seulement le reste, dans le sens de la flèche — du *pourqu
 
 **BRAND.md est stable ; tout le reste peut évoluer.** C'est cette asymétrie qui
 garantit qu'ARTIZEN évoluera pendant dix ans sans perdre ce qui le rend unique.
+
+## Gel du référentiel documentaire *(décision PO — 2026-07-31)*
+
+Le **référentiel opérationnel de mise en production** est **GELÉ** :
+`ADR`, `DECISIONS.md`, `CLAUDE.md`, `MASTER_EXECUTION_PLAN_FINAL.md`,
+`RC1_DOSSIER.md`, `DEPLOYMENT_INPUTS.md`, `DEPLOYMENT-T3.md`,
+`BACKUP_RESTORE.md`, `KNOWN_LIMITATIONS.md`.
+
+Aucune modification de ces documents n'est autorisée, **sauf** déclenchée par l'un
+des trois événements suivants :
+
+1. une **décision explicite du PO** ;
+2. une **exigence juridique ou réglementaire** ;
+3. un **retour d'expérience observé en production**.
+
+Les corrections de style, de formulation, de structure, de présentation ou de
+**perfectionnement** sont désormais **interdites**. Toute proposition de
+modification doit **nommer explicitement** son événement déclencheur parmi ces
+trois catégories. À défaut, la réponse est exactement :
+**« Référentiel gelé — aucune modification autorisée. »**
