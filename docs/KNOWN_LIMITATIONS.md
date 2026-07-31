@@ -88,9 +88,9 @@ deux tests widget échouent si un libellé non adossé réapparaît.
 
 | # | Limitation | Classe | Suite |
 |---|---|---|---|
-| 9 | **Rate limiting en mémoire par worker** (plafond réel ≈ 4× avec 4 workers) et fondé sur l'IP du socket (inopérant derrière un proxy sans `X-Forwarded-For`). Ferme néanmoins le trou d'énumération. | 🟢 | V3 (Redis) |
+| 9 | **Rate limiting en mémoire par worker** (plafond réel ≈ 4× avec 4 workers) et fondé sur l'IP du socket **par défaut**. **Adressé en production T3** : `--proxy-headers` (vraie IP client derrière le routeur Scalingo) + `RATE_LIMIT_BACKEND=redis` (compteur partagé, addon Redis). Ferme le trou d'énumération. | 🟢 | **Adressé (T3)** |
 | 10 | **JWT en `localStorage`** sur le web : lisible par un XSS. Cookie `HttpOnly` prévu. | 🟢 | V3 |
-| 11 | **`python-jose` non maintenu** (2021). Crypto vérifiée ; migration PyJWT prévue. | 🟢 | V3 |
+| 11 | ~~**`python-jose` non maintenu** (2021)~~ **✅ Résolu** : migration vers **PyJWT** effectuée (`requirements.txt` : `PyJWT==2.10.1`, `python-jose` retiré). Décodage avec allow-list d'algorithmes explicite, `alg=none` rejeté. | 🟢 | **Fait** |
 | 12 | **Corps chunké non borné** : le garde lit `Content-Length`. Un reverse proxy le ferme. | 🟢 | V3 / proxy |
 
 ## Architecture &amp; qualité interne

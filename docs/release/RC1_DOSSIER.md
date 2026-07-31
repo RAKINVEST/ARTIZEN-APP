@@ -63,7 +63,7 @@ réellement terminée.*
 | ☐ | Pipeline de déploiement *(squelette `deploy.yml.example` prêt ; reste la cible registry/host — déploiement)* |
 | ☐ | HTTPS/TLS actif en production |
 
-**Score : 11 / 19 conditions terminées.**
+**Score : 6 / 15 conditions terminées.**
 
 ---
 
@@ -120,7 +120,7 @@ clients, devis + PDF, import, effacement RGPD), sur une base **légale et
 opérationnelle** conforme pour un **premier client payant**.
 
 ### Critères d'acceptation
-1. Go-Live Checklist **entièrement cochée** (19/19).
+1. Go-Live Checklist **entièrement cochée** (15/15).
 2. Operational Readiness **sans bloquant ouvert**.
 3. Suites de tests **vertes** (backend + Flutter), `flutter analyze` propre.
 4. **Zéro anomalie bloquante ou majeure** ouverte.
@@ -148,15 +148,15 @@ opérationnelle** conforme pour un **premier client payant**.
 **Justification.** Le **produit et le code sont prêts** (parcours artisan complet,
 600 + 192 tests verts, API et base de données prêtes production). Le go-live est
 bloqué non par du développement mais par **des décisions (PO/Juriste) et des
-activations d'exploitation** : 11/19 conditions checklist cochées, et 3 bloquants
+activations d'exploitation** : 6/15 conditions checklist cochées, et 3 bloquants
 d'exploitation ouverts (sauvegardes auto, alerting, TLS). Les items restants sont
 **juridiques** (contenu + rétention), **opérationnels** (backups, alerting,
 déploiement/TLS) et **support**.
 
-**Chemin vers le GO :** cocher les 8 conditions restantes. Le code/les scripts
+**Chemin vers le GO :** cocher les 9 conditions restantes. Le code/les scripts
 préparables sans décision seront livrés d'ici là ; les décisions PO/Juriste et la
 cible de déploiement débloquent le reste. Cette page passera à **🟢 GO** lorsque
-les 19 conditions seront réellement terminées et les 3 bloquants d'exploitation
+les 15 conditions seront réellement terminées et les 3 bloquants d'exploitation
 fermés.
 
 ---

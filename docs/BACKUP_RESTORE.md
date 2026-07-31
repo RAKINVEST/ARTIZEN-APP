@@ -1,7 +1,8 @@
 # Sauvegarde &amp; restauration — ARTIZEN V2
 
-> **État :** le dépôt fournit un **script de sauvegarde versionné et testé**
-> (`scripts/backup.sh`, voir ci-dessous) ; il reste à l'**activer** côté
+> **État :** le dépôt fournit des **scripts versionnés et testés** de sauvegarde
+> (`scripts/backup.sh`) et de restauration (`scripts/restore.sh`, forme scriptée
+> des procédures manuelles ci-dessous) ; il reste à l'**activer** côté
 > exploitation (cron, rétention, stockage hors-site) — de la *configuration*, pas
 > du code. Les procédures manuelles détaillées plus bas ont été **réellement
 > exécutées** contre la pile Docker de validation (2026-07-17) et restent la
