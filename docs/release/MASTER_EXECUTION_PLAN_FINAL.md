@@ -18,7 +18,7 @@ mécanique de contenu déjà écrit) · **Marketing** · **Support**.
 - **Livrables** : `SUPPORT_EMAIL` réel, prestataire de paiement, fournisseur object-storage EU ; `main` taguée. *(Domaine **déjà acquis** : `artizenapp.com` — site public en ligne sur `www.artizenapp.com`.)*
 - **Prérequis** : aucun. **Responsable** : PO. **Durée** : 1 j.
 - **Dépendances** : —. **Risques** : indécision PO (bloque tout l'aval).
-- **GO** : les 3 décisions restantes posées. **NO GO** : une décision manquante → Phase 2 ne peut démarrer.
+- **GO** : les 3 décisions restantes posées. **NO GO** : une décision manquante → Phase 2 ne peut démarrer. ✅ **Fait (2026-07-31)** : `support@artizenapp.com` · Stripe · Scaleway (`fr-par`).
 
 ### Phase 1 — Activation juridique *(reportée après la bêta — décision PO 2026-07-31)*
 - **Objectif** : contenu légal opposable + politique de rétention.
@@ -79,7 +79,7 @@ mécanique de contenu déjà écrit) · **Marketing** · **Support**.
 
 | N° | Description | Resp. | Temps | Dépend | Parallèle ? | Bloque la suite ? |
 |---|---|---|---|---|---|---|
-| **T01** | Décisions PO : `SUPPORT_EMAIL`, prestataire paiement, object-storage EU *(domaine **acquis** : `artizenapp.com` ✅)* | PO | 1 j | — | oui | **Oui** (débloque Phase 2) |
+| **T01** ✅ | **Décidé (2026-07-31)** : `SUPPORT_EMAIL=support@artizenapp.com` · paiement **Stripe** · storage **Scaleway** (`fr-par`) · domaine `artizenapp.com` | PO | — | — | — | **Fait** → Phase 2 débloquée |
 | **T02** | Tag `main` (état gelé, arbre propre) | Code | 15 min | — | oui | non |
 | **T10** | Briefer le juriste (gabarits + contexte RGPD/hébergement) | PO | 0,5 j | — | oui | Oui (aval juridique) |
 | **T11** | Valider Mentions/CGU/Confidentialité (remplir `{…}`) | Juriste | 5–10 j | T10 | oui | Oui (commercialisation) |
