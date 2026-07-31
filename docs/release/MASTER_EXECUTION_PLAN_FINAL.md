@@ -15,10 +15,10 @@ mécanique de contenu déjà écrit) · **Marketing** · **Support**.
 
 ### Phase 0 — Préparation (décisions PO + dépôt propre)
 - **Objectif** : figer les dernières entrées PO et geler la ligne de code.
-- **Livrables** : domaine choisi, `SUPPORT_EMAIL` réel, prestataire de paiement, fournisseur object-storage EU ; `main` taguée.
+- **Livrables** : `SUPPORT_EMAIL` réel, prestataire de paiement, fournisseur object-storage EU ; `main` taguée. *(Domaine **déjà acquis** : `artizenapp.com` — site public en ligne sur `www.artizenapp.com`.)*
 - **Prérequis** : aucun. **Responsable** : PO. **Durée** : 1 j.
 - **Dépendances** : —. **Risques** : indécision PO (bloque tout l'aval).
-- **GO** : les 4 décisions posées. **NO GO** : une décision manquante → Phase 2 ne peut démarrer.
+- **GO** : les 3 décisions restantes posées. **NO GO** : une décision manquante → Phase 2 ne peut démarrer.
 
 ### Phase 1 — Activation juridique *(parallèle à Phases 2-4)*
 - **Objectif** : contenu légal opposable + politique de rétention.
@@ -79,7 +79,7 @@ mécanique de contenu déjà écrit) · **Marketing** · **Support**.
 
 | N° | Description | Resp. | Temps | Dépend | Parallèle ? | Bloque la suite ? |
 |---|---|---|---|---|---|---|
-| **T01** | Décisions PO : domaine, `SUPPORT_EMAIL`, prestataire paiement, object-storage EU | PO | 1 j | — | oui | **Oui** (débloque Phase 2) |
+| **T01** | Décisions PO : `SUPPORT_EMAIL`, prestataire paiement, object-storage EU *(domaine **acquis** : `artizenapp.com` ✅)* | PO | 1 j | — | oui | **Oui** (débloque Phase 2) |
 | **T02** | Tag `main` (état gelé, arbre propre) | Code | 15 min | — | oui | non |
 | **T10** | Briefer le juriste (gabarits + contexte RGPD/hébergement) | PO | 0,5 j | — | oui | Oui (aval juridique) |
 | **T11** | Valider Mentions/CGU/Confidentialité (remplir `{…}`) | Juriste | 5–10 j | T10 | oui | Oui (commercialisation) |
@@ -88,7 +88,7 @@ mécanique de contenu déjà écrit) · **Marketing** · **Support**.
 | **T20** | Ouvrir compte Scalingo (osc-fr1) | Infra | 0,5 j | T01 | oui | Oui |
 | **T21** | Bucket object-storage EU + clés + versioning | Infra | 0,5 j | T01 | oui | Oui |
 | **T22** | Ouvrir Brevo + vérifier SPF/DKIM | Infra/PO | 0,5–2 j | T01 | oui | Oui (e-mails) |
-| **T23** | Configurer DNS (`api.`, `app.`) | PO/Infra | 0,5 j +propag. | T01 | oui | Oui (TLS/CORS) |
+| **T23** | DNS — **domaine `artizenapp.com` acquis** ✅ ; reste la **configuration des enregistrements** `api.`/`app.` (vers les cibles Scalingo/CDN) | Infra | 0,25 j +propag. | T20,T34 | oui | Oui (TLS/CORS) |
 | **T24** | Compte supervision (UptimeRobot) | Infra | 0,5 j | — | oui | non |
 | **T30** | App Scalingo + addons Postgres + Redis | Infra | 0,5 j | T20 | non | Oui |
 | **T31** | Poser les variables d'env (`.env.production.example`) | Infra | 0,5 j | T21,T22,T30 | non | Oui |
