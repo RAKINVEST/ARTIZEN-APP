@@ -58,9 +58,13 @@ class Settings(BaseSettings):
     # --- Database ---
     POSTGRES_HOST: str = "db"
     POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
+    # Optional: a managed platform (Scalingo) describes the whole database through
+    # DATABASE_URL_OVERRIDE instead of these discrete parts. Kept as fields with empty
+    # defaults so the app can boot with ONLY the override (local compose still supplies
+    # them). The model validator below requires one of the two forms.
+    POSTGRES_USER: str = ""
+    POSTGRES_PASSWORD: str = ""
+    POSTGRES_DB: str = ""
     # A managed platform (Scalingo…) hands the database over as ONE connection
     # URL rather than discrete parts. When set, it wins over the POSTGRES_* fields.
     # Set it to the addon's URL (e.g. Scalingo's SCALINGO_POSTGRESQL_URL). Both the
@@ -260,6 +264,15 @@ class Settings(BaseSettings):
         # A provider selected but left unconfigured fails only at first use (a lost
         # upload, an unsent reset email) — surface it at boot instead. Defaults
         # (local, mock) skip both checks, so dev/tests stay copy-.env.example-and-go.
+        # The database must be fully described by ONE of the two forms: the managed
+        # override, or the discrete POSTGRES_* trio (local compose).
+        if not self.DATABASE_URL_OVERRIDE and not (
+            self.POSTGRES_USER and self.POSTGRES_PASSWORD and self.POSTGRES_DB
+        ):
+            raise ValueError(
+                "Database configuration missing: set DATABASE_URL_OVERRIDE (managed "
+                "platform) or POSTGRES_USER + POSTGRES_PASSWORD + POSTGRES_DB (local)."
+            )
         if self.STORAGE_PROVIDER == "s3" and not (
             self.STORAGE_S3_ENDPOINT_URL
             and self.STORAGE_S3_BUCKET
