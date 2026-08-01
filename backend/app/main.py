@@ -30,6 +30,10 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("Starting %s v%s (%s)", settings.PROJECT_NAME, settings.VERSION, settings.ENVIRONMENT)
+    # TEMP diagnostic: the exact list handed to CORSMiddleware.allow_origins, shown
+    # in the startup logs (%r so a trailing slash or stray space is visible). Remove
+    # once the production CORS value is confirmed.
+    logger.info("CORS allow_origins = %r", settings.CORS_ORIGINS)
     yield
     logger.info("Shutting down %s", settings.PROJECT_NAME)
     await engine.dispose()
