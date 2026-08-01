@@ -94,3 +94,12 @@ def test_wildcard_cors_is_tolerated_outside_production() -> None:
     # Only production forbids it — dev/staging must stay frictionless.
     s = _base(ENVIRONMENT="development", CORS_ORIGINS=["*"])
     assert s.CORS_ORIGINS == ["*"]
+
+
+def test_cors_origins_normalise_trailing_slash_and_whitespace() -> None:
+    # Env supplies a comma string; a trailing slash never matches a browser Origin.
+    s = _base(CORS_ORIGINS="https://app.artizenapp.com/ , https://x.s3-website.fr-par.scw.cloud")
+    assert s.CORS_ORIGINS == [
+        "https://app.artizenapp.com",
+        "https://x.s3-website.fr-par.scw.cloud",
+    ]

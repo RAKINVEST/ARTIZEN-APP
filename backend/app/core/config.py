@@ -48,8 +48,11 @@ class Settings(BaseSettings):
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def _split_cors_origins(cls, value: object) -> object:
+        # Split on commas, drop empties, strip whitespace AND a trailing slash: a
+        # browser Origin never ends with "/", so "https://app…/" in the env would
+        # silently never match and every request would be "Disallowed CORS origin".
         if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
+            return [o.strip().rstrip("/") for o in value.split(",") if o.strip()]
         return value
 
     # --- Logging ---
