@@ -7,10 +7,10 @@
 # (a domain change means a rebuild). Output: frontend/build/web (the static files
 # to publish with scripts/deploy_frontend.sh).
 #
-# Usage:  API_BASE_URL=https://api.artizen.fr/api ./scripts/build_frontend.sh
+# Usage:  API_BASE_URL=https://api.artizenapp.com/api ./scripts/build_frontend.sh
 set -euo pipefail
 
-API_BASE_URL="${API_BASE_URL:-https://api.artizen.fr/api}"
+API_BASE_URL="${API_BASE_URL:-https://api.artizenapp.com/api}"
 cd "$(dirname "$0")/../frontend"
 
 echo "==> flutter pub get"

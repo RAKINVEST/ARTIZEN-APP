@@ -4,9 +4,11 @@
 # + CDN (T3 frontend). Provider-agnostic: works with any EU S3 endpoint (Scaleway,
 # OVH…) via the aws CLI. Build first with scripts/build_frontend.sh.
 #
-# Cache strategy: Flutter fingerprints its assets (main.dart.js etc.), so those are
-# immutable and cached hard; index.html / the service worker / version.json must
-# NOT be cached, so a new deploy is picked up immediately.
+# Cache strategy: Flutter does NOT content-hash its entry files — index.html,
+# main.dart.js, flutter.js, flutter_bootstrap.js, the service worker, version.json
+# and manifest.json keep the SAME name every build — so they are served no-cache
+# (otherwise returning visitors run stale app code after a redeploy). Only the
+# versioned/static content (canvaskit/, assets/, icons/, favicon) is cached hard.
 #
 # Required env: FRONTEND_S3_ENDPOINT, FRONTEND_S3_BUCKET (aws CLI credentials via
 # the usual AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_REGION).
@@ -22,20 +24,24 @@ set -euo pipefail
 DIST="$(cd "$(dirname "$0")/../frontend" && pwd)/build/web"
 [ -d "$DIST" ] || { echo "No build found at $DIST — run scripts/build_frontend.sh first."; exit 1; }
 
-NEVER_CACHE=(index.html flutter_service_worker.js version.json)
+# Files that change on every build but keep the same name → never long-cached.
+NEVER_CACHE=(index.html main.dart.js flutter.js flutter_bootstrap.js flutter_service_worker.js version.json manifest.json)
 
-echo "==> Uploading immutable, fingerprinted assets (cached 1 year)"
+excludes=(); includes=()
+for f in "${NEVER_CACHE[@]}"; do excludes+=(--exclude "$f"); includes+=(--include "$f"); done
+
+echo "==> Uploading long-lived content (canvaskit/, assets/, icons/… cached 1 year)"
 aws s3 sync "$DIST" "s3://$FRONTEND_S3_BUCKET" \
   --endpoint-url "$FRONTEND_S3_ENDPOINT" \
   --delete \
   --cache-control "public, max-age=31536000, immutable" \
-  --exclude "${NEVER_CACHE[0]}" --exclude "${NEVER_CACHE[1]}" --exclude "${NEVER_CACHE[2]}"
+  "${excludes[@]}"
 
-echo "==> Uploading entrypoints (never cached)"
+echo "==> Uploading entry files (never cached)"
 aws s3 sync "$DIST" "s3://$FRONTEND_S3_BUCKET" \
   --endpoint-url "$FRONTEND_S3_ENDPOINT" \
   --cache-control "no-cache, no-store, must-revalidate" \
   --exclude "*" \
-  --include "${NEVER_CACHE[0]}" --include "${NEVER_CACHE[1]}" --include "${NEVER_CACHE[2]}"
+  "${includes[@]}"
 
 echo "==> Published to s3://$FRONTEND_S3_BUCKET (remember to purge the CDN cache if it caches HTML)."
