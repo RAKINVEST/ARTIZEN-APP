@@ -51,19 +51,22 @@ fi
 
 # --- Phase 2: unprivileged from here on ---
 
-echo "Waiting for database at ${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}..."
+# The DB host/port come from the application's REAL configuration:
+# settings.DATABASE_URL resolves DATABASE_URL_OVERRIDE (managed platforms like
+# Scalingo) and falls back to the POSTGRES_* variables (local compose). Deriving
+# the wait target from POSTGRES_HOST alone was wrong on Scalingo, where the
+# database is described only by DATABASE_URL_OVERRIDE — the loop waited on the
+# compose service name "db", which does not exist there, and timed out.
+echo "Waiting for the database (host/port resolved from the app configuration)..."
 until python -c "
-import os, socket, sys
-host = os.environ.get('POSTGRES_HOST', 'db')
-port = int(os.environ.get('POSTGRES_PORT', 5432))
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.settimeout(1)
+import socket, sys
+from sqlalchemy.engine import make_url
+from app.core.config import settings
+url = make_url(settings.DATABASE_URL)
 try:
-    s.connect((host, port))
+    socket.create_connection((url.host, url.port or 5432), timeout=1).close()
 except OSError:
     sys.exit(1)
-finally:
-    s.close()
 "; do
   sleep 1
 done

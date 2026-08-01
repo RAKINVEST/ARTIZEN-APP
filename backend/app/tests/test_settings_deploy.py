@@ -41,6 +41,23 @@ def test_database_url_falls_back_to_discrete_vars() -> None:
     assert s.DATABASE_URL == "postgresql+asyncpg://u:p@db:5432/d"
 
 
+def test_database_url_host_and_port_are_extractable_for_entrypoint() -> None:
+    # entrypoint.sh waits on the host/port parsed from settings.DATABASE_URL via
+    # make_url, so on a managed platform it targets the real DB (from
+    # DATABASE_URL_OVERRIDE), not the local compose service "db".
+    from sqlalchemy.engine import make_url
+
+    s = _base(
+        DATABASE_URL_OVERRIDE="postgres://u:p@managed.osc-fr1.scalingo.io:34567/prod?sslmode=require"
+    )
+    url = make_url(s.DATABASE_URL)
+    assert url.host == "managed.osc-fr1.scalingo.io"
+    assert url.port == 34567
+
+    local = _base(POSTGRES_HOST="db", POSTGRES_PORT=5432)
+    assert make_url(local.DATABASE_URL).host == "db"
+
+
 def test_s3_provider_requires_all_credentials() -> None:
     with pytest.raises(ValueError):
         _base(
