@@ -22,14 +22,14 @@ from app.catalog.schemas import (
     CatalogCategoryOverview,
     CatalogCategoryRead,
     CatalogCategoryUpdate,
-    TaxonomyEntryRead,
-    TaxonomyFamilyRead,
-    TaxonomyRead,
     CatalogImportResult,
     CatalogItemCreate,
     CatalogItemRead,
     CatalogItemUpdate,
     QualificationRead,
+    TaxonomyEntryRead,
+    TaxonomyFamilyRead,
+    TaxonomyRead,
     TradeGroupRead,
 )
 from app.core.authorization import ensure_same_company

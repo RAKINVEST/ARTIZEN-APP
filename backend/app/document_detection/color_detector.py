@@ -12,11 +12,10 @@ from io import BytesIO
 
 from pypdf import PdfReader
 
-from app.document_detection.interfaces import DetectorResult, VisualDetector
-
 # Imported for its import-time side effect: it caps how large an image
 # Pillow will decode. See the module docstring.
 from app.document_detection import image_limits  # noqa: F401
+from app.document_detection.interfaces import DetectorResult, VisualDetector
 
 logger = logging.getLogger(__name__)
 

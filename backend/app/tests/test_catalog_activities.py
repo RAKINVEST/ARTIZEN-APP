@@ -159,9 +159,15 @@ async def test_a_newer_version_surfaces_an_update_without_touching_prices(
     publie une v2 avec un article de plus : l'activité passe en
     « mise à jour disponible » avec le bon décompte, la mise à jour ajoute
     seulement le nouvel article, et ne touche pas aux prix personnalisés."""
-    from app.catalog import trades
-    from app.catalog.trades.definitions import Activity, CatalogPack, PackItem, VersionNotes
     from decimal import Decimal
+
+    from app.catalog import trades
+    from app.catalog.trades.definitions import (
+        Activity,
+        CatalogPack,
+        PackItem,
+        VersionNotes,
+    )
 
     v1 = trades.get_activity("plomberie")
     await client.post("/api/catalog/activities/plomberie")  # importe la v1

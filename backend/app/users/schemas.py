@@ -4,7 +4,6 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-
 # bcrypt hashes at most 72 bytes and passlib raises above 4096. Bounding
 # both password fields keeps a long input from silently losing its tail on
 # register, and from raising an unhandled error on login — which turned a

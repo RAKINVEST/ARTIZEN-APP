@@ -16,6 +16,20 @@ import '../../features/catalog/presentation/item_form_screen.dart';
 import '../../features/catalog/presentation/toolbox_screen.dart';
 import '../../features/clients/presentation/client_form_screen.dart';
 import '../../features/clients/presentation/clients_list_screen.dart';
+import '../../features/decision/presentation/decision_screen.dart';
+import '../../features/knowledge/presentation/knowledge_detail_screen.dart';
+import '../../features/knowledge/presentation/knowledge_search_screen.dart';
+import '../../features/ai_companion/presentation/companion_screen.dart';
+import '../../features/mission/presentation/mission_detail_screen.dart';
+import '../../features/mission/presentation/mission_screen.dart';
+import '../../features/notification/presentation/notification_detail_screen.dart';
+import '../../features/notification/presentation/notification_screen.dart';
+import '../../features/orchestration/presentation/orchestration_detail_screen.dart';
+import '../../features/orchestration/presentation/orchestration_screen.dart';
+import '../../features/planning/presentation/planning_detail_screen.dart';
+import '../../features/planning/presentation/planning_screen.dart';
+import '../../features/workflow/presentation/workflow_detail_screen.dart';
+import '../../features/workflow/presentation/workflow_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/metiers/presentation/metiers_screen.dart';
 import '../../features/quote_assistant/presentation/quote_assistant_screen.dart';
@@ -230,6 +244,84 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/quote-assistant',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const QuoteAssistantScreen(),
+      ),
+      GoRoute(
+        path: '/decision',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const DecisionScreen(),
+      ),
+      GoRoute(
+        path: '/knowledge',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const KnowledgeSearchScreen(),
+      ),
+      GoRoute(
+        path: '/knowledge/:type/:slug',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => KnowledgeDetailScreen(
+          type: state.pathParameters['type']!,
+          slug: state.pathParameters['slug']!,
+        ),
+      ),
+      GoRoute(
+        path: '/workflow',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const WorkflowScreen(),
+      ),
+      GoRoute(
+        path: '/workflow/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            WorkflowDetailScreen(id: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/missions',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const MissionScreen(),
+      ),
+      GoRoute(
+        path: '/missions/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            MissionDetailScreen(id: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/orchestrations',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const OrchestrationScreen(),
+      ),
+      GoRoute(
+        path: '/orchestrations/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            OrchestrationDetailScreen(id: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/planning',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const PlanningScreen(),
+      ),
+      GoRoute(
+        path: '/planning/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            PlanningDetailScreen(id: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/companion',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const CompanionScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const NotificationScreen(),
+      ),
+      GoRoute(
+        path: '/notifications/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            NotificationDetailScreen(id: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/template-import',

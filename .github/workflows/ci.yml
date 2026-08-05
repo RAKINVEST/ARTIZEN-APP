@@ -18,6 +18,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    name: Backend (ruff + mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - name: Install dev tooling
+        working-directory: backend
+        run: pip install -r requirements-dev.txt
+      # Blocking: pyflakes + import order across the whole backend (config in
+      # backend/pyproject.toml). No merge if it fails.
+      - name: Ruff
+        working-directory: backend
+        run: ruff check app
+      # Blocking on the RC-hardened modules; --follow-imports=silent checks them
+      # fully while not failing on pre-existing debt in imported legacy modules
+      # (a full-app type pass is a V1.1 goal — see docs/ROADMAP.md).
+      - name: Mypy
+        working-directory: backend
+        run: mypy --follow-imports=silent app/ai_companion app/core/observability.py app/notification app/knowledge_factory
+
   backend:
     name: Backend (pytest)
     runs-on: ubuntu-latest
@@ -113,3 +139,19 @@ jobs:
       - name: Build web
         working-directory: frontend
         run: flutter build web --release
+
+  docker:
+    name: Backend (docker image build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Proves the production image builds reproducibly and — since the corpus
+      # was vendored into backend/knowledge_corpus — that it ships the Knowledge
+      # corpus. Same Dockerfile Scalingo deploys (PROJECT_DIR=backend).
+      - name: Build image
+        run: docker build -t artizen-backend:ci ./backend
+      - name: Assert Knowledge corpus is embedded
+        run: |
+          count=$(docker run --rm --entrypoint sh artizen-backend:ci -c 'find /app/knowledge_corpus -type f | wc -l')
+          echo "corpus files in image: $count"
+          test "$count" -gt 50

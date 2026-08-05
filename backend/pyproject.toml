@@ -1,0 +1,21 @@
+# Tooling configuration for the backend. Not a packaging manifest (the app is
+# run, not pip-installed): only the linter/type-checker read this.
+
+[tool.ruff]
+# The project's house style is ~100 cols; pycodestyle line-length rules (E5xx)
+# are intentionally not enforced (they were never part of the codebase's style).
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+# RC baseline: pyflakes (real correctness — unused imports, undefined names,
+# f-string bugs) + import sorting. Green across the whole codebase, so it is a
+# genuine BLOCKING gate in CI. Widen the ruleset (B, UP, S, RUF…) in V1.1 once
+# the pre-existing findings those surface are triaged.
+select = ["F", "I"]
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+# Scoped in CI to the RC-hardened modules (see .github/workflows/ci.yml); a
+# full-app type pass is a V1.1 goal, tracked in docs/ROADMAP.md.

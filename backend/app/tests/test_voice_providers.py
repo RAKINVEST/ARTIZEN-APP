@@ -15,7 +15,6 @@ from app.ai.factory import (
 )
 from app.core.config import settings
 
-
 # --- Factory: selects the mock, needs no key ---------------------------------
 
 

@@ -15,7 +15,11 @@ from app.catalog.trades.definitions import (
     Activity,
     CatalogPack,
     Qualification,
+)
+from app.catalog.trades.definitions import (
     prestation as _s,
+)
+from app.catalog.trades.definitions import (
     produit as _p,
 )
 

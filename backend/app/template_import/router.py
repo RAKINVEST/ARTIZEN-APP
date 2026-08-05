@@ -19,7 +19,10 @@ from fastapi import APIRouter, Response
 
 from app.branding.schemas import BrandingProfileRead
 from app.template_import.deps import TemplateImportServiceDep
-from app.template_import.schemas import TemplateImportPreviewRead, TemplateImportValidateRequest
+from app.template_import.schemas import (
+    TemplateImportPreviewRead,
+    TemplateImportValidateRequest,
+)
 from app.users.deps import CurrentUserDep
 
 router = APIRouter(prefix="/template-import", tags=["template-import"])

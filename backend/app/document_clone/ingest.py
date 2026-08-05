@@ -22,10 +22,10 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import fitz  # PyMuPDF
+
 from app.document_analysis.pdf_classifier import PdfKind, classify_pdf
 from app.document_clone.anonymizer import anonymize_pdf
-
-import fitz  # PyMuPDF
 
 _MANIFEST = "manifest.json"
 

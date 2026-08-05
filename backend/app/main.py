@@ -5,8 +5,8 @@ routers. It intentionally contains no business logic.
 """
 
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +17,7 @@ from app.core.body_size_limit import MaxBodySizeMiddleware
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import setup_logging
+from app.core.observability import RequestContextMiddleware
 from app.core.rate_limit import AuthRateLimitMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.database.session import engine
@@ -78,6 +79,11 @@ app.add_middleware(SecurityHeadersMiddleware)
 # order, and this one is only worth anything if it refuses an oversized
 # body before any of the machinery below starts reading it.
 app.add_middleware(MaxBodySizeMiddleware)
+
+# Outermost of all: assign a correlation id and start the response-time clock
+# before any other middleware runs, so even a request rejected by the body-size
+# or rate-limit guard is still traced and timed.
+app.add_middleware(RequestContextMiddleware)
 
 register_exception_handlers(app)
 

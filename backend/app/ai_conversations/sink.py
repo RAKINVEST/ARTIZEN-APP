@@ -15,9 +15,10 @@ event's data is lost, nothing else is.
 import logging
 import uuid
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.ai_conversations.repository import AiConversationRepository
 from app.voice_quote.events import EventType, VoiceEvent
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 

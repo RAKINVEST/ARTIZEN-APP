@@ -37,7 +37,10 @@ from app.document_detection.service import DocumentDetectionService
 from app.quotes.service import QuoteService
 from app.template_import.coherence import assess as assess_identity
 from app.template_import.exceptions import InvalidDocumentTypeForTemplateError
-from app.template_import.schemas import TemplateImportPreviewRead, TemplateImportValidateRequest
+from app.template_import.schemas import (
+    TemplateImportPreviewRead,
+    TemplateImportValidateRequest,
+)
 
 _COMPANY_FIELDS = {
     "name", "legal_name", "siret", "vat_number",

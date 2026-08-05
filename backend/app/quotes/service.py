@@ -25,9 +25,8 @@ from app.clients.repository import ClientRepository
 from app.core.exceptions import NotFoundError
 from app.email.base import EmailAttachment, EmailProvider
 from app.pdf.html_renderer import HtmlPdfRenderer
-from app.quotes.document_mapper import quote_to_document, sample_document
-from app.storage import StorageProvider
 from app.quotes.calculator import LineTotals, QuoteCalculator, QuoteTotals
+from app.quotes.document_mapper import quote_to_document, sample_document
 from app.quotes.exceptions import (
     InactiveCatalogItemError,
     InvalidQuoteTransitionError,
@@ -51,6 +50,7 @@ from app.quotes.schemas import (
     QuoteRead,
     QuoteReadiness,
 )
+from app.storage import StorageProvider
 
 logger = logging.getLogger(__name__)
 

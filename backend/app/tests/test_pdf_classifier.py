@@ -9,10 +9,10 @@ clone pipeline routes on.
 import io
 
 from PIL import Image as PILImage
+from pypdf import PdfWriter
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
-from pypdf import PdfWriter
 
 from app.document_analysis.pdf_classifier import (
     CloneEngine,

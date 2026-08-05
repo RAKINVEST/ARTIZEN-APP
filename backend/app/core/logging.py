@@ -10,8 +10,11 @@ import logging
 import sys
 
 from app.core.config import settings
+from app.core.observability import CorrelationIdFilter
 
-_LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+# Each line carries the request's correlation id (see app.core.observability),
+# so a single request's logs can be grepped/joined across the app and workers.
+_LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(correlation_id)s | %(name)s | %(message)s"
 _DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
@@ -20,6 +23,7 @@ def setup_logging() -> None:
 
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(logging.Formatter(fmt=_LOG_FORMAT, datefmt=_DATE_FORMAT))
+    handler.addFilter(CorrelationIdFilter())
 
     root_logger = logging.getLogger()
     root_logger.setLevel(level)

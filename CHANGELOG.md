@@ -29,6 +29,27 @@ Parcours **« Reproduire un devis »** enrichi côté produit.
   Ce moteur est la brique de R&D derrière la promesse de restitution ; son
   intégration dans le flux d'import livré reste une étape produit à venir.
 
+### Moteurs d'exécution + AI Companion
+- **Moteurs** Knowledge, Decision, Workflow, Mission, Planning, Notification,
+  Orchestration branchés et validés runtime (Docker). L'Orchestration coordonne
+  Mission + Workflow + Planning + Notification via leurs services publics ;
+  l'IA ne crée **jamais** de devis (Invariant #1).
+- **AI Companion** (`app/ai_companion`, read-side, sans donnée métier) : interface
+  conversationnelle officielle. Comprend, raisonne via Decision/Knowledge, propose,
+  explique (moteur + confiance + sources), exige une validation humaine avant toute
+  action, et n'orchestre que les services publics des moteurs. Mémoire éphémère Redis.
+
+### Industrialisation (RC-1)
+- **Corpus Knowledge embarqué** : relocalisé dans le contexte de build
+  (`backend/knowledge_corpus/`) — présent dans l'image, aucun réglage manuel.
+- **Observabilité** : `correlation_id` (en-tête `X-Request-ID` propagé) sur chaque
+  ligne de log, `X-Response-Time-ms`, access log par requête ; `/health` (db/redis/
+  queue_depth) inchangé.
+- **CI/CD** : jobs bloquants ajoutés — `ruff` (F,I) + `mypy` (modules durcis) +
+  build de l'image Docker avec **assertion d'embarquement du corpus**.
+- Config outillage : `backend/pyproject.toml` (ruff/mypy), `backend/requirements-dev.txt`.
+- Audit RC : [docs/RC1_AUDIT.md](docs/RC1_AUDIT.md).
+
 ## [v1.0.0-beta] — 2026-07-19 (branche `develop/v3`)
 
 Première version prête pour une **bêta privée** commerciale : le devis conforme

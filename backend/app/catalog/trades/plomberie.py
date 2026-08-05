@@ -19,7 +19,11 @@ from app.catalog.trades.definitions import (
     Activity,
     CatalogPack,
     PackItem,
+)
+from app.catalog.trades.definitions import (
     prestation as _s,
+)
+from app.catalog.trades.definitions import (
     produit as _p,
 )
 

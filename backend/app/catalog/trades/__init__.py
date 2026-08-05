@@ -6,9 +6,6 @@ and receive an empty toolbox — the exact opposite of the promise, and worse
 than not offering it yet. An activity appears the day its packs exist.
 """
 
-from app.catalog.trades.chauffage import CHAUFFAGE
-from app.catalog.trades.climatisation import CLIMATISATION, FLUIDES_FRIGORIGENES
-from app.catalog.trades.commun import CHANTIER
 from app.catalog.trades.agencement import AGENCEMENT
 from app.catalog.trades.arrosage import ARROSAGE
 from app.catalog.trades.ascenseur import ASCENSEUR
@@ -17,9 +14,23 @@ from app.catalog.trades.automatismes_portails import AUTOMATISMES_PORTAILS
 from app.catalog.trades.bardage import BARDAGE
 from app.catalog.trades.carrelage import CARRELAGE
 from app.catalog.trades.charpente import CHARPENTE
+from app.catalog.trades.chauffage import CHAUFFAGE
+from app.catalog.trades.climatisation import CLIMATISATION, FLUIDES_FRIGORIGENES
 from app.catalog.trades.cloture import CLOTURE
+from app.catalog.trades.commun import CHANTIER
 from app.catalog.trades.couverture import COUVERTURE
 from app.catalog.trades.cuisine import CUISINE
+from app.catalog.trades.definitions import (
+    Activity,
+    CatalogPack,
+    PackItem,
+    Qualification,
+    VersionNotes,
+    merge_packs,
+    notes_since,
+    prestation,
+    produit,
+)
 from app.catalog.trades.demolition import DEMOLITION
 from app.catalog.trades.desamiantage import CERTIFICATION_AMIANTE, DESAMIANTAGE
 from app.catalog.trades.diagnostic import DIAGNOSTIC
@@ -30,6 +41,7 @@ from app.catalog.trades.etancheite import ETANCHEITE
 from app.catalog.trades.facade import FACADE
 from app.catalog.trades.ferronnerie import FERRONNERIE
 from app.catalog.trades.forage import FORAGE
+from app.catalog.trades.gaz import PG
 from app.catalog.trades.hygiene_nuisibles import HYGIENE_NUISIBLES
 from app.catalog.trades.interphonie import INTERPHONIE
 from app.catalog.trades.isolation import ISOLATION
@@ -44,45 +56,41 @@ from app.catalog.trades.peinture import PEINTURE
 from app.catalog.trades.photovoltaique import PHOTOVOLTAIQUE
 from app.catalog.trades.piscine import PISCINE
 from app.catalog.trades.platrerie import PLATRERIE
+from app.catalog.trades.plomberie import PLOMBERIE
 from app.catalog.trades.ramonage import RAMONAGE
 from app.catalog.trades.reseaux_vdi import RESEAUX_VDI
 from app.catalog.trades.revetements_sol import REVETEMENTS_SOL
-from app.catalog.trades.securite import ALARME_INTRUSION, CONTROLE_ACCES, VIDEOSURVEILLANCE
+from app.catalog.trades.securite import (
+    ALARME_INTRUSION,
+    CONTROLE_ACCES,
+    VIDEOSURVEILLANCE,
+)
 from app.catalog.trades.serrurerie_metallerie import SERRURERIE_METALLERIE
 from app.catalog.trades.stores_pergolas import STORES_PERGOLAS
-from app.catalog.trades.terrasse_bois import TERRASSE_BOIS
-from app.catalog.trades.terrassement import TERRASSEMENT
-from app.catalog.trades.traitement_charpente import TRAITEMENT_CHARPENTE
-from app.catalog.trades.vitrerie import VITRERIE
-from app.catalog.trades.vrd import VRD
-from app.catalog.trades.zinguerie import ZINGUERIE
-from app.catalog.trades.definitions import (
-    Activity,
-    CatalogPack,
-    PackItem,
-    Qualification,
-    VersionNotes,
-    merge_packs,
-    notes_since,
-    prestation,
-    produit,
-)
-from app.catalog.trades.gaz import PG
-from app.catalog.trades.plomberie import PLOMBERIE
 from app.catalog.trades.taxonomy import (
     COMPANY_CERTIFICATIONS,
     FAMILIES,
     Family,
     TaxonomyEntry,
     TradeStatus,
-    all_activities as taxonomy_activities,
     all_company_certifications,
-    all_exercise_qualifications as taxonomy_exercise_qualifications,
     all_slugs,
     family_of,
 )
+from app.catalog.trades.taxonomy import (
+    all_activities as taxonomy_activities,
+)
+from app.catalog.trades.taxonomy import (
+    all_exercise_qualifications as taxonomy_exercise_qualifications,
+)
+from app.catalog.trades.terrasse_bois import TERRASSE_BOIS
+from app.catalog.trades.terrassement import TERRASSEMENT
+from app.catalog.trades.traitement_charpente import TRAITEMENT_CHARPENTE
 from app.catalog.trades.traitement_eau import TRAITEMENT_EAU
 from app.catalog.trades.ventilation import VENTILATION
+from app.catalog.trades.vitrerie import VITRERIE
+from app.catalog.trades.vrd import VRD
+from app.catalog.trades.zinguerie import ZINGUERIE
 
 #: What the company does. Keyed by the slug persisted on the company.
 ACTIVITIES: dict[str, Activity] = {

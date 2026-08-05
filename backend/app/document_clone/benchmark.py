@@ -272,7 +272,9 @@ def _next_run_number(history: dict | None) -> int:
 
 
 def _certified_ids(corpus_dir: Path) -> set[str]:
-    from app.document_clone.ingest import load_manifest  # local: avoid import cycle risk
+    from app.document_clone.ingest import (
+        load_manifest,  # local: avoid import cycle risk
+    )
 
     manifest = load_manifest(corpus_dir)
     return {d["id"] for d in manifest.get("documents", []) if d.get("gold_status") == "certified"}

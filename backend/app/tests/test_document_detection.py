@@ -13,16 +13,16 @@ import pytest
 from httpx import AsyncClient
 from pypdf import PdfWriter
 
-from app.document_detection.contact_detector import ContactDetector
-from app.document_detection.siret_detector import SiretDetector
-from app.document_detection.vat_detector import VatDetector
 from app.document_detection.aggregator import DetectionAggregator
 from app.document_detection.color_detector import ColorDetector
+from app.document_detection.contact_detector import ContactDetector
 from app.document_detection.footer_detector import FooterDetector
 from app.document_detection.header_detector import HeaderDetector
 from app.document_detection.legal_notice_detector import LegalNoticeDetector
 from app.document_detection.logo_detector import LogoDetector
+from app.document_detection.siret_detector import SiretDetector
 from app.document_detection.table_detector import TableDetector
+from app.document_detection.vat_detector import VatDetector
 
 _SAMPLE_TEXT = """Menuiserie Dupont
 12 rue des Artisans

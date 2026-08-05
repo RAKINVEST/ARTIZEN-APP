@@ -12,7 +12,11 @@ décision 7 : la même case cochée alimente le catalogue et le PDF.
 from app.catalog.trades.definitions import (
     CatalogPack,
     Qualification,
+)
+from app.catalog.trades.definitions import (
     prestation as _s,
+)
+from app.catalog.trades.definitions import (
     produit as _p,
 )
 

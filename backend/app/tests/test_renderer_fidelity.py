@@ -15,10 +15,10 @@ from PIL import Image as PILImage
 
 from app.document_clone.artizen_format import (
     ArtizenTemplate,
+    FixedText,
     GraphicLayer,
     HAlign,
     ImageBlock,
-    FixedText,
     PageGeometry,
     Rect,
     TextStyle,

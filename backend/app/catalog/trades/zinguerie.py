@@ -8,7 +8,11 @@ Prix estimations de marché HT (option A), versionné v1. TVA 10 % par défaut.
 from app.catalog.trades.definitions import (
     Activity,
     CatalogPack,
+)
+from app.catalog.trades.definitions import (
     prestation as _s,
+)
+from app.catalog.trades.definitions import (
     produit as _p,
 )
 

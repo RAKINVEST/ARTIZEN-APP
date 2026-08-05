@@ -16,8 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
 from app.document_analysis.exceptions import InvalidDocumentError
-from app.document_analysis.models import DocumentAnalysis, DocumentStatus, DocumentType
 from app.document_analysis.hashing import sha256_hex
+from app.document_analysis.models import DocumentAnalysis, DocumentStatus, DocumentType
 from app.document_analysis.pipeline import DocumentPipeline
 from app.document_analysis.repository import DocumentAnalysisRepository
 from app.storage import StorageProvider

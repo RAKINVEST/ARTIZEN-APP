@@ -1,0 +1,7 @@
+# Developer/CI tooling — NOT installed in the production image (see Dockerfile,
+# which installs only requirements.txt). Kept separate so the shipped image
+# stays lean and free of linters/type-checkers.
+-r requirements.txt
+
+ruff==0.16.1
+mypy>=1.11,<2

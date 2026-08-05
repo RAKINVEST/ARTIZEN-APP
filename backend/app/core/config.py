@@ -224,6 +224,13 @@ class Settings(BaseSettings):
     STORAGE_S3_ACCESS_KEY: str = ""
     STORAGE_S3_SECRET_KEY: str = ""
 
+    # --- Knowledge corpus (read-side, see app/knowledge) ---
+    # The Knowledge Engine serves the Markdown corpus vendored at
+    # backend/knowledge_corpus/ (inside the build context, so it ships in the
+    # image). Empty = default computed by source.py. Set only to point the engine
+    # at a different corpus root (e.g. tests).
+    KNOWLEDGE_CORPUS_ROOT: str = ""
+
     # --- Email (transactional: password reset, welcome, receipts) ---
     # "mock" (default) logs the message and never fails — the app runs and the
     # reset flow works end-to-end without any email account. "smtp" sends for
@@ -261,6 +268,15 @@ class Settings(BaseSettings):
     # feature degrades gracefully (in-memory rate limit, tasks refused with a
     # clear error). "redis" is the compose service name; override for local.
     REDIS_URL: str = "redis://redis:6379/0"
+
+    # --- AI Companion (conversational layer, see app/ai_companion) ---
+    # The Companion keeps only conversational context (session + turns), never
+    # business data, in Redis with this TTL — "expiration configurable". When
+    # Redis is unreachable the Companion still answers, only losing cross-turn
+    # memory (degrades, never crashes). Same "always usable" rule as the rest.
+    COMPANION_SESSION_TTL_SECONDS: int = 3600
+    # Turns kept verbatim before older ones fold into an automatic summary.
+    COMPANION_MAX_TURNS: int = 20
 
     @model_validator(mode="after")
     def _require_selected_provider_credentials(self) -> "Settings":

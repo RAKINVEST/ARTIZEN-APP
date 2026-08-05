@@ -19,12 +19,11 @@ from io import BytesIO
 from pypdf import PdfReader
 from pypdf.generic import ContentStream
 
-from app.document_detection.interfaces import DetectorResult, VisualDetector
-
 # Imported for its import-time side effect: it caps how large an image
 # Pillow will decode, which is what keeps a decompression bomb from being
 # expanded in full below. See the module docstring.
 from app.document_detection import image_limits  # noqa: F401
+from app.document_detection.interfaces import DetectorResult, VisualDetector
 
 logger = logging.getLogger(__name__)
 
