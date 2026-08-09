@@ -8,7 +8,7 @@
 |---|---|
 | Identifiant | `pac-ne-chauffe-pas` |
 | Titre | PAC qui ne chauffe pas (ou peu) |
-| Profession | `metier:pac` |
+| Profession | `metier:chauffage` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:pac-air-eau` |
 | Version | v0.1 |
@@ -21,7 +21,7 @@
 - La PAC fonctionne mais le chauffage est **insuffisant**. `[C]`
 
 ## Causes probables
-1. Débit hydraulique/**désembouage** insuffisant (air/eau). `[C]` → [desembouer-circuit-pac-air-eau](../../professions/pac/cards/desembouer-circuit-pac-air-eau.md)
+1. Débit hydraulique/**désembouage** insuffisant (air/eau). `[C]` → [desembouer-circuit-pac-air-eau](../../professions/chauffage/cards/desembouer-circuit-pac-air-eau.md)
 2. Loi d'eau / paramétrage inadapté. `[C]` ⟦selon fabricant⟧
 3. Dégivrage fréquent / unité ext. encrassée. `[C]` → [controler-unite-exterieure-pac](../../professions/pac/cards/controler-unite-exterieure-pac.md)
 4. Défaut frigorifère (charge) → **frigoriste F-Gaz**. `[D]`
@@ -32,7 +32,7 @@
 ## Cadre
 - **Normes** : installations de PAC **DTU 65.16** `[B]` ⟦référence exacte à confirmer⟧. `respecte-norme`
 - **Relations** : `traite-diagnostic` → [mettre-en-service-pac-air-eau](../../professions/pac/cards/mettre-en-service-pac-air-eau.md).
-- **Tags** : `metier:pac equipement:pac famille:fluides sous-famille:pac-air-eau probleme:chauffage-insuffisant cluster:diagnostic cluster:pannes type:diagnostic`
+- **Tags** : `metier:chauffage equipement:pac famille:fluides sous-famille:pac-air-eau probleme:chauffage-insuffisant cluster:diagnostic cluster:pannes type:diagnostic`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |

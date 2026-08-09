@@ -8,7 +8,7 @@
 |---|---|
 | Identifiant | `desembouer-circuit-pac-air-eau` |
 | Titre | Désembouer le circuit hydraulique d'une PAC air/eau |
-| Profession | `metier:pac` |
+| Profession | `metier:chauffage` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:pac-air-eau` |
 | Version | v0.1 |
@@ -35,7 +35,7 @@
 - **Relations Chauffage** : `cite-carte` → [desembouer-circuit-chauffage](../../../professions/chauffage/cards/desembouer-circuit-chauffage.md)
 
 ## Relations & tags
-- **Tags** : `metier:pac equipement:pac famille:fluides sous-famille:pac-air-eau intervention:entretenir cluster:hydraulique cluster:reparation probleme:boue complexite:moyenne type:entretien`
+- **Tags** : `metier:chauffage equipement:pac famille:fluides sous-famille:pac-air-eau intervention:entretenir cluster:hydraulique cluster:reparation probleme:boue complexite:moyenne type:entretien`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |

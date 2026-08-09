@@ -1,12 +1,12 @@
 # ADR-0024 — Représentation de la PAC dans le Book System (proposé)
 
-> **Version** 1.0 — **Status** Proposed — **Owner** Lead Engineer — **Last Update** 2026-08-04
+> **Version** 1.3 — **Status** Accepted — **Owner** Lead Engineer — **Last Update** 2026-08-09
 > **Depends On:** [ADR-0000-adopter-les-adr.md](ADR-0000-adopter-les-adr.md), Book System (`knowledge_corpus/books/BOOK_SYSTEM.md`, Validated), Taxonomie (`docs/TAXONOMIE-METIERS.md`) — **Used By:** production éditoriale (Livres), Factory, Knowledge/Decision/Companion — **Niveau:** 2 · Gouvernance documentaire
 >
-> **Décision recommandée, en attente d'acceptation par le Product Owner.** Aucune modification n'est appliquée tant que ce statut n'est pas passé à `Accepted` (Loi 7/18 : validation humaine). Aucune décision silencieuse.
+> **Décision acceptée par le Product Owner (2026-08-09)** — validation humaine requise (Loi 7/18). La migration (Option B) est désormais autorisée ; elle procède en vagues (Wave 1 : 4 contenus tranchés ; Wave 2 : 11 arbitrages + 8 doublons).
 
 ## Statut
-**Proposed** — recommandation motivée (Option B). La production éditoriale « Livre PAC » est **suspendue** jusqu'à acceptation.
+**Accepted** (2026-08-09, PO) — Option B retenue. La migration PAC (re-tag/re-home vers les activités réelles + projection `equipement:pac`) est autorisée ; la production éditoriale reprend selon ce modèle (« Livre PAC » = projection, jamais un Livre).
 
 ## Contexte
 La construction d'un « Livre III — PAC » (parallèle aux Livres Plomberie et Chauffage) a produit 15 contenus taggés `metier:pac`. La Factory les a acceptés (0 bloquant) mais a émis **15 warnings `metier_hors_taxonomie`** : `pac` n'existe pas dans la taxonomie gelée des 62 activités. Ce warning révèle un conflit de fond entre l'intention « PAC = Livre » et les fondations documentaires.
@@ -124,5 +124,24 @@ Une fois cet ADR **accepté** par le PO, la production éditoriale peut reprendr
 - la restitution transversale « PAC » se fait par **projection** (`equipement:pac`), sans créer de Livre ;
 - les 15 contenus déjà produits sont **conservés** et **re-taggés/re-homés** selon la migration ci-dessus (aucune perte — Loi 5).
 
+## Mise à jour (2026-08-09) — vérification de l'état du dépôt (décision inchangée)
+Audit du dépôt réalisé avant présentation au PO. La **décision (Option B) reste valide et inchangée** ; ses prémisses sont confirmées comme **FAITS** :
+- Taxonomie (`catalog/trades/taxonomy.py`) : **62 activités, aucune `pac`**. QualiPAC y est une *certification d'entreprise*, pas un métier ; F-Gaz (`fluides-frigorigenes`) y est une *qualification d'exercice*.
+- `equipement:pac` est officiel (`taxonomy/EQUIPMENT_TYPES.md`).
+- Le **Book System** (`books/BOOK_SYSTEM.md`, *Validated*) énonce déjà la clause « **Cas transversal (ex. PAC)** : une PAC n'est pas une activité, c'est un `equipement:pac` » et l'invariant « **Livre = activité (62)** ». **Option B est donc déjà la position écrite du Book System** ; l'accepter ne fait qu'aligner le corpus dessus.
+
+**Deux éléments ont évolué depuis la rédaction (2026-08-04) :**
+1. **Blocage de migration levé.** Les Livres `climatisation`, `froid`, `geothermie` sont **désormais ouverts** (dossiers `professions/*` + cartes existantes). Les cartes PAC frigorifique/F-Gaz, air/air et géothermique **n'attendent plus** leur création : le re-homing n'est **plus bloqué** par leur absence. Les mentions « en attente » des sections *Conséquences*, *Migration* (point 1) et *Confirmation de reprise* ci-dessus sont **caduques**.
+2. **Anomalie `metier:pac` localisée** (c'est exactement ce que l'Option B corrige) : `professions/pac/README.md` et `professions/README.md` (tous deux *Validated*) déclarent un « **Dossier métier `metier:pac` — miroir de la taxonomie gelée** », ce qui est **faux** (aucun slug `pac` dans la taxonomie). Les ~15 contenus PAC sont **tous en Brouillon (v0)**, taggés `metier:pac equipement:pac`. Migration (après acceptation) : retirer `metier:pac`, retirer PAC de la liste des métiers de `professions/README.md`, re-homer chaque carte vers son activité réelle en conservant `equipement:pac` (Loi 5 : déplacer/retagger, jamais détruire).
+
+**Vigilance doublons** (pour le re-homing, pas maintenant) : certaines cartes PAC recoupent thématiquement des cartes déjà présentes dans les Livres cibles — p.ex. `professions/pac/cards/controler-circuit-frigorifique-pac.md` vs `professions/climatisation/cards/controler-circuit-frigorifique-clim.md` (et le Livre `froid`). Arbitrer **fusion vs distinction PAC-spécifique** au cas par cas ; aucune perte (append-only).
+
+**Nature de la migration — décision ≠ exécution mécanique.** L'acceptation tranche la **décision d'architecture** (prête). L'**exécution** se répartit en trois couches à ne pas confondre : **(a) migration technique** — **4/15** contenus ont une destination claire (3 → `chauffage` : `mettre-en-service-pac-air-eau`, `desembouer-circuit-pac-air-eau`, `pac-ne-chauffe-pas` ; 1 → `geothermie` : `controler-pac-geothermique`) ; **(b) arbitrages éditoriaux** — **11/15** contenus sont réellement transversaux (aérothermie, F-Gaz, cadres généraux) et exigent une décision métier d'activité-cible ; **(c) doublons** — **8** recoupements avec les Livres existants, dont **2 quasi-identiques** (`controler-circuit-frigorifique-pac` ≈ `…-clim` — qui porte déjà `equipement:pac` ; `securite-frigorifique-pac` ≈ `…-clim`/`…-froid`) à arbitrer fusion/distinction. Le coût **technique** (« faible » ci-dessus) vaut pour la partie (a) ; l'**arbitrage éditorial** (b)+(c) est le véritable travail. La transversalité de la majorité des contenus **confirme** le bien-fondé d'Option B.
+
+**À ce stade : aucun contenu déplacé, aucun code modifié, aucun document gelé touché.**
+
 ## Historique
 - 1.0 (2026-08-04) — Rédaction ; recommandation **Option B** ; statut **Proposed**, en attente d'acceptation PO.
+- 1.1 (2026-08-09) — Mise à jour d'état du dépôt : Livres climatisation/froid/géothermie ouverts (migration débloquée) ; anomalie `metier:pac` localisée ; vigilance doublons. **Décision (Option B) inchangée ; statut toujours `Proposed`.**
+- 1.2 (2026-08-09) — Précision de portée : distinction **décision d'architecture / migration technique (4/15 tranchés) / arbitrages éditoriaux (11/15 + 8 doublons)** ; « intégralement dès acceptation » ramené à « blocage levé ». **Décision (Option B) inchangée ; statut toujours `Proposed`.**
+- 1.3 (2026-08-09) — **Acceptation PO** : statut `Proposed → Accepted`. Option B retenue. Migration autorisée en deux vagues (Wave 1 : 4 contenus tranchés ; Wave 2 : 11 arbitrages + 8 doublons).

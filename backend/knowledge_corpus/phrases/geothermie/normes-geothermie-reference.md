@@ -24,7 +24,7 @@
 
 ## Cadre
 - **Normes** : installation électrique **NF C 15-100** ; réglementation **géothermie de minime importance (GMI)** ; dimensionnement **NF EN 15450** `[B]` ⟦référence exacte à confirmer⟧. `respecte-norme`
-- **Relations** : `cite-carte` → [controler-pac-geothermique](../../professions/pac/cards/controler-pac-geothermique.md).
+- **Relations** : `cite-carte` → [controler-pac-geothermique](../../professions/geothermie/cards/controler-pac-geothermique.md).
 - **Tags** : `metier:geothermie equipement:pac famille:fluides type:phrase usage:normes cluster:normes cluster:reglementation relation:pac relation:chauffage relation:electricite`
 
 ## Historique

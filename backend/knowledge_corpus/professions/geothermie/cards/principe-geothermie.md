@@ -25,7 +25,7 @@
 - **Étapes** :
   1. **Captage vertical** (sondes/forage) ou **horizontal** (capteurs enterrés). `[C]`
   2. Fluide **caloporteur** (eau glycolée) circulant dans le captage. `[C]` → [controler-fluide-caloporteur](controler-fluide-caloporteur.md)
-  3. **PAC géothermique** (équipement transversal) — partie frigorifique réservée. `[C]` → [controler-pac-geothermique](../../../professions/pac/cards/controler-pac-geothermique.md)
+  3. **PAC géothermique** (équipement transversal) — partie frigorifique réservée. `[C]` → [controler-pac-geothermique](controler-pac-geothermique.md)
   4. Émission vers le circuit de chauffage. `[C]`
 - **Points critiques** : distinguer **captage** (géothermie), **PAC** (équipement F-Gaz) et **forage** (foreur).
 - **Sécurité** : chaque domaine (forage, frigorifique, electrique) releve de sa qualification propre. **Le **forage/captage vertical** relève d'un **foreur qualifié** (réglementation GMI / déclaration) ; la partie **PAC** (circuit frigorifique) est réservée à un **frigoriste attesté F-Gaz** ; le **raccordement électrique** à un intervenant **habilité**.** `[A]`

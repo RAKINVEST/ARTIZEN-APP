@@ -24,7 +24,7 @@
 ## Réalisation
 - **Étapes** :
   1. Consigner (électricité) ; nettoyer filtres/échangeurs accessibles. `[C]`
-  2. Contrôler l'hydraulique (pression, débit, filtre magnétique). `[C]` → [desembouer-circuit-pac-air-eau](desembouer-circuit-pac-air-eau.md)
+  2. Contrôler l'hydraulique (pression, débit, filtre magnétique). `[C]` → [desembouer-circuit-pac-air-eau](../../chauffage/cards/desembouer-circuit-pac-air-eau.md)
   3. Vérifier condensats, dégivrage, unité extérieure. `[C]` → [controler-unite-exterieure-pac](controler-unite-exterieure-pac.md)
   4. Confier le **contrôle frigorifère** à un frigoriste attesté. `[A]` → [controler-circuit-frigorifique-pac](controler-circuit-frigorifique-pac.md)
 - **Points critiques** : séparer clairement le domaine accessible du domaine **frigorifère réglementé**. `[B]`

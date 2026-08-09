@@ -26,7 +26,7 @@
   1. **Source** : air extérieur (air/air, air/eau) ou sol/eau (géothermique). `[C]`
   2. **Cycle frigorifère** : évaporation → compression → condensation → détente. `[C]`
   3. **Émission** : air soufflé (air/air) ou circuit hydraulique (air/eau, géo). `[C]`
-  4. Pour l'air/eau, l'émission alimente un circuit de chauffage. → [mettre-en-service-pac-air-eau](mettre-en-service-pac-air-eau.md)
+  4. Pour l'air/eau, l'émission alimente un circuit de chauffage. → [mettre-en-service-pac-air-eau](../../chauffage/cards/mettre-en-service-pac-air-eau.md)
 - **Points critiques** : ne pas confondre les types ; le dimensionnement conditionne le rendement (COP). `[C]`
 - **Sécurité** : sous pression + fluide frigorigène. **Le circuit frigorifère est sous pression et contient un fluide réglementé : toute manipulation (charge, récupération, brasage) exige une **attestation de capacité F-Gaz** et l'outillage adapté — hors périmètre sans qualification.** `[A]`
 

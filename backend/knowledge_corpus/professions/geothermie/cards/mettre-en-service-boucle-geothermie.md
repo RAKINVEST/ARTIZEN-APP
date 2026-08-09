@@ -26,7 +26,7 @@
   1. Remplir avec le **fluide caloporteur** doseé. `[C]` → [remplissage-boucle-captage](../../../procedures/geothermie/remplissage-boucle-captage.md)
   2. **Purger** l'air, régler la pression. `[C]`
   3. Équilibrer les boucles au collecteur. `[C]` → [controler-collecteur-geothermie](controler-collecteur-geothermie.md)
-  4. Contrôler l'étanchéité ; couplage PAC par le **frigoriste attesté**. `[A]` → [controler-pac-geothermique](../../../professions/pac/cards/controler-pac-geothermique.md)
+  4. Contrôler l'étanchéité ; couplage PAC par le **frigoriste attesté**. `[A]` → [controler-pac-geothermique](controler-pac-geothermique.md)
 - **Points critiques** : purge complète ; équilibrage ; le couplage à la PAC relève du frigoriste.
 - **Sécurité** : produit caloporteur (EPI/env.) ; PAC frigorifique réservée F-Gaz. **Le **forage/captage vertical** relève d'un **foreur qualifié** (réglementation GMI / déclaration) ; la partie **PAC** (circuit frigorifique) est réservée à un **frigoriste attesté F-Gaz** ; le **raccordement électrique** à un intervenant **habilité**.** `[A]`
 

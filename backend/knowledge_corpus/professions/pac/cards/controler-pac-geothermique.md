@@ -8,7 +8,7 @@
 |---|---|
 | Identifiant | `controler-pac-geothermique` |
 | Titre | Contrôler une PAC géothermique |
-| Profession | `metier:pac` |
+| Profession | `metier:geothermie` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:pac-geothermique` |
 | Version | v0.1 |
@@ -32,10 +32,10 @@
 
 ## Cadre & suites
 - **Normes** : installations de PAC **DTU 65.16** `[B]` ⟦références/versions exactes à confirmer par le validateur⟧. `respecte-norme`
-- **Principe** : `cite-carte` → [principe-fonctionnement-pac](principe-fonctionnement-pac.md)
+- **Principe** : `cite-carte` → [principe-fonctionnement-pac](../../pac/cards/principe-fonctionnement-pac.md)
 
 ## Relations & tags
-- **Tags** : `metier:pac equipement:pac famille:fluides sous-famille:pac-geothermique intervention:controler cluster:geothermique cluster:controle complexite:avancee type:controle`
+- **Tags** : `metier:geothermie equipement:pac famille:fluides sous-famille:pac-geothermique intervention:controler cluster:geothermique cluster:controle complexite:avancee type:controle`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |

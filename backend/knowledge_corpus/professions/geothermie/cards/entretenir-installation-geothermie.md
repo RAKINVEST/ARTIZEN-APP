@@ -26,7 +26,7 @@
   1. Contrôler pression et **fluide caloporteur**. `[C]` → [controler-fluide-caloporteur](controler-fluide-caloporteur.md)
   2. Vérifier le **circulateur** et le filtre. `[C]` → [controler-circulateur-captage](controler-circulateur-captage.md)
   3. Contrôler l'équilibrage et l'étanchéité. `[C]`
-  4. PAC (frigorifère) : entretien par un **frigoriste attesté**. `[A]` → [controler-pac-geothermique](../../../professions/pac/cards/controler-pac-geothermique.md)
+  4. PAC (frigorifère) : entretien par un **frigoriste attesté**. `[A]` → [controler-pac-geothermique](controler-pac-geothermique.md)
 - **Points critiques** : séparer captage (géothermie) et PAC (F-Gaz) ; caloporteur adapté.
 - **Sécurité** : produit ; électrique ; PAC réservée F-Gaz. **Le **forage/captage vertical** relève d'un **foreur qualifié** (réglementation GMI / déclaration) ; la partie **PAC** (circuit frigorifique) est réservée à un **frigoriste attesté F-Gaz** ; le **raccordement électrique** à un intervenant **habilité**.** `[A]`
 

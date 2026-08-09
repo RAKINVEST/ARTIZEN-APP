@@ -8,7 +8,7 @@
 |---|---|
 | Identifiant | `mettre-en-service-pac-air-eau` |
 | Titre | Mettre en service une PAC air/eau |
-| Profession | `metier:pac` |
+| Profession | `metier:chauffage` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:pac-air-eau` |
 | Version | v0.1 |
@@ -34,10 +34,10 @@
 ## Cadre & suites
 - **Normes** : installations de PAC **DTU 65.16** ; côté hydraulique **DTU 65.11** `[B]` ⟦références/versions exactes à confirmer par le validateur⟧. `respecte-norme`
 - **Relations Chauffage** : `cite-carte` → [desembouer-circuit-pac-air-eau](desembouer-circuit-pac-air-eau.md)
-- **Diagnostics liés** : `traite-diagnostic` → [pac-ne-chauffe-pas](../../../diagnostics/pac/pac-ne-chauffe-pas.md)
+- **Diagnostics liés** : `traite-diagnostic` → [pac-ne-chauffe-pas](../../../diagnostics/chauffage/pac-ne-chauffe-pas.md)
 
 ## Relations & tags
-- **Tags** : `metier:pac equipement:pac famille:fluides sous-famille:pac-air-eau intervention:mettre-en-service cluster:hydraulique cluster:mise-en-service complexite:avancee type:mise-en-service`
+- **Tags** : `metier:chauffage equipement:pac famille:fluides sous-famille:pac-air-eau intervention:mettre-en-service cluster:hydraulique cluster:mise-en-service complexite:avancee type:mise-en-service`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |

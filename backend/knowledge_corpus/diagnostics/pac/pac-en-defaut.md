@@ -26,7 +26,7 @@
 3. Défaut frigorifère → **frigoriste F-Gaz**. `[D]`
 
 ## Résolution
-- Relever le **code** (doc fabricant), contrôler l'hydraulique ; frigorifère → qualifié. `[C]` → [controler-pac-geothermique](../../professions/pac/cards/controler-pac-geothermique.md)
+- Relever le **code** (doc fabricant), contrôler l'hydraulique ; frigorifère → qualifié. `[C]` → [controler-pac-geothermique](../../professions/geothermie/cards/controler-pac-geothermique.md)
 
 ## Cadre
 - **Normes** : installations de PAC **DTU 65.16** `[B]` ⟦référence exacte à confirmer⟧. `respecte-norme`
