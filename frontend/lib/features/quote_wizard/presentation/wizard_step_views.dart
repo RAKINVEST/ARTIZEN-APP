@@ -1585,6 +1585,16 @@ class _PriceEditDialogState extends State<_PriceEditDialog> {
   }
 }
 
+/// Formats a VAT rate for display only: "20.00" -> "20", "5.50" -> "5,5".
+/// Pure string tidy-up of the backend's value — no monetary computation.
+String _formatVatRate(String rate) {
+  var text = rate;
+  if (text.contains('.')) {
+    text = text.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+  }
+  return text.replaceAll('.', ',');
+}
+
 /// The running totals — always the backend's figures, with a discreet
 /// "Recalcul…" while a fresh calculation is in flight.
 class _TotalsCard extends StatelessWidget {
@@ -1615,6 +1625,16 @@ class _TotalsCard extends StatelessWidget {
               _RecapRow('Total HT net', '${calc.netTotalHt} €'),
             ],
             _RecapRow('TVA', calc == null ? '—' : '${calc.netTotalVat} €'),
+            // Per-rate ventilation, only when more than one rate is involved —
+            // a single rate is already conveyed by the "TVA" line above (same
+            // convention as the PDF). Figures are the backend's; nothing here
+            // is computed.
+            if (calc != null && calc.vatBreakdown.length > 1)
+              for (final bucket in calc.vatBreakdown)
+                _RecapRow(
+                  'dont TVA ${_formatVatRate(bucket.rate)} %',
+                  '${bucket.vatAmount} €',
+                ),
             const Divider(),
             _RecapRow(
               'Total TTC',

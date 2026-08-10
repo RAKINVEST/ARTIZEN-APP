@@ -171,6 +171,19 @@ class QuoteLineCalculation(BaseModel):
     total_ttc: Decimal
 
 
+class VatBucketRead(BaseModel):
+    """One per-rate VAT row of a quote's ventilation — the figures a French
+    document must show grouped by rate. These are the *net* per-rate amounts
+    ``QuoteCalculator.apply_discount`` already produced (the same the PDF
+    prints); never derived anywhere else."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    rate: Decimal
+    base_ht: Decimal
+    vat_amount: Decimal
+
+
 class _QuoteAdjustmentsRead(BaseModel):
     """The discount/deposit outcome carried by a quote or a live calculation:
     the discount, the net totals after it, then the deposit split of the net
@@ -201,6 +214,10 @@ class QuoteCalculation(_QuoteAdjustmentsRead):
     total_vat: Decimal
     total_ttc: Decimal
     lines: list[QuoteLineCalculation] = Field(default_factory=list)
+    # Per-rate VAT ventilation (net, after any discount) — the same figures the
+    # PDF already shows, exposed so the Récap can display them. Empty when there
+    # are no lines. Never computed client-side.
+    vat_breakdown: list[VatBucketRead] = Field(default_factory=list)
 
 
 class QuoteLineRead(BaseModel):

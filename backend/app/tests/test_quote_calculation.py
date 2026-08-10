@@ -154,6 +154,126 @@ async def test_preview_refuses_another_companys_item(
     assert response.status_code == 404
 
 
+# --- Per-rate VAT ventilation exposed to the Récap (V1.1) ---
+
+
+async def test_calculate_exposes_vat_breakdown_single_rate(
+    client: AsyncClient, company_id: str, category_id: str
+) -> None:
+    """The Récap needs the per-rate VAT ventilation — the same figures the PDF
+    prints. A single-rate quote yields one bucket carrying the whole VAT."""
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    body = (
+        await client.post(
+            "/api/quotes/calculate",
+            json={"lines": [{"catalog_item_id": item_id, "quantity": "2"}]},
+        )
+    ).json()
+
+    breakdown = body["vat_breakdown"]
+    assert len(breakdown) == 1
+    assert Decimal(breakdown[0]["rate"]) == Decimal("20.00")
+    assert Decimal(breakdown[0]["base_ht"]) == Decimal("200.00")
+    assert Decimal(breakdown[0]["vat_amount"]) == Decimal("40.00")
+    # The ventilation always reconciles with the quote's VAT total.
+    assert sum(Decimal(b["vat_amount"]) for b in breakdown) == Decimal(body["net_total_vat"])
+
+
+async def test_calculate_vat_breakdown_multi_rate_sorted_and_reconciles(
+    client: AsyncClient, company_id: str, category_id: str
+) -> None:
+    at_20 = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    at_10 = await _create_item(
+        client, company_id, category_id, unit_price_ht="50.00", vat_rate="10.00"
+    )
+
+    body = (
+        await client.post(
+            "/api/quotes/calculate",
+            json={
+                "lines": [
+                    {"catalog_item_id": at_20, "quantity": "1"},  # HT 100, VAT 20
+                    {"catalog_item_id": at_10, "quantity": "2"},  # HT 100, VAT 10
+                ]
+            },
+        )
+    ).json()
+
+    breakdown = body["vat_breakdown"]
+    # One bucket per rate, sorted ascending.
+    assert [Decimal(b["rate"]) for b in breakdown] == [Decimal("10.00"), Decimal("20.00")]
+    by_rate = {Decimal(b["rate"]): b for b in breakdown}
+    assert Decimal(by_rate[Decimal("10.00")]["vat_amount"]) == Decimal("10.00")
+    assert Decimal(by_rate[Decimal("20.00")]["vat_amount"]) == Decimal("20.00")
+    # Reconciles with the quote's net totals — never a figure of its own.
+    assert sum(Decimal(b["vat_amount"]) for b in breakdown) == Decimal(body["net_total_vat"])
+    assert sum(Decimal(b["base_ht"]) for b in breakdown) == Decimal(body["net_total_ht"])
+
+
+async def test_calculate_vat_breakdown_is_net_after_discount(
+    client: AsyncClient, company_id: str, category_id: str
+) -> None:
+    """With a remise, the ventilation is the *net* one (after discount) — it is
+    what reconciles with net_total_vat, exactly like the PDF."""
+    at_20 = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    at_10 = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="10.00"
+    )
+
+    body = (
+        await client.post(
+            "/api/quotes/calculate",
+            json={
+                "lines": [
+                    {"catalog_item_id": at_20, "quantity": "1"},
+                    {"catalog_item_id": at_10, "quantity": "1"},
+                ],
+                "discount_type": "percent",
+                "discount_value": "10",
+            },
+        )
+    ).json()
+
+    breakdown = body["vat_breakdown"]
+    assert len(breakdown) == 2
+    assert sum(Decimal(b["vat_amount"]) for b in breakdown) == Decimal(body["net_total_vat"])
+    # The discount really lowered the VAT (net < gross).
+    assert Decimal(body["net_total_vat"]) < Decimal(body["total_vat"])
+
+
+async def test_calculate_vat_breakdown_franchise_zero_rate(
+    client: AsyncClient, company_id: str, category_id: str
+) -> None:
+    """A 0 % (franchise) article yields a real 0 % bucket — the backend states
+    the fact; the client decides whether to show it."""
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="0.00"
+    )
+    body = (
+        await client.post(
+            "/api/quotes/calculate",
+            json={"lines": [{"catalog_item_id": item_id, "quantity": "1"}]},
+        )
+    ).json()
+
+    breakdown = body["vat_breakdown"]
+    assert len(breakdown) == 1
+    assert Decimal(breakdown[0]["rate"]) == Decimal("0.00")
+    assert Decimal(breakdown[0]["vat_amount"]) == Decimal("0.00")
+    assert Decimal(body["total_vat"]) == Decimal("0.00")
+
+
+async def test_calculate_with_no_lines_has_empty_vat_breakdown(client: AsyncClient) -> None:
+    body = (await client.post("/api/quotes/calculate", json={"lines": []})).json()
+    assert body["vat_breakdown"] == []
+
+
 async def test_preview_refuses_inactive_item(
     client: AsyncClient, company_id: str, category_id: str
 ) -> None:

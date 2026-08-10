@@ -365,6 +365,205 @@ abstract class _QuoteCalculationLine implements QuoteCalculationLine {
   get copyWith => throw _privateConstructorUsedError;
 }
 
+VatBreakdownEntry _$VatBreakdownEntryFromJson(Map<String, dynamic> json) {
+  return _VatBreakdownEntry.fromJson(json);
+}
+
+/// @nodoc
+mixin _$VatBreakdownEntry {
+  String get rate => throw _privateConstructorUsedError;
+  String get baseHt => throw _privateConstructorUsedError;
+  String get vatAmount => throw _privateConstructorUsedError;
+
+  /// Serializes this VatBreakdownEntry to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of VatBreakdownEntry
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $VatBreakdownEntryCopyWith<VatBreakdownEntry> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $VatBreakdownEntryCopyWith<$Res> {
+  factory $VatBreakdownEntryCopyWith(
+    VatBreakdownEntry value,
+    $Res Function(VatBreakdownEntry) then,
+  ) = _$VatBreakdownEntryCopyWithImpl<$Res, VatBreakdownEntry>;
+  @useResult
+  $Res call({String rate, String baseHt, String vatAmount});
+}
+
+/// @nodoc
+class _$VatBreakdownEntryCopyWithImpl<$Res, $Val extends VatBreakdownEntry>
+    implements $VatBreakdownEntryCopyWith<$Res> {
+  _$VatBreakdownEntryCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of VatBreakdownEntry
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? rate = null,
+    Object? baseHt = null,
+    Object? vatAmount = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            rate: null == rate
+                ? _value.rate
+                : rate // ignore: cast_nullable_to_non_nullable
+                      as String,
+            baseHt: null == baseHt
+                ? _value.baseHt
+                : baseHt // ignore: cast_nullable_to_non_nullable
+                      as String,
+            vatAmount: null == vatAmount
+                ? _value.vatAmount
+                : vatAmount // ignore: cast_nullable_to_non_nullable
+                      as String,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$VatBreakdownEntryImplCopyWith<$Res>
+    implements $VatBreakdownEntryCopyWith<$Res> {
+  factory _$$VatBreakdownEntryImplCopyWith(
+    _$VatBreakdownEntryImpl value,
+    $Res Function(_$VatBreakdownEntryImpl) then,
+  ) = __$$VatBreakdownEntryImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String rate, String baseHt, String vatAmount});
+}
+
+/// @nodoc
+class __$$VatBreakdownEntryImplCopyWithImpl<$Res>
+    extends _$VatBreakdownEntryCopyWithImpl<$Res, _$VatBreakdownEntryImpl>
+    implements _$$VatBreakdownEntryImplCopyWith<$Res> {
+  __$$VatBreakdownEntryImplCopyWithImpl(
+    _$VatBreakdownEntryImpl _value,
+    $Res Function(_$VatBreakdownEntryImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of VatBreakdownEntry
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? rate = null,
+    Object? baseHt = null,
+    Object? vatAmount = null,
+  }) {
+    return _then(
+      _$VatBreakdownEntryImpl(
+        rate: null == rate
+            ? _value.rate
+            : rate // ignore: cast_nullable_to_non_nullable
+                  as String,
+        baseHt: null == baseHt
+            ? _value.baseHt
+            : baseHt // ignore: cast_nullable_to_non_nullable
+                  as String,
+        vatAmount: null == vatAmount
+            ? _value.vatAmount
+            : vatAmount // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$VatBreakdownEntryImpl implements _VatBreakdownEntry {
+  const _$VatBreakdownEntryImpl({
+    required this.rate,
+    required this.baseHt,
+    required this.vatAmount,
+  });
+
+  factory _$VatBreakdownEntryImpl.fromJson(Map<String, dynamic> json) =>
+      _$$VatBreakdownEntryImplFromJson(json);
+
+  @override
+  final String rate;
+  @override
+  final String baseHt;
+  @override
+  final String vatAmount;
+
+  @override
+  String toString() {
+    return 'VatBreakdownEntry(rate: $rate, baseHt: $baseHt, vatAmount: $vatAmount)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$VatBreakdownEntryImpl &&
+            (identical(other.rate, rate) || other.rate == rate) &&
+            (identical(other.baseHt, baseHt) || other.baseHt == baseHt) &&
+            (identical(other.vatAmount, vatAmount) ||
+                other.vatAmount == vatAmount));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, rate, baseHt, vatAmount);
+
+  /// Create a copy of VatBreakdownEntry
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$VatBreakdownEntryImplCopyWith<_$VatBreakdownEntryImpl> get copyWith =>
+      __$$VatBreakdownEntryImplCopyWithImpl<_$VatBreakdownEntryImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$VatBreakdownEntryImplToJson(this);
+  }
+}
+
+abstract class _VatBreakdownEntry implements VatBreakdownEntry {
+  const factory _VatBreakdownEntry({
+    required final String rate,
+    required final String baseHt,
+    required final String vatAmount,
+  }) = _$VatBreakdownEntryImpl;
+
+  factory _VatBreakdownEntry.fromJson(Map<String, dynamic> json) =
+      _$VatBreakdownEntryImpl.fromJson;
+
+  @override
+  String get rate;
+  @override
+  String get baseHt;
+  @override
+  String get vatAmount;
+
+  /// Create a copy of VatBreakdownEntry
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$VatBreakdownEntryImplCopyWith<_$VatBreakdownEntryImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 QuoteCalculation _$QuoteCalculationFromJson(Map<String, dynamic> json) {
   return _QuoteCalculation.fromJson(json);
 }
@@ -387,7 +586,11 @@ mixin _$QuoteCalculation {
   String get depositValue => throw _privateConstructorUsedError;
   String get depositAmount => throw _privateConstructorUsedError;
   String get balanceDue => throw _privateConstructorUsedError;
-  List<QuoteCalculationLine> get lines => throw _privateConstructorUsedError;
+  List<QuoteCalculationLine> get lines =>
+      throw _privateConstructorUsedError; // Per-rate VAT ventilation (net) — the backend's figures, shown at the
+  // Récap. Empty when there are no lines.
+  List<VatBreakdownEntry> get vatBreakdown =>
+      throw _privateConstructorUsedError;
 
   /// Serializes this QuoteCalculation to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -421,6 +624,7 @@ abstract class $QuoteCalculationCopyWith<$Res> {
     String depositAmount,
     String balanceDue,
     List<QuoteCalculationLine> lines,
+    List<VatBreakdownEntry> vatBreakdown,
   });
 }
 
@@ -453,6 +657,7 @@ class _$QuoteCalculationCopyWithImpl<$Res, $Val extends QuoteCalculation>
     Object? depositAmount = null,
     Object? balanceDue = null,
     Object? lines = null,
+    Object? vatBreakdown = null,
   }) {
     return _then(
       _value.copyWith(
@@ -512,6 +717,10 @@ class _$QuoteCalculationCopyWithImpl<$Res, $Val extends QuoteCalculation>
                 ? _value.lines
                 : lines // ignore: cast_nullable_to_non_nullable
                       as List<QuoteCalculationLine>,
+            vatBreakdown: null == vatBreakdown
+                ? _value.vatBreakdown
+                : vatBreakdown // ignore: cast_nullable_to_non_nullable
+                      as List<VatBreakdownEntry>,
           )
           as $Val,
     );
@@ -542,6 +751,7 @@ abstract class _$$QuoteCalculationImplCopyWith<$Res>
     String depositAmount,
     String balanceDue,
     List<QuoteCalculationLine> lines,
+    List<VatBreakdownEntry> vatBreakdown,
   });
 }
 
@@ -573,6 +783,7 @@ class __$$QuoteCalculationImplCopyWithImpl<$Res>
     Object? depositAmount = null,
     Object? balanceDue = null,
     Object? lines = null,
+    Object? vatBreakdown = null,
   }) {
     return _then(
       _$QuoteCalculationImpl(
@@ -632,6 +843,10 @@ class __$$QuoteCalculationImplCopyWithImpl<$Res>
             ? _value._lines
             : lines // ignore: cast_nullable_to_non_nullable
                   as List<QuoteCalculationLine>,
+        vatBreakdown: null == vatBreakdown
+            ? _value._vatBreakdown
+            : vatBreakdown // ignore: cast_nullable_to_non_nullable
+                  as List<VatBreakdownEntry>,
       ),
     );
   }
@@ -655,7 +870,9 @@ class _$QuoteCalculationImpl implements _QuoteCalculation {
     this.depositAmount = '0.00',
     this.balanceDue = '0.00',
     final List<QuoteCalculationLine> lines = const <QuoteCalculationLine>[],
-  }) : _lines = lines;
+    final List<VatBreakdownEntry> vatBreakdown = const <VatBreakdownEntry>[],
+  }) : _lines = lines,
+       _vatBreakdown = vatBreakdown;
 
   factory _$QuoteCalculationImpl.fromJson(Map<String, dynamic> json) =>
       _$$QuoteCalculationImplFromJson(json);
@@ -706,9 +923,22 @@ class _$QuoteCalculationImpl implements _QuoteCalculation {
     return EqualUnmodifiableListView(_lines);
   }
 
+  // Per-rate VAT ventilation (net) — the backend's figures, shown at the
+  // Récap. Empty when there are no lines.
+  final List<VatBreakdownEntry> _vatBreakdown;
+  // Per-rate VAT ventilation (net) — the backend's figures, shown at the
+  // Récap. Empty when there are no lines.
+  @override
+  @JsonKey()
+  List<VatBreakdownEntry> get vatBreakdown {
+    if (_vatBreakdown is EqualUnmodifiableListView) return _vatBreakdown;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_vatBreakdown);
+  }
+
   @override
   String toString() {
-    return 'QuoteCalculation(totalHt: $totalHt, totalVat: $totalVat, totalTtc: $totalTtc, discountType: $discountType, discountValue: $discountValue, discountAmount: $discountAmount, netTotalHt: $netTotalHt, netTotalVat: $netTotalVat, netTotalTtc: $netTotalTtc, depositType: $depositType, depositValue: $depositValue, depositAmount: $depositAmount, balanceDue: $balanceDue, lines: $lines)';
+    return 'QuoteCalculation(totalHt: $totalHt, totalVat: $totalVat, totalTtc: $totalTtc, discountType: $discountType, discountValue: $discountValue, discountAmount: $discountAmount, netTotalHt: $netTotalHt, netTotalVat: $netTotalVat, netTotalTtc: $netTotalTtc, depositType: $depositType, depositValue: $depositValue, depositAmount: $depositAmount, balanceDue: $balanceDue, lines: $lines, vatBreakdown: $vatBreakdown)';
   }
 
   @override
@@ -741,7 +971,11 @@ class _$QuoteCalculationImpl implements _QuoteCalculation {
                 other.depositAmount == depositAmount) &&
             (identical(other.balanceDue, balanceDue) ||
                 other.balanceDue == balanceDue) &&
-            const DeepCollectionEquality().equals(other._lines, _lines));
+            const DeepCollectionEquality().equals(other._lines, _lines) &&
+            const DeepCollectionEquality().equals(
+              other._vatBreakdown,
+              _vatBreakdown,
+            ));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -762,6 +996,7 @@ class _$QuoteCalculationImpl implements _QuoteCalculation {
     depositAmount,
     balanceDue,
     const DeepCollectionEquality().hash(_lines),
+    const DeepCollectionEquality().hash(_vatBreakdown),
   );
 
   /// Create a copy of QuoteCalculation
@@ -797,6 +1032,7 @@ abstract class _QuoteCalculation implements QuoteCalculation {
     final String depositAmount,
     final String balanceDue,
     final List<QuoteCalculationLine> lines,
+    final List<VatBreakdownEntry> vatBreakdown,
   }) = _$QuoteCalculationImpl;
 
   factory _QuoteCalculation.fromJson(Map<String, dynamic> json) =
@@ -831,7 +1067,10 @@ abstract class _QuoteCalculation implements QuoteCalculation {
   @override
   String get balanceDue;
   @override
-  List<QuoteCalculationLine> get lines;
+  List<QuoteCalculationLine> get lines; // Per-rate VAT ventilation (net) — the backend's figures, shown at the
+  // Récap. Empty when there are no lines.
+  @override
+  List<VatBreakdownEntry> get vatBreakdown;
 
   /// Create a copy of QuoteCalculation
   /// with the given fields replaced by the non-null parameter values.

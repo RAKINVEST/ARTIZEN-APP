@@ -27,6 +27,21 @@ class QuoteCalculationLine with _$QuoteCalculationLine {
       _$QuoteCalculationLineFromJson(json);
 }
 
+/// One per-rate VAT row (the *ventilation* a French quote shows), mirroring
+/// the backend's `VatBucketRead`. Amounts stay `String` (Decimal) — the
+/// backend computes them, this only displays.
+@freezed
+class VatBreakdownEntry with _$VatBreakdownEntry {
+  const factory VatBreakdownEntry({
+    required String rate,
+    required String baseHt,
+    required String vatAmount,
+  }) = _VatBreakdownEntry;
+
+  factory VatBreakdownEntry.fromJson(Map<String, dynamic> json) =>
+      _$VatBreakdownEntryFromJson(json);
+}
+
 @freezed
 class QuoteCalculation with _$QuoteCalculation {
   const factory QuoteCalculation({
@@ -47,6 +62,9 @@ class QuoteCalculation with _$QuoteCalculation {
     @Default('0.00') String depositAmount,
     @Default('0.00') String balanceDue,
     @Default(<QuoteCalculationLine>[]) List<QuoteCalculationLine> lines,
+    // Per-rate VAT ventilation (net) — the backend's figures, shown at the
+    // Récap. Empty when there are no lines.
+    @Default(<VatBreakdownEntry>[]) List<VatBreakdownEntry> vatBreakdown,
   }) = _QuoteCalculation;
 
   factory QuoteCalculation.fromJson(Map<String, dynamic> json) =>

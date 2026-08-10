@@ -34,6 +34,22 @@ Map<String, dynamic> _$$QuoteCalculationLineImplToJson(
   'total_ttc': instance.totalTtc,
 };
 
+_$VatBreakdownEntryImpl _$$VatBreakdownEntryImplFromJson(
+  Map<String, dynamic> json,
+) => _$VatBreakdownEntryImpl(
+  rate: json['rate'] as String,
+  baseHt: json['base_ht'] as String,
+  vatAmount: json['vat_amount'] as String,
+);
+
+Map<String, dynamic> _$$VatBreakdownEntryImplToJson(
+  _$VatBreakdownEntryImpl instance,
+) => <String, dynamic>{
+  'rate': instance.rate,
+  'base_ht': instance.baseHt,
+  'vat_amount': instance.vatAmount,
+};
+
 _$QuoteCalculationImpl _$$QuoteCalculationImplFromJson(
   Map<String, dynamic> json,
 ) => _$QuoteCalculationImpl(
@@ -55,6 +71,11 @@ _$QuoteCalculationImpl _$$QuoteCalculationImplFromJson(
           ?.map((e) => QuoteCalculationLine.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <QuoteCalculationLine>[],
+  vatBreakdown:
+      (json['vat_breakdown'] as List<dynamic>?)
+          ?.map((e) => VatBreakdownEntry.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <VatBreakdownEntry>[],
 );
 
 Map<String, dynamic> _$$QuoteCalculationImplToJson(
@@ -74,4 +95,5 @@ Map<String, dynamic> _$$QuoteCalculationImplToJson(
   'deposit_amount': instance.depositAmount,
   'balance_due': instance.balanceDue,
   'lines': instance.lines,
+  'vat_breakdown': instance.vatBreakdown,
 };

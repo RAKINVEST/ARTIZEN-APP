@@ -51,6 +51,7 @@ from app.quotes.schemas import (
     QuoteLineRead,
     QuoteRead,
     QuoteReadiness,
+    VatBucketRead,
 )
 from app.storage import StorageProvider
 
@@ -175,6 +176,11 @@ class QuoteService:
             total_vat=totals.total_vat,
             total_ttc=totals.total_ttc,
             lines=[QuoteLineCalculation.model_validate(line) for line in line_models],
+            # Already computed (net per-rate rows) — only surfaced here, exactly
+            # like the PDF consumes them. No new figure is derived.
+            vat_breakdown=[
+                VatBucketRead.model_validate(bucket) for bucket in adjustments.vat_rows
+            ],
             **self._adjustment_fields(adjustments),
         )
 
