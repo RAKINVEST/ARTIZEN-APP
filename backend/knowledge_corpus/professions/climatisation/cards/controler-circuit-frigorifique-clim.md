@@ -30,7 +30,7 @@
 - **Sécurité** : **Le circuit frigorifère contient un fluide réglementé sous pression : toute manipulation (charge, récupération, brasage) exige une **attestation de capacité F-Gaz** et l'outillage dédié — hors périmètre sans qualification.** `[A]`
 
 ## Cadre & suites
-- **Normes** : climatiseurs à détente directe **DTU 65.16** ; réglementation **F-Gaz** (UE 517/2014) ⟦à confirmer⟧ `[B]` ⟦références/versions exactes à confirmer par le validateur⟧. `respecte-norme`
+- **Normes** : climatiseurs **et PAC** à détente directe / systèmes frigorifères **DTU 65.16** ; réglementation **F-Gaz** (UE 517/2014) ⟦à confirmer⟧ `[B]` ⟦références/versions exactes à confirmer par le validateur⟧. `respecte-norme`
 - **Sécurité** : `a-checklist` → [securite-frigorifique-clim](../../../checklists/climatisation/securite-frigorifique-clim.md)
 
 ## Relations & tags

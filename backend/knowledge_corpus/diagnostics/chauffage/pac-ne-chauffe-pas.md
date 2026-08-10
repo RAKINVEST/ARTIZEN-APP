@@ -23,7 +23,7 @@
 ## Causes probables
 1. Débit hydraulique/**désembouage** insuffisant (air/eau). `[C]` → [desembouer-circuit-pac-air-eau](../../professions/chauffage/cards/desembouer-circuit-pac-air-eau.md)
 2. Loi d'eau / paramétrage inadapté. `[C]` ⟦selon fabricant⟧
-3. Dégivrage fréquent / unité ext. encrassée. `[C]` → [controler-unite-exterieure-pac](../../professions/pac/cards/controler-unite-exterieure-pac.md)
+3. Dégivrage fréquent / unité ext. encrassée. `[C]` → [controler-unite-exterieure-pac](../../professions/chauffage/cards/controler-unite-exterieure-pac.md)
 4. Défaut frigorifère (charge) → **frigoriste F-Gaz**. `[D]`
 
 ## Résolution

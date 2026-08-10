@@ -8,7 +8,7 @@
 |---|---|
 | Identifiant | `kit-entretien-pac` |
 | Titre | Kit entretien PAC (partie accessible) |
-| Profession | `metier:pac` |
+| Profession | `metier:chauffage` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:pac` |
 | Version | v0.1 |
@@ -27,8 +27,8 @@
 
 ## Cadre
 - **Normes** : installations de PAC **DTU 65.16** `[B]` ⟦référence exacte à confirmer⟧. `respecte-norme`
-- **Relations** : `utilise-kit` → [entretenir-pac](../../professions/pac/cards/entretenir-pac.md).
-- **Tags** : `metier:pac equipement:pac famille:fluides sous-famille:pac type:kit cluster:entretien equipement:pac`
+- **Relations** : `utilise-kit` → [entretenir-pac](../../professions/chauffage/cards/entretenir-pac.md).
+- **Tags** : `metier:chauffage equipement:pac famille:fluides sous-famille:pac type:kit cluster:entretien equipement:pac`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |

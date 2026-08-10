@@ -2,19 +2,21 @@
 
 > **Brouillon (v0) — proposé par IA, en attente de validation métier** (Loi 7/18). Modèle : [../../../cards/CARD_TEMPLATE.md](../../../cards/CARD_TEMPLATE.md).
 > Niveaux de confiance : A normes/fabricant · B technique · C terrain validé · D hypothèse. Rien n'est publié comme certitude.
+>
+> **⚠️ DÉPRÉCIÉE (Wave 2, ADR-0024) — fusionnée dans [controler-circuit-frigorifique-clim](../../climatisation/cards/controler-circuit-frigorifique-clim.md).** Contenu conservé pour traçabilité (Loi 5) ; se référer à la carte climatisation (applicable PAC via `equipement:pac`).
 
 ## Métadonnées
 | Champ | Valeur |
 |---|---|
 | Identifiant | `controler-circuit-frigorifique-pac` |
 | Titre | Contrôler l'étanchéité du circuit frigorifère (PAC) |
-| Profession | `metier:pac` |
+| Profession | `metier:climatisation` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:frigorifique` |
 | Version | v0.1 |
 | Auteur | IA (proposition) |
 | Validateur | ⟦à valider métier⟧ |
-| Statut | Brouillon |
+| Statut | Archive |
 | Indice de confiance | **C** |
 
 ## Cadrage
@@ -34,7 +36,7 @@
 - **Sécurité** : `a-checklist` → [securite-frigorifique-pac](../../../checklists/pac/securite-frigorifique-pac.md)
 
 ## Relations & tags
-- **Tags** : `metier:pac equipement:pac famille:fluides sous-famille:frigorifique intervention:controler cluster:frigorifique cluster:securite cluster:normes securite:frigorifique complexite:expert type:controle`
+- **Tags** : `metier:climatisation equipement:pac famille:fluides sous-famille:frigorifique intervention:controler cluster:frigorifique cluster:securite cluster:normes securite:frigorifique complexite:expert type:controle`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |

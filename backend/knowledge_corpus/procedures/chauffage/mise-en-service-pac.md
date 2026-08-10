@@ -8,7 +8,7 @@
 |---|---|
 | Identifiant | `mise-en-service-pac` |
 | Titre | Mise en service d'une PAC (cadre général) |
-| Profession | `metier:pac` |
+| Profession | `metier:chauffage` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:pac` |
 | Version | v0.1 |
@@ -21,15 +21,15 @@
 - Encadrer la mise en service d'une PAC : partie accessible par l'installateur, partie frigorifère par un **attesté F-Gaz**. `[B]`
 
 ## Étapes
-1. Contrôles préalables (implantation, électrique, hydraulique). `[C]` → [controle-avant-mise-en-service-pac](../../checklists/pac/controle-avant-mise-en-service-pac.md)
+1. Contrôles préalables (implantation, électrique, hydraulique). `[C]` → [controle-avant-mise-en-service-pac](../../checklists/chauffage/controle-avant-mise-en-service-pac.md)
 2. Mise en eau/purge du circuit émission (air/eau). `[C]`
 3. **Contrôle d'étanchéité frigorifère + mise en route** par un frigoriste attesté. `[A]`
 4. Paramétrage régulation et contrôle des performances. `[C]` ⟦selon fabricant⟧
 
 ## Cadre
 - **Normes** : installations de PAC **DTU 65.16** `[B]` ⟦référence exacte à confirmer⟧. `respecte-norme`
-- **Relations** : `cite-checklist` → [controle-avant-mise-en-service-pac](../../checklists/pac/controle-avant-mise-en-service-pac.md).
-- **Tags** : `metier:pac equipement:pac famille:fluides sous-famille:pac intervention:mettre-en-service cluster:mise-en-service type:procedure`
+- **Relations** : `cite-checklist` → [controle-avant-mise-en-service-pac](../../checklists/chauffage/controle-avant-mise-en-service-pac.md).
+- **Tags** : `metier:chauffage equipement:pac famille:fluides sous-famille:pac intervention:mettre-en-service cluster:mise-en-service type:procedure`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |

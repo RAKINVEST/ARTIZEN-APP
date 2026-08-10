@@ -26,7 +26,7 @@
   1. **Unité intérieure** (mural, cassette, gainable, console) diffuse l'air traité. `[C]`
   2. **Unité extérieure** échange avec l'air extérieur. `[C]`
   3. **Cycle frigorifère** entre les deux (réservé qualifié). `[C]` → [controler-circuit-frigorifique-clim](controler-circuit-frigorifique-clim.md)
-  4. En **réversible** = PAC air/air (chauffe et refroidit). `[C]` → [principe-fonctionnement-pac](../../../professions/pac/cards/principe-fonctionnement-pac.md)
+  4. En **réversible** = PAC air/air (chauffe et refroidit). `[C]` → [principe-fonctionnement-pac](../../../professions/chauffage/cards/principe-fonctionnement-pac.md)
 - **Points critiques** : dimensionnement selon volume/apports ; le réversible partage la technologie PAC. `[C]`
 - **Sécurité** : sous pression + fluide frigorigène. **Le circuit frigorifère contient un fluide réglementé sous pression : toute manipulation (charge, récupération, brasage) exige une **attestation de capacité F-Gaz** et l'outillage dédié — hors périmètre sans qualification.** `[A]`
 

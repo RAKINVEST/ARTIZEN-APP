@@ -8,7 +8,7 @@
 |---|---|
 | Identifiant | `pac-en-defaut` |
 | Titre | PAC en défaut (code / mise en sécurité) |
-| Profession | `metier:pac` |
+| Profession | `metier:chauffage` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:pac` |
 | Version | v0.1 |
@@ -30,8 +30,8 @@
 
 ## Cadre
 - **Normes** : installations de PAC **DTU 65.16** `[B]` ⟦référence exacte à confirmer⟧. `respecte-norme`
-- **Relations** : `traite-diagnostic` → [entretenir-pac](../../professions/pac/cards/entretenir-pac.md).
-- **Tags** : `metier:pac equipement:pac famille:fluides sous-famille:pac probleme:mise-en-securite cluster:diagnostic cluster:pannes type:diagnostic`
+- **Relations** : `traite-diagnostic` → [entretenir-pac](../../professions/chauffage/cards/entretenir-pac.md).
+- **Tags** : `metier:chauffage equipement:pac famille:fluides sous-famille:pac probleme:mise-en-securite cluster:diagnostic cluster:pannes type:diagnostic`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |

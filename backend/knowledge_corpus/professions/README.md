@@ -16,7 +16,6 @@ taxonomie `catalog/trades` — voir [../../TAXONOMIE-METIERS.md](../../TAXONOMIE
 - [Plomberie](plomberie/README.md)
 - [Électricité](electricite/README.md)
 - [Climatisation](climatisation/README.md)
-- [PAC (pompe à chaleur)](pac/README.md)
 - [Chauffage](chauffage/README.md)
 - [Ventilation](ventilation/README.md)
 - [Plaquiste](plaquiste/README.md)

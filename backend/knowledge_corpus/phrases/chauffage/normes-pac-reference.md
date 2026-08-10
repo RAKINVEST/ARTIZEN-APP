@@ -8,7 +8,7 @@
 |---|---|
 | Identifiant | `normes-pac-reference` |
 | Titre | Phrase — références normatives PAC |
-| Profession | `metier:pac` |
+| Profession | `metier:chauffage` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:pac` |
 | Version | v0.1 |
@@ -20,12 +20,12 @@
 ## Formulation (cluster « Normes »)
 > « Nos installations et interventions PAC respectent les règles de l'art, notamment le **DTU 65.16** (installations de PAC) et la réglementation **F-Gaz** pour le circuit frigorifère (intervenant attesté). » `[C]` ⟦liste et versions exactes à valider par un expert⟧
 
-> **Relations inter-Livres** : une PAC est un **équipement transversal** (⟦equipement:pac⟧) lié aux Livres **Chauffage** (émission air/eau) et **Climatisation** (réversible air/air). Ces relations seront tracées quand le Livre Climatisation existera. `[C]`
+> **Relations inter-Livres** : une PAC est un **équipement transversal** (⟦equipement:pac⟧) lié aux Livres **Chauffage** (émission air/eau) et **Climatisation** (réversible air/air). Ces relations sont tracées via l'axe `equipement:pac` et les Livres Chauffage et Climatisation (existants). `[C]`
 
 ## Cadre
 - **Normes** : installations de PAC **DTU 65.16** `[B]` ⟦référence exacte à confirmer⟧. `respecte-norme`
-- **Relations** : `cite-phrase` → [entretenir-pac](../../professions/pac/cards/entretenir-pac.md).
-- **Tags** : `metier:pac equipement:pac famille:fluides type:phrase usage:normes cluster:normes relation:chauffage relation:climatisation`
+- **Relations** : `cite-phrase` → [entretenir-pac](../../professions/chauffage/cards/entretenir-pac.md).
+- **Tags** : `metier:chauffage equipement:pac famille:fluides type:phrase usage:normes cluster:normes relation:chauffage relation:climatisation`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |

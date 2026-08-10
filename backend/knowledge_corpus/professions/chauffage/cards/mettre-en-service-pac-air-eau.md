@@ -27,7 +27,7 @@
   2. Remplir et **purger** le circuit (côté émission). `[C]` → [mise-en-service-chauffage](../../../procedures/chauffage/mise-en-service-chauffage.md)
   3. Contrôler pression, débit et **équilibrage** du circuit. `[B]`
   4. Vérifier les paramètres de régulation (loi d'eau) selon fabricant. `[C]` ⟦à confirmer⟧
-  5. Contrôler la montée en température et les sécurités. `[C]` → [controle-avant-mise-en-service-pac](../../../checklists/pac/controle-avant-mise-en-service-pac.md)
+  5. Contrôler la montée en température et les sécurités. `[C]` → [controle-avant-mise-en-service-pac](../../../checklists/chauffage/controle-avant-mise-en-service-pac.md)
 - **Points critiques** : débit hydraulique suffisant (protection PAC) ; équilibrage ; loi d'eau adaptée à l'émission. `[B]`
 - **Sécurité** : hydraulique sous pression + fluide frigorigène côté groupe. **Le circuit frigorifère est sous pression et contient un fluide réglementé : toute manipulation (charge, récupération, brasage) exige une **attestation de capacité F-Gaz** et l'outillage adapté — hors périmètre sans qualification.** `[A]`
 

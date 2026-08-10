@@ -8,7 +8,7 @@
 |---|---|
 | Identifiant | `principe-fonctionnement-pac` |
 | Titre | Principe de fonctionnement d'une PAC |
-| Profession | `metier:pac` |
+| Profession | `metier:chauffage` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:pac` |
 | Version | v0.1 |
@@ -32,10 +32,10 @@
 
 ## Cadre & suites
 - **Normes** : installations de PAC **DTU 65.16** `[B]` ⟦références/versions exactes à confirmer par le validateur⟧. `respecte-norme`
-- **Types liés** : `cite-carte` → [controler-pac-geothermique](../../geothermie/cards/controler-pac-geothermique.md) ; `cite-carte` → [controler-circuit-frigorifique-pac](controler-circuit-frigorifique-pac.md)
+- **Types liés** : `cite-carte` → [controler-pac-geothermique](../../geothermie/cards/controler-pac-geothermique.md) ; `cite-carte` → [controler-circuit-frigorifique-clim](../../climatisation/cards/controler-circuit-frigorifique-clim.md)
 
 ## Relations & tags
-- **Tags** : `metier:pac equipement:pac famille:fluides sous-famille:pac intervention:comprendre type:principe cluster:principe`
+- **Tags** : `metier:chauffage equipement:pac famille:fluides sous-famille:pac intervention:comprendre type:principe cluster:principe`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |

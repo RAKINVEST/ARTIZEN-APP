@@ -8,7 +8,7 @@
 |---|---|
 | Identifiant | `controler-unite-exterieure-pac` |
 | Titre | Contrôler l'unité extérieure d'une PAC |
-| Profession | `metier:pac` |
+| Profession | `metier:chauffage` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:pac` |
 | Version | v0.1 |
@@ -26,16 +26,16 @@
   1. Couper l'alimentation électrique de l'unité. `[A]`
   2. Nettoyer l'**échangeur** extérieur (ailettes) sans les déformer. `[C]`
   3. Vérifier le **ventilateur** et l'absence d'obstacle (implantation). `[C]`
-  4. Contrôler l'évacuation des **condensats** et le cycle de **dégivrage**. `[C]` → [pac-givre-anormal](../../../diagnostics/pac/pac-givre-anormal.md)
+  4. Contrôler l'évacuation des **condensats** et le cycle de **dégivrage**. `[C]` → [pac-givre-anormal](../../../diagnostics/chauffage/pac-givre-anormal.md)
 - **Points critiques** : ailettes fragiles ; évacuation des condensats libre (gel) ; ne pas ouvrir le circuit frigorifère. `[B]`
 - **Sécurité** : électricité (consignation) ; ne pas intervenir sur le frigorifère. **Le circuit frigorifère est sous pression et contient un fluide réglementé : toute manipulation (charge, récupération, brasage) exige une **attestation de capacité F-Gaz** et l'outillage adapté — hors périmètre sans qualification.** `[A]`
 
 ## Cadre & suites
 - **Normes** : installations de PAC **DTU 65.16** `[B]` ⟦références/versions exactes à confirmer par le validateur⟧. `respecte-norme`
-- **Diagnostics liés** : `traite-diagnostic` → [pac-givre-anormal](../../../diagnostics/pac/pac-givre-anormal.md)
+- **Diagnostics liés** : `traite-diagnostic` → [pac-givre-anormal](../../../diagnostics/chauffage/pac-givre-anormal.md)
 
 ## Relations & tags
-- **Tags** : `metier:pac equipement:pac famille:fluides sous-famille:pac intervention:controler intervention:entretenir cluster:unite-exterieure cluster:controle equipement:unite-exterieure complexite:moyenne type:entretien`
+- **Tags** : `metier:chauffage equipement:pac famille:fluides sous-famille:pac intervention:controler intervention:entretenir cluster:unite-exterieure cluster:controle equipement:unite-exterieure complexite:moyenne type:entretien`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |

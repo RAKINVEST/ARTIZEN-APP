@@ -8,7 +8,7 @@
 |---|---|
 | Identifiant | `entretenir-pac` |
 | Titre | Entretenir une PAC |
-| Profession | `metier:pac` |
+| Profession | `metier:chauffage` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:pac` |
 | Version | v0.1 |
@@ -26,17 +26,17 @@
   1. Consigner (électricité) ; nettoyer filtres/échangeurs accessibles. `[C]`
   2. Contrôler l'hydraulique (pression, débit, filtre magnétique). `[C]` → [desembouer-circuit-pac-air-eau](../../chauffage/cards/desembouer-circuit-pac-air-eau.md)
   3. Vérifier condensats, dégivrage, unité extérieure. `[C]` → [controler-unite-exterieure-pac](controler-unite-exterieure-pac.md)
-  4. Confier le **contrôle frigorifère** à un frigoriste attesté. `[A]` → [controler-circuit-frigorifique-pac](controler-circuit-frigorifique-pac.md)
+  4. Confier le **contrôle frigorifère** à un frigoriste attesté. `[A]` → [controler-circuit-frigorifique-clim](../../climatisation/cards/controler-circuit-frigorifique-clim.md)
 - **Points critiques** : séparer clairement le domaine accessible du domaine **frigorifère réglementé**. `[B]`
 - **Sécurité** : électricité ; frigorifère réservé F-Gaz. **Le circuit frigorifère est sous pression et contient un fluide réglementé : toute manipulation (charge, récupération, brasage) exige une **attestation de capacité F-Gaz** et l'outillage adapté — hors périmètre sans qualification.** `[A]`
 
 ## Cadre & suites
 - **Normes** : installations de PAC **DTU 65.16** `[B]` ⟦références/versions exactes à confirmer par le validateur⟧. `respecte-norme`
-- **Kit** : `utilise-kit` → [kit-entretien-pac](../../../kits/pac/kit-entretien-pac.md)
-- **Conseil** : `cite-phrase` → [normes-pac-reference](../../../phrases/pac/normes-pac-reference.md)
+- **Kit** : `utilise-kit` → [kit-entretien-pac](../../../kits/chauffage/kit-entretien-pac.md)
+- **Conseil** : `cite-phrase` → [normes-pac-reference](../../../phrases/chauffage/normes-pac-reference.md)
 
 ## Relations & tags
-- **Tags** : `metier:pac equipement:pac famille:fluides sous-famille:pac intervention:entretenir cluster:entretien cluster:maintenance equipement:pac complexite:moyenne type:entretien`
+- **Tags** : `metier:chauffage equipement:pac famille:fluides sous-famille:pac intervention:entretenir cluster:entretien cluster:maintenance equipement:pac complexite:moyenne type:entretien`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |

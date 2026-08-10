@@ -8,7 +8,7 @@
 |---|---|
 | Identifiant | `pac-givre-anormal` |
 | Titre | Givrage anormal de l'unité extérieure |
-| Profession | `metier:pac` |
+| Profession | `metier:chauffage` |
 | Famille | `famille:fluides` |
 | Sous-famille | `sous-famille:pac` |
 | Version | v0.1 |
@@ -23,7 +23,7 @@
 ## Causes probables
 1. Évacuation des **condensats** bouchée / gel. `[C]`
 2. Cycle de **dégivrage** défaillant. `[C]`
-3. Échangeur encrassé / débit d'air réduit. `[C]` → [controler-unite-exterieure-pac](../../professions/pac/cards/controler-unite-exterieure-pac.md)
+3. Échangeur encrassé / débit d'air réduit. `[C]` → [controler-unite-exterieure-pac](../../professions/chauffage/cards/controler-unite-exterieure-pac.md)
 4. Défaut frigorifère → **frigoriste F-Gaz**. `[D]`
 
 ## Résolution
@@ -31,8 +31,8 @@
 
 ## Cadre
 - **Normes** : installations de PAC **DTU 65.16** `[B]` ⟦référence exacte à confirmer⟧. `respecte-norme`
-- **Relations** : `traite-diagnostic` → [controler-unite-exterieure-pac](../../professions/pac/cards/controler-unite-exterieure-pac.md).
-- **Tags** : `metier:pac equipement:pac famille:fluides sous-famille:pac probleme:givrage cluster:diagnostic cluster:pannes equipement:unite-exterieure type:diagnostic`
+- **Relations** : `traite-diagnostic` → [controler-unite-exterieure-pac](../../professions/chauffage/cards/controler-unite-exterieure-pac.md).
+- **Tags** : `metier:chauffage equipement:pac famille:fluides sous-famille:pac probleme:givrage cluster:diagnostic cluster:pannes equipement:unite-exterieure type:diagnostic`
 
 ## Historique
 | Version | Date | Auteur | Validateur | Motif |
