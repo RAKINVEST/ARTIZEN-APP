@@ -31,7 +31,7 @@
 
 ## Cadre
 - **Normes** : installations de PAC **DTU 65.16** `[B]` ⟦référence exacte à confirmer⟧. `respecte-norme`
-- **Relations** : `traite-diagnostic` → [mettre-en-service-pac-air-eau](../../professions/pac/cards/mettre-en-service-pac-air-eau.md).
+- **Relations** : `traite-diagnostic` → [mettre-en-service-pac-air-eau](../../professions/chauffage/cards/mettre-en-service-pac-air-eau.md).
 - **Tags** : `metier:chauffage equipement:pac famille:fluides sous-famille:pac-air-eau probleme:chauffage-insuffisant cluster:diagnostic cluster:pannes type:diagnostic`
 
 ## Historique
