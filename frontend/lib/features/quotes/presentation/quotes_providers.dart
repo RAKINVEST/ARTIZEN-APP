@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/pagination/paged_list.dart';
 import '../../../core/pagination/paged_list_notifier.dart';
 import '../../../shared/providers/current_company_provider.dart';
-import '../../catalog/data/catalog_models.dart';
-import '../../clients/data/client_model.dart';
 import '../data/quote_models.dart';
 import '../data/quote_readiness.dart';
 import '../data/quotes_repository_impl.dart';
@@ -186,37 +184,3 @@ final quotePdfProvider = FutureProvider.family<Uint8List, String>((ref, id) {
 final quoteSamplePdfProvider = FutureProvider.autoDispose<Uint8List>((ref) {
   return ref.watch(quotesRepositoryProvider).downloadSamplePdf();
 });
-
-/// One line being assembled in the "new quote" form, before it's ever sent
-/// to the backend. Deliberately carries no computed amount — see
-/// `QuoteFormScreen`: nothing is calculated client-side, even for preview,
-/// so there is nothing here to compute either.
-class QuoteDraftLine {
-  const QuoteDraftLine({required this.item, required this.quantity});
-
-  final CatalogItem item;
-  final String quantity;
-}
-
-class QuoteDraftNotifier extends Notifier<List<QuoteDraftLine>> {
-  @override
-  List<QuoteDraftLine> build() => [];
-
-  void addLine(CatalogItem item, String quantity) {
-    state = [...state, QuoteDraftLine(item: item, quantity: quantity)];
-  }
-
-  void removeLineAt(int index) {
-    state = [...state]..removeAt(index);
-  }
-
-  void clear() => state = [];
-}
-
-final quoteDraftLinesProvider =
-    NotifierProvider<QuoteDraftNotifier, List<QuoteDraftLine>>(
-      QuoteDraftNotifier.new,
-    );
-
-/// The client selected for the quote currently being drafted.
-final quoteDraftClientProvider = StateProvider<Client?>((ref) => null);

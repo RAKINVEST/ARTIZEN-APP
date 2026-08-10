@@ -14,21 +14,21 @@ import '../../../shared/widgets/debounced_search_field.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../catalog/data/catalog_repository_impl.dart';
 import '../../catalog/presentation/catalog_providers.dart';
-import '../../quotes/presentation/quotes_providers.dart';
+import '../../quote_wizard/presentation/quote_draft_provider.dart';
 import '../data/quote_suggestion_models.dart';
 import 'quote_assistant_providers.dart';
 
 /// "Copilote IA" (Étape 9, anciennement "Assistant IA") : description
 /// libre -> lignes de catalogue suggérées -> (modifiables, complétables
-/// manuellement) -> remise à l'écran de création de devis existant.
+/// manuellement) -> remise au **wizard guidé** de création de devis.
 ///
 /// Cet écran ne crée jamais de devis et ne calcule jamais de montant :
 /// il ne fait qu'appeler `POST /quote-assistant/suggest` pour obtenir
-/// une *proposition*. "Créer le devis" pré-remplit
-/// `quoteDraftLinesProvider` (le même brouillon que `QuoteFormScreen`)
-/// avec les lignes acceptées puis navigue vers l'écran existant — la
-/// création reste `POST /quotes`, exactement comme avant cette
-/// fonctionnalité.
+/// une *proposition*. "Créer le devis" **amorce le brouillon du wizard**
+/// (`seedWizardFromCatalogItems`) avec les lignes acceptées puis navigue
+/// vers `/assistant` : l'artisan choisit le client, vérifie, puis crée —
+/// la création reste `POST /quotes`, via le pipeline existant. Le copilote
+/// alimente le même brouillon que le wizard ; il n'en ouvre pas un second.
 class QuoteAssistantScreen extends ConsumerStatefulWidget {
   const QuoteAssistantScreen({super.key});
 
@@ -109,9 +109,8 @@ class _QuoteAssistantScreenState extends ConsumerState<QuoteAssistantScreen> {
   }
 
   /// Étape 9 : "ajout manuel d'un article" — lets the user complete the
-  /// AI's proposal with an article it missed, exactly like picking an
-  /// item in `QuoteFormScreen`'s own picker, without waiting for another
-  /// analysis.
+  /// AI's proposal with an article it missed, just like picking one in the
+  /// wizard's "Catalogue" step, without waiting for another analysis.
   Future<void> _addManualItem() async {
     final line = await showModalBottomSheet<_ManualItemSelection>(
       context: context,
@@ -142,18 +141,27 @@ class _QuoteAssistantScreenState extends ConsumerState<QuoteAssistantScreen> {
           .listItems(companyId: companyId, activeOnly: true);
       final itemsById = {for (final item in activeItems) item.id: item};
 
-      final draftNotifier = ref.read(quoteDraftLinesProvider.notifier)..clear();
+      // Build the wizard draft from the accepted suggestions. Quantities are
+      // inferred by the AI (Invariant #1's one numeric value) and carried as
+      // strings; parse to the num the draft holds, defaulting to 1 if a
+      // suggestion ever arrives unparseable.
+      final draftLines = <({CatalogItem item, num quantity})>[];
       for (final suggested in accepted) {
         final item = itemsById[suggested.catalogItemId];
         if (item != null) {
-          draftNotifier.addLine(item, suggested.quantity);
+          draftLines.add(
+            (item: item, quantity: num.tryParse(suggested.quantity) ?? 1),
+          );
         }
       }
+      seedWizardFromCatalogItems(ref, draftLines);
 
       ref.read(quoteAssistantNotifierProvider.notifier).clear();
       _descriptionController.clear();
 
-      if (mounted) context.push('/quotes/new');
+      // The copilote has filled the brouillon; the guided wizard takes over
+      // (choisir le client → vérifier → créer). Same draft, one create path.
+      if (mounted) context.push('/assistant');
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -331,9 +339,10 @@ class _ManualItemSelection {
 }
 
 /// Picker for "ajout manuel d'un article" — deliberately its own small
-/// widget rather than reusing `QuoteFormScreen`'s private item picker:
-/// that class isn't exported, and duplicating this little picker is
-/// simpler than making it shared infrastructure for two callers.
+/// widget rather than reusing the wizard's article picker: that one is a
+/// step embedded in the wizard flow, not a standalone, exportable sheet,
+/// and duplicating this little picker is simpler than making it shared
+/// infrastructure for two callers.
 class _ManualItemPickerSheet extends ConsumerStatefulWidget {
   const _ManualItemPickerSheet();
 
@@ -346,9 +355,8 @@ class _ManualItemPickerSheetState extends ConsumerState<_ManualItemPickerSheet> 
   final _quantityController = TextEditingController(text: '1');
   String? _quantityError;
 
-  /// See `_ItemPickerSheetState._addSelectedItem` in quote_form_screen.dart:
-  /// same reason, same guard — a comma or a third decimal must be caught
-  /// on the field, not as a 422 on the finished quote.
+  /// The quantity guard: a comma or a third decimal must be caught on the
+  /// field, not as a 422 on the finished quote.
   void _addSelectedItem() {
     final error = DecimalInput.validate(
       _quantityController.text,
@@ -374,8 +382,8 @@ class _ManualItemPickerSheetState extends ConsumerState<_ManualItemPickerSheet> 
 
   @override
   Widget build(BuildContext context) {
-    // Server search, active items only — mirrors QuoteFormScreen's own
-    // picker, so a large catalogue stays reachable by typing.
+    // Server search, active items only — like the wizard's article picker,
+    // so a large catalogue stays reachable by typing.
     final items = ref.watch(catalogItemSearchProvider);
     final notifier = ref.read(catalogItemSearchProvider.notifier);
 

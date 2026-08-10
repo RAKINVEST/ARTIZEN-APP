@@ -241,6 +241,38 @@ void loadQuoteForEdit(
   ref.read(editingQuoteIdProvider.notifier).state = quote.id;
 }
 
+/// Seed the wizard from the copilote IA's accepted articles: a fresh draft
+/// whose lines are those catalog items, so the artisan continues **in the
+/// wizard** (choisir le client → vérifier → créer) instead of a separate form.
+/// Same shape as [loadQuoteForEdit] — a clean draft, folder and markers cleared
+/// — but built from catalog items and *without* a client: the copilote proposes
+/// the lines, the wizard's Client step decides who the quote is for. The
+/// mapping [CatalogItem] → [DraftLine] is the same one the "Catalogue" step
+/// uses, so a copilote line and a hand-picked line are indistinguishable
+/// afterwards — the artisan can adjust or drop either exactly the same way.
+void seedWizardFromCatalogItems(
+  WidgetRef ref,
+  List<({CatalogItem item, num quantity})> lines,
+) {
+  final notifier = ref.read(quoteDraftProvider.notifier);
+  notifier.reset();
+  for (final entry in lines) {
+    notifier.addArticle(
+      DraftLine(
+        catalogItemId: entry.item.id,
+        designation: entry.item.designation,
+        unit: entry.item.unit,
+        quantity: entry.quantity,
+        unitPriceHt: entry.item.unitPriceHt,
+        vatRate: entry.item.vatRate,
+      ),
+    );
+  }
+  ref.read(selectedFolderProvider.notifier).clear();
+  ref.read(createdQuoteProvider.notifier).state = null;
+  ref.read(editingQuoteIdProvider.notifier).state = null;
+}
+
 /// Clears everything the wizard held — draft, open folder, created quote, and
 /// the "editing" marker — so the next "Nouveau devis" starts from a clean
 /// slate. Called only after a full, successful flow (or a confirmed abandon).

@@ -68,9 +68,9 @@ class QuotesListScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: GradientFab(
-        // "Nouveau devis" now opens the guided wizard (V1). The old
-        // QuoteFormScreen (/quotes/new) is deprecated — no visible link points
-        // to it anymore.
+        // "Nouveau devis" opens the guided wizard — the single quote-creation
+        // path. (The old QuoteFormScreen / `/quotes/new` was removed in V1.1;
+        // the copilote IA now feeds the wizard's draft instead.)
         onPressed: () => context.push('/assistant'),
         tooltip: 'Nouveau devis',
       ),

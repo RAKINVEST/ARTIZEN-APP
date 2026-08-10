@@ -196,12 +196,13 @@ l'analyse statique (`analysis_options.yaml` → `analyzer: exclude`).
   ce qui donne le triplet chargement/erreur/donnée sans code
   supplémentaire, consommé directement par `AsyncValueView`/
   `AsyncListView` (voir plus bas).
-- L'état d'un formulaire de devis en cours de saisie (lignes
-  sélectionnées, client choisi) n'appelle aucune API tant qu'on n'a pas
-  cliqué "Créer le devis" : `QuoteDraftNotifier` (`Notifier<List<QuoteDraftLine>>`)
-  et `quoteDraftClientProvider` (`StateProvider<Client?>`) sont donc de
-  simples providers synchrones, sans `AsyncValue`, plus simples et plus
-  rapides à tester.
+- L'état d'un devis en cours de saisie (client choisi, lignes
+  sélectionnées) n'appelle aucune API tant qu'on n'a pas créé le devis :
+  le `QuoteDraftNotifier` du wizard (`Notifier<QuoteDraft>`,
+  `quote_wizard/presentation/quote_draft_provider.dart`) est donc un
+  simple provider synchrone, sans `AsyncValue`, plus simple et plus
+  rapide à tester. Le client fait partie de `QuoteDraft` — il n'y a plus
+  de provider séparé pour lui.
 - **Piège de cache identifié et corrigé** : un `FutureProvider` (ou le
   `build()` d'un `AsyncNotifier`) dont le Future a échoué reste
   **indéfiniment en échec tant qu'il n'est pas explicitement invalidé** —
@@ -329,13 +330,17 @@ nette entre deux états :
 **"Créer le devis" ne crée rien dans ce module.** Il résout chaque
 `catalog_item_id` accepté en un vrai `CatalogItem` (un seul appel
 `GET /catalog/items?active_only=true`, pour disposer du prix/unité/etc.
-que la réponse de suggestion ne porte pas), pré-remplit
-`quoteDraftLinesProvider` — le même brouillon que `QuoteFormScreen`
-(Étape 6) utilise déjà — puis navigue vers `/quotes/new`. La création
-elle-même reste `POST /quotes`, exactement comme avant cette
-fonctionnalité : "la création du devis utilise ensuite les endpoints
-existants" (énoncé), au pied de la lettre — aucun nouveau code de
-création de devis n'a été écrit.
+que la réponse de suggestion ne porte pas), **amorce le brouillon du
+wizard** via `seedWizardFromCatalogItems` — le même `quoteDraftProvider`
+que le wizard guidé remplit déjà — puis navigue vers `/assistant`.
+L'artisan y choisit le client, vérifie, puis crée. La création elle-même
+reste `POST /quotes`, exactement comme avant cette fonctionnalité : "la
+création du devis utilise ensuite les endpoints existants" (énoncé), au
+pied de la lettre — aucun nouveau code de création de devis n'a été
+écrit. Le copilote alimente le brouillon du wizard ; il n'ouvre pas un
+second parcours de création. *(V1.1 : l'ancien `QuoteFormScreen` /
+`/quotes/new` a été retiré ; le copilote débouche désormais dans le
+wizard, unique parcours de création.)*
 
 **Sans clé Anthropic configurée, l'écran fonctionne exactement comme
 avec une vraie clé — jamais d'écran d'erreur.** Le backend
@@ -356,7 +361,8 @@ navigation nécessaire) et gagne :
 - **"Ajouter un article"** — `AcceptedSuggestionItemsNotifier.addItem()`
   ajoute une ligne choisie manuellement dans le catalogue (via un petit
   picker dédié, `_ManualItemPickerSheet`, plutôt que de réutiliser le
-  picker privé de `QuoteFormScreen` qui n'est pas exporté) à côté de ce
+  picker d'articles du wizard, intégré à son parcours et non exportable)
+  à côté de ce
   que l'IA a proposé, avec `reason: 'Ajouté manuellement'` — l'énoncé
   demande explicitement cette possibilité en plus de la modification
   des lignes déjà suggérées.
