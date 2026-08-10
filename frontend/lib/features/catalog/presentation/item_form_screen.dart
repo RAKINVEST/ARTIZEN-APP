@@ -8,6 +8,7 @@ import '../../../core/utils/decimal_input.dart';
 import '../../../core/widgets/app_components.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../data/catalog_models.dart';
+import '../domain/sale_unit.dart';
 import 'catalog_providers.dart';
 
 /// Used for both creation (`itemId == null`) and editing.
@@ -62,7 +63,19 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
   late final _designation = TextEditingController(text: widget.initial?.designation);
   late final _code = TextEditingController(text: widget.initial?.code);
   late final _description = TextEditingController(text: widget.initial?.description);
-  late final _unit = TextEditingController(text: widget.initial?.unit ?? 'unité');
+  // Unit is picked from a friendly list instead of typed. Stored as a plain
+  // String code (see [SaleUnit]) — no backend/model/DB change.
+  late String _unitCode = widget.initial?.unit ?? kSaleUnits.first.code;
+
+  /// The standard units, plus the article's own unit when it's a legacy/seed
+  /// value outside the list ("ml", "m³", "jour"…) — editing must never change
+  /// how an existing article is counted.
+  late final List<SaleUnit> _unitOptions = [
+    ...kSaleUnits,
+    if (widget.initial != null && !kSaleUnits.any((u) => u.code == widget.initial!.unit))
+      SaleUnit(widget.initial!.unit, saleUnitLabel(widget.initial!.unit)),
+  ];
+
   late final _unitPriceHt = TextEditingController(text: widget.initial?.unitPriceHt);
   late final _vatRate = TextEditingController(text: widget.initial?.vatRate ?? '20.00');
   late final _duration = TextEditingController(
@@ -83,7 +96,7 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
 
   @override
   void dispose() {
-    for (final controller in [_designation, _code, _description, _unit, _unitPriceHt, _vatRate, _duration]) {
+    for (final controller in [_designation, _code, _description, _unitPriceHt, _vatRate, _duration]) {
       controller.dispose();
     }
     super.dispose();
@@ -98,7 +111,7 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
       designation: _designation.text.trim(),
       description: _description.text.trim().isEmpty ? null : _description.text.trim(),
       itemType: _itemType,
-      unit: _unit.text.trim(),
+      unit: _unitCode,
       // Normalized, not just trimmed: the backend's Decimal rejects the
       // comma a French keyboard produces.
       unitPriceHt: DecimalInput.normalize(_unitPriceHt.text),
@@ -181,12 +194,17 @@ class _ItemFormState extends ConsumerState<_ItemForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: AppTextField(
-                  label: 'Unité *',
-                  controller: _unit,
-                  hintText: 'unité, h, m²…',
-                  textInputAction: TextInputAction.next,
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Requis' : null,
+                // Free-text unit replaced by a friendly picker ("À la pièce",
+                // "Au mètre"…). The stored value stays a plain String code.
+                child: DropdownButtonFormField<String>(
+                  initialValue: _unitCode,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Unité *'),
+                  items: [
+                    for (final unit in _unitOptions)
+                      DropdownMenuItem(value: unit.code, child: Text(unit.label)),
+                  ],
+                  onChanged: (value) => setState(() => _unitCode = value ?? _unitCode),
                 ),
               ),
               const SizedBox(width: ArtizenSpacing.sm),
