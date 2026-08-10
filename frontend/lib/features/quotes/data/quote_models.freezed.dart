@@ -21,8 +21,10 @@ QuoteLine _$QuoteLineFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$QuoteLine {
-  String get id => throw _privateConstructorUsedError;
-  String get catalogItemId => throw _privateConstructorUsedError;
+  String get id =>
+      throw _privateConstructorUsedError; // Null for a free line (décision 5), or once the catalog item behind a
+  // line has been deleted (backend SET NULL). The snapshot below still holds.
+  String? get catalogItemId => throw _privateConstructorUsedError;
   String get designation => throw _privateConstructorUsedError;
   String get unit => throw _privateConstructorUsedError;
   String get quantity => throw _privateConstructorUsedError;
@@ -49,7 +51,7 @@ abstract class $QuoteLineCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String catalogItemId,
+    String? catalogItemId,
     String designation,
     String unit,
     String quantity,
@@ -77,7 +79,7 @@ class _$QuoteLineCopyWithImpl<$Res, $Val extends QuoteLine>
   @override
   $Res call({
     Object? id = null,
-    Object? catalogItemId = null,
+    Object? catalogItemId = freezed,
     Object? designation = null,
     Object? unit = null,
     Object? quantity = null,
@@ -93,10 +95,10 @@ class _$QuoteLineCopyWithImpl<$Res, $Val extends QuoteLine>
                 ? _value.id
                 : id // ignore: cast_nullable_to_non_nullable
                       as String,
-            catalogItemId: null == catalogItemId
+            catalogItemId: freezed == catalogItemId
                 ? _value.catalogItemId
                 : catalogItemId // ignore: cast_nullable_to_non_nullable
-                      as String,
+                      as String?,
             designation: null == designation
                 ? _value.designation
                 : designation // ignore: cast_nullable_to_non_nullable
@@ -146,7 +148,7 @@ abstract class _$$QuoteLineImplCopyWith<$Res>
   @useResult
   $Res call({
     String id,
-    String catalogItemId,
+    String? catalogItemId,
     String designation,
     String unit,
     String quantity,
@@ -173,7 +175,7 @@ class __$$QuoteLineImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? catalogItemId = null,
+    Object? catalogItemId = freezed,
     Object? designation = null,
     Object? unit = null,
     Object? quantity = null,
@@ -189,10 +191,10 @@ class __$$QuoteLineImplCopyWithImpl<$Res>
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
                   as String,
-        catalogItemId: null == catalogItemId
+        catalogItemId: freezed == catalogItemId
             ? _value.catalogItemId
             : catalogItemId // ignore: cast_nullable_to_non_nullable
-                  as String,
+                  as String?,
         designation: null == designation
             ? _value.designation
             : designation // ignore: cast_nullable_to_non_nullable
@@ -235,7 +237,7 @@ class __$$QuoteLineImplCopyWithImpl<$Res>
 class _$QuoteLineImpl implements _QuoteLine {
   const _$QuoteLineImpl({
     required this.id,
-    required this.catalogItemId,
+    this.catalogItemId,
     required this.designation,
     required this.unit,
     required this.quantity,
@@ -251,8 +253,10 @@ class _$QuoteLineImpl implements _QuoteLine {
 
   @override
   final String id;
+  // Null for a free line (décision 5), or once the catalog item behind a
+  // line has been deleted (backend SET NULL). The snapshot below still holds.
   @override
-  final String catalogItemId;
+  final String? catalogItemId;
   @override
   final String designation;
   @override
@@ -331,7 +335,7 @@ class _$QuoteLineImpl implements _QuoteLine {
 abstract class _QuoteLine implements QuoteLine {
   const factory _QuoteLine({
     required final String id,
-    required final String catalogItemId,
+    final String? catalogItemId,
     required final String designation,
     required final String unit,
     required final String quantity,
@@ -346,9 +350,10 @@ abstract class _QuoteLine implements QuoteLine {
       _$QuoteLineImpl.fromJson;
 
   @override
-  String get id;
+  String get id; // Null for a free line (décision 5), or once the catalog item behind a
+  // line has been deleted (backend SET NULL). The snapshot below still holds.
   @override
-  String get catalogItemId;
+  String? get catalogItemId;
   @override
   String get designation;
   @override
@@ -773,8 +778,12 @@ QuoteLineInput _$QuoteLineInputFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$QuoteLineInput {
-  String get catalogItemId => throw _privateConstructorUsedError;
+  String? get catalogItemId => throw _privateConstructorUsedError;
   String get quantity => throw _privateConstructorUsedError;
+  String? get designation => throw _privateConstructorUsedError;
+  String? get unit => throw _privateConstructorUsedError;
+  String? get unitPriceHt => throw _privateConstructorUsedError;
+  String? get vatRate => throw _privateConstructorUsedError;
 
   /// Serializes this QuoteLineInput to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -793,7 +802,14 @@ abstract class $QuoteLineInputCopyWith<$Res> {
     $Res Function(QuoteLineInput) then,
   ) = _$QuoteLineInputCopyWithImpl<$Res, QuoteLineInput>;
   @useResult
-  $Res call({String catalogItemId, String quantity});
+  $Res call({
+    String? catalogItemId,
+    String quantity,
+    String? designation,
+    String? unit,
+    String? unitPriceHt,
+    String? vatRate,
+  });
 }
 
 /// @nodoc
@@ -810,17 +826,40 @@ class _$QuoteLineInputCopyWithImpl<$Res, $Val extends QuoteLineInput>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? catalogItemId = null, Object? quantity = null}) {
+  $Res call({
+    Object? catalogItemId = freezed,
+    Object? quantity = null,
+    Object? designation = freezed,
+    Object? unit = freezed,
+    Object? unitPriceHt = freezed,
+    Object? vatRate = freezed,
+  }) {
     return _then(
       _value.copyWith(
-            catalogItemId: null == catalogItemId
+            catalogItemId: freezed == catalogItemId
                 ? _value.catalogItemId
                 : catalogItemId // ignore: cast_nullable_to_non_nullable
-                      as String,
+                      as String?,
             quantity: null == quantity
                 ? _value.quantity
                 : quantity // ignore: cast_nullable_to_non_nullable
                       as String,
+            designation: freezed == designation
+                ? _value.designation
+                : designation // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            unit: freezed == unit
+                ? _value.unit
+                : unit // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            unitPriceHt: freezed == unitPriceHt
+                ? _value.unitPriceHt
+                : unitPriceHt // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            vatRate: freezed == vatRate
+                ? _value.vatRate
+                : vatRate // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -836,7 +875,14 @@ abstract class _$$QuoteLineInputImplCopyWith<$Res>
   ) = __$$QuoteLineInputImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String catalogItemId, String quantity});
+  $Res call({
+    String? catalogItemId,
+    String quantity,
+    String? designation,
+    String? unit,
+    String? unitPriceHt,
+    String? vatRate,
+  });
 }
 
 /// @nodoc
@@ -852,17 +898,40 @@ class __$$QuoteLineInputImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? catalogItemId = null, Object? quantity = null}) {
+  $Res call({
+    Object? catalogItemId = freezed,
+    Object? quantity = null,
+    Object? designation = freezed,
+    Object? unit = freezed,
+    Object? unitPriceHt = freezed,
+    Object? vatRate = freezed,
+  }) {
     return _then(
       _$QuoteLineInputImpl(
-        catalogItemId: null == catalogItemId
+        catalogItemId: freezed == catalogItemId
             ? _value.catalogItemId
             : catalogItemId // ignore: cast_nullable_to_non_nullable
-                  as String,
+                  as String?,
         quantity: null == quantity
             ? _value.quantity
             : quantity // ignore: cast_nullable_to_non_nullable
                   as String,
+        designation: freezed == designation
+            ? _value.designation
+            : designation // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        unit: freezed == unit
+            ? _value.unit
+            : unit // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        unitPriceHt: freezed == unitPriceHt
+            ? _value.unitPriceHt
+            : unitPriceHt // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        vatRate: freezed == vatRate
+            ? _value.vatRate
+            : vatRate // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -872,21 +941,33 @@ class __$$QuoteLineInputImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$QuoteLineInputImpl implements _QuoteLineInput {
   const _$QuoteLineInputImpl({
-    required this.catalogItemId,
+    this.catalogItemId,
     required this.quantity,
+    this.designation,
+    this.unit,
+    this.unitPriceHt,
+    this.vatRate,
   });
 
   factory _$QuoteLineInputImpl.fromJson(Map<String, dynamic> json) =>
       _$$QuoteLineInputImplFromJson(json);
 
   @override
-  final String catalogItemId;
+  final String? catalogItemId;
   @override
   final String quantity;
+  @override
+  final String? designation;
+  @override
+  final String? unit;
+  @override
+  final String? unitPriceHt;
+  @override
+  final String? vatRate;
 
   @override
   String toString() {
-    return 'QuoteLineInput(catalogItemId: $catalogItemId, quantity: $quantity)';
+    return 'QuoteLineInput(catalogItemId: $catalogItemId, quantity: $quantity, designation: $designation, unit: $unit, unitPriceHt: $unitPriceHt, vatRate: $vatRate)';
   }
 
   @override
@@ -897,12 +978,26 @@ class _$QuoteLineInputImpl implements _QuoteLineInput {
             (identical(other.catalogItemId, catalogItemId) ||
                 other.catalogItemId == catalogItemId) &&
             (identical(other.quantity, quantity) ||
-                other.quantity == quantity));
+                other.quantity == quantity) &&
+            (identical(other.designation, designation) ||
+                other.designation == designation) &&
+            (identical(other.unit, unit) || other.unit == unit) &&
+            (identical(other.unitPriceHt, unitPriceHt) ||
+                other.unitPriceHt == unitPriceHt) &&
+            (identical(other.vatRate, vatRate) || other.vatRate == vatRate));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, catalogItemId, quantity);
+  int get hashCode => Object.hash(
+    runtimeType,
+    catalogItemId,
+    quantity,
+    designation,
+    unit,
+    unitPriceHt,
+    vatRate,
+  );
 
   /// Create a copy of QuoteLineInput
   /// with the given fields replaced by the non-null parameter values.
@@ -923,17 +1018,29 @@ class _$QuoteLineInputImpl implements _QuoteLineInput {
 
 abstract class _QuoteLineInput implements QuoteLineInput {
   const factory _QuoteLineInput({
-    required final String catalogItemId,
+    final String? catalogItemId,
     required final String quantity,
+    final String? designation,
+    final String? unit,
+    final String? unitPriceHt,
+    final String? vatRate,
   }) = _$QuoteLineInputImpl;
 
   factory _QuoteLineInput.fromJson(Map<String, dynamic> json) =
       _$QuoteLineInputImpl.fromJson;
 
   @override
-  String get catalogItemId;
+  String? get catalogItemId;
   @override
   String get quantity;
+  @override
+  String? get designation;
+  @override
+  String? get unit;
+  @override
+  String? get unitPriceHt;
+  @override
+  String? get vatRate;
 
   /// Create a copy of QuoteLineInput
   /// with the given fields replaced by the non-null parameter values.

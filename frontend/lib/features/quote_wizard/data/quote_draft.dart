@@ -1,27 +1,72 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../quotes/data/quote_calculation.dart';
+import '../../quotes/data/quote_models.dart';
 
 part 'quote_draft.freezed.dart';
 
-/// One line of a draft, captured as a **snapshot** when the article is picked
-/// (docs/DECISIONS.md, décision 5): its designation, unit and unit price
-/// travel with the line, and [catalogItemId] is its origin. No amount is
-/// computed here — the server calculation holds the authoritative totals.
+int _freeLineSeq = 0;
+
+/// A locally-unique id for a free line. No `uuid` dependency — a monotonic
+/// counter plus the clock is unique within a session, which is all a draft
+/// line's identity needs (it never leaves the client under this name).
+String newFreeLineId() =>
+    'free-${DateTime.now().microsecondsSinceEpoch}-${_freeLineSeq++}';
+
+/// One line of a draft, captured as a **snapshot** when it is added
+/// (docs/DECISIONS.md, décision 5): its designation, unit, price and VAT travel
+/// with the line. No amount is computed here — the server calculation holds the
+/// authoritative totals.
 ///
-/// Free lines and custom prices (also décision 5) need the backend extension
-/// that makes `catalog_item_id` nullable and adds a price field; until then a
-/// draft line always references a catalog item.
+/// A line is either a **catalog line** ([catalogItemId] set — a trace of
+/// origin) or a **free line** ([catalogItemId] null: péage, location…). Its
+/// price can be overridden by the artisan ([priceOverridden]).
 @freezed
 class DraftLine with _$DraftLine {
   const factory DraftLine({
-    required String catalogItemId,
+    /// Stable identity of the line within the draft. For a catalog line it is
+    /// the catalog item's id (so ticking the same article twice bumps its
+    /// quantity rather than duplicating it); for a free line it is a generated
+    /// key ([newFreeLineId]), so two free lines never collapse into one.
+    required String id,
+
+    /// Null for a free line — décision 5.
+    String? catalogItemId,
     required String designation,
     required String unit,
     required num quantity,
     required String unitPriceHt,
     required String vatRate,
+
+    /// True once the artisan set a price different from the catalog's. Only
+    /// then does the override travel to the backend for a catalog line — an
+    /// untouched catalog line sends no price, so the server re-reads the
+    /// current catalog price exactly as before this feature.
+    @Default(false) bool priceOverridden,
   }) = _DraftLine;
+}
+
+extension DraftLineInput on DraftLine {
+  /// Maps this line to the API's `QuoteLineCreate`. A free line carries its
+  /// whole snapshot; a catalog line carries only its id and quantity — plus its
+  /// price *only* when overridden — so an untouched catalog line stays
+  /// byte-identical to before this feature.
+  QuoteLineInput toInput() {
+    if (catalogItemId == null) {
+      return QuoteLineInput(
+        quantity: quantity.toString(),
+        designation: designation,
+        unit: unit,
+        unitPriceHt: unitPriceHt,
+        vatRate: vatRate,
+      );
+    }
+    return QuoteLineInput(
+      catalogItemId: catalogItemId,
+      quantity: quantity.toString(),
+      unitPriceHt: priceOverridden ? unitPriceHt : null,
+    );
+  }
 }
 
 /// The quote in preparation — the business object the whole wizard edits

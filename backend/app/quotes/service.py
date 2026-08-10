@@ -144,12 +144,13 @@ class QuoteService:
     async def _price_lines(
         self, *, company_id: uuid.UUID, lines_data: list[QuoteLineCreate]
     ) -> tuple[list[QuoteLine], QuoteTotals]:
-        """Turns requested (catalog item, quantity) pairs into priced lines.
+        """Turns requested lines — catalog articles or free lines — into priced
+        ``QuoteLine`` objects.
 
         Shared by :meth:`create` and :meth:`calculate` so the live preview and
-        the persisted quote walk the exact same catalog lookups, the same
-        VAT-regime override and the same calculator. Returned ``QuoteLine``
-        objects are unsaved: only ``create`` gives them a ``quote_id``.
+        the persisted quote walk the exact same catalog lookups, price override
+        rule, VAT-regime override and calculator. Returned ``QuoteLine`` objects
+        are unsaved: only ``create`` gives them a ``quote_id``.
         """
         # A company under the franchise-en-base regime (art. 293 B du CGI, the
         # micro-entrepreneur case) charges NO VAT: every line is HT only. The
@@ -163,28 +164,49 @@ class QuoteService:
         line_models: list[QuoteLine] = []
         line_totals: list[LineTotals] = []
         for line_data in lines_data:
-            item = await self._catalog_items.get(line_data.catalog_item_id)
-            if item is None or item.company_id != company_id:
-                raise NotFoundError(f"Catalog item {line_data.catalog_item_id} not found.")
-            if not item.active:
-                raise InactiveCatalogItemError(
-                    f"Catalog item {item.id} is inactive and cannot be used in a quote."
+            if line_data.catalog_item_id is not None:
+                # Catalog line: snapshot désignation/unité/TVA from the article.
+                # The price is the catalog's unless the artisan overrode it
+                # (décision 5 — "un prix peut différer de celui du catalogue").
+                item = await self._catalog_items.get(line_data.catalog_item_id)
+                if item is None or item.company_id != company_id:
+                    raise NotFoundError(f"Catalog item {line_data.catalog_item_id} not found.")
+                if not item.active:
+                    raise InactiveCatalogItemError(
+                        f"Catalog item {item.id} is inactive and cannot be used in a quote."
+                    )
+                catalog_item_id = item.id
+                designation = item.designation
+                unit = item.unit
+                unit_price_ht = (
+                    line_data.unit_price_ht
+                    if line_data.unit_price_ht is not None
+                    else item.unit_price_ht
                 )
+                base_vat_rate = item.vat_rate
+            else:
+                # Free line: the artisan typed everything (the schema guarantees
+                # the four fields are present). No catalog lookup, no origin.
+                catalog_item_id = None
+                designation = line_data.designation
+                unit = line_data.unit
+                unit_price_ht = line_data.unit_price_ht
+                base_vat_rate = line_data.vat_rate
 
-            effective_vat_rate = Decimal("0.00") if vat_exempt else item.vat_rate
+            effective_vat_rate = Decimal("0.00") if vat_exempt else base_vat_rate
             totals = self._calculator.calculate_line(
                 quantity=line_data.quantity,
-                unit_price_ht=item.unit_price_ht,
+                unit_price_ht=unit_price_ht,
                 vat_rate=effective_vat_rate,
             )
             line_totals.append(totals)
             line_models.append(
                 QuoteLine(
-                    catalog_item_id=item.id,
-                    designation=item.designation,
-                    unit=item.unit,
+                    catalog_item_id=catalog_item_id,
+                    designation=designation,
+                    unit=unit,
                     quantity=line_data.quantity,
-                    unit_price_ht=item.unit_price_ht,
+                    unit_price_ht=unit_price_ht,
                     vat_rate=effective_vat_rate,
                     total_ht=totals.total_ht,
                     total_vat=totals.total_vat,

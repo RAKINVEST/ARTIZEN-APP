@@ -9,7 +9,7 @@ part of 'quote_calculation.dart';
 _$QuoteCalculationLineImpl _$$QuoteCalculationLineImplFromJson(
   Map<String, dynamic> json,
 ) => _$QuoteCalculationLineImpl(
-  catalogItemId: json['catalog_item_id'] as String,
+  catalogItemId: json['catalog_item_id'] as String?,
   designation: json['designation'] as String,
   unit: json['unit'] as String,
   quantity: json['quantity'] as String,
@@ -23,7 +23,7 @@ _$QuoteCalculationLineImpl _$$QuoteCalculationLineImplFromJson(
 Map<String, dynamic> _$$QuoteCalculationLineImplToJson(
   _$QuoteCalculationLineImpl instance,
 ) => <String, dynamic>{
-  'catalog_item_id': instance.catalogItemId,
+  if (instance.catalogItemId case final value?) 'catalog_item_id': value,
   'designation': instance.designation,
   'unit': instance.unit,
   'quantity': instance.quantity,

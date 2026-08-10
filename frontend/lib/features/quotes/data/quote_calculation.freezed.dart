@@ -21,7 +21,8 @@ QuoteCalculationLine _$QuoteCalculationLineFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$QuoteCalculationLine {
-  String get catalogItemId => throw _privateConstructorUsedError;
+  // Null for a free line — the priced preview echoes back what was sent.
+  String? get catalogItemId => throw _privateConstructorUsedError;
   String get designation => throw _privateConstructorUsedError;
   String get unit => throw _privateConstructorUsedError;
   String get quantity => throw _privateConstructorUsedError;
@@ -49,7 +50,7 @@ abstract class $QuoteCalculationLineCopyWith<$Res> {
   ) = _$QuoteCalculationLineCopyWithImpl<$Res, QuoteCalculationLine>;
   @useResult
   $Res call({
-    String catalogItemId,
+    String? catalogItemId,
     String designation,
     String unit,
     String quantity,
@@ -79,7 +80,7 @@ class _$QuoteCalculationLineCopyWithImpl<
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? catalogItemId = null,
+    Object? catalogItemId = freezed,
     Object? designation = null,
     Object? unit = null,
     Object? quantity = null,
@@ -91,10 +92,10 @@ class _$QuoteCalculationLineCopyWithImpl<
   }) {
     return _then(
       _value.copyWith(
-            catalogItemId: null == catalogItemId
+            catalogItemId: freezed == catalogItemId
                 ? _value.catalogItemId
                 : catalogItemId // ignore: cast_nullable_to_non_nullable
-                      as String,
+                      as String?,
             designation: null == designation
                 ? _value.designation
                 : designation // ignore: cast_nullable_to_non_nullable
@@ -143,7 +144,7 @@ abstract class _$$QuoteCalculationLineImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    String catalogItemId,
+    String? catalogItemId,
     String designation,
     String unit,
     String quantity,
@@ -169,7 +170,7 @@ class __$$QuoteCalculationLineImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? catalogItemId = null,
+    Object? catalogItemId = freezed,
     Object? designation = null,
     Object? unit = null,
     Object? quantity = null,
@@ -181,10 +182,10 @@ class __$$QuoteCalculationLineImplCopyWithImpl<$Res>
   }) {
     return _then(
       _$QuoteCalculationLineImpl(
-        catalogItemId: null == catalogItemId
+        catalogItemId: freezed == catalogItemId
             ? _value.catalogItemId
             : catalogItemId // ignore: cast_nullable_to_non_nullable
-                  as String,
+                  as String?,
         designation: null == designation
             ? _value.designation
             : designation // ignore: cast_nullable_to_non_nullable
@@ -226,7 +227,7 @@ class __$$QuoteCalculationLineImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$QuoteCalculationLineImpl implements _QuoteCalculationLine {
   const _$QuoteCalculationLineImpl({
-    required this.catalogItemId,
+    this.catalogItemId,
     required this.designation,
     required this.unit,
     required this.quantity,
@@ -240,8 +241,9 @@ class _$QuoteCalculationLineImpl implements _QuoteCalculationLine {
   factory _$QuoteCalculationLineImpl.fromJson(Map<String, dynamic> json) =>
       _$$QuoteCalculationLineImplFromJson(json);
 
+  // Null for a free line — the priced preview echoes back what was sent.
   @override
-  final String catalogItemId;
+  final String? catalogItemId;
   @override
   final String designation;
   @override
@@ -321,7 +323,7 @@ class _$QuoteCalculationLineImpl implements _QuoteCalculationLine {
 
 abstract class _QuoteCalculationLine implements QuoteCalculationLine {
   const factory _QuoteCalculationLine({
-    required final String catalogItemId,
+    final String? catalogItemId,
     required final String designation,
     required final String unit,
     required final String quantity,
@@ -335,8 +337,9 @@ abstract class _QuoteCalculationLine implements QuoteCalculationLine {
   factory _QuoteCalculationLine.fromJson(Map<String, dynamic> json) =
       _$QuoteCalculationLineImpl.fromJson;
 
+  // Null for a free line — the priced preview echoes back what was sent.
   @override
-  String get catalogItemId;
+  String? get catalogItemId;
   @override
   String get designation;
   @override

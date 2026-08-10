@@ -6,7 +6,6 @@ import 'package:printing/printing.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/debouncer.dart';
-import '../../quotes/data/quote_models.dart';
 import '../../quotes/data/quotes_repository_impl.dart';
 import '../data/quote_draft.dart';
 import 'quote_draft_provider.dart';
@@ -48,11 +47,15 @@ class _LiveDevisPreviewState extends ConsumerState<LiveDevisPreview> {
     super.dispose();
   }
 
-  /// Only the client and the (item, quantity) pairs change the document — a new
-  /// calculation landing in the draft must not trigger a re-render.
+  /// Only what the document shows changes the signature — a new calculation
+  /// landing in the draft must not trigger a re-render. Beyond client and
+  /// quantity, this now covers a free line's whole snapshot and any price
+  /// override (keyed on the stable line id, not catalogItemId, which is null
+  /// for free lines).
   String _signatureOf(QuoteDraft draft) =>
       '${draft.clientId}|'
-      '${draft.lines.map((l) => '${l.catalogItemId}:${l.quantity}').join(',')}';
+      '${draft.lines.map((l) => '${l.id}:${l.quantity}:${l.unitPriceHt}:'
+          '${l.vatRate}:${l.designation}:${l.unit}').join(',')}';
 
   Future<void> _refresh() async {
     final draft = ref.read(quoteDraftProvider);
@@ -62,13 +65,7 @@ class _LiveDevisPreviewState extends ConsumerState<LiveDevisPreview> {
       if (mounted) setState(() => _pdf = null);
       return;
     }
-    final lines = [
-      for (final line in draft.lines)
-        QuoteLineInput(
-          catalogItemId: line.catalogItemId,
-          quantity: line.quantity.toString(),
-        ),
-    ];
+    final lines = [for (final line in draft.lines) line.toInput()];
     if (mounted) setState(() => _pdf = const AsyncValue.loading());
     final next = await AsyncValue.guard(
       () => ref

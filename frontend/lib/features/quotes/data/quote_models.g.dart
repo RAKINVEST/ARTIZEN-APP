@@ -9,7 +9,7 @@ part of 'quote_models.dart';
 _$QuoteLineImpl _$$QuoteLineImplFromJson(Map<String, dynamic> json) =>
     _$QuoteLineImpl(
       id: json['id'] as String,
-      catalogItemId: json['catalog_item_id'] as String,
+      catalogItemId: json['catalog_item_id'] as String?,
       designation: json['designation'] as String,
       unit: json['unit'] as String,
       quantity: json['quantity'] as String,
@@ -23,7 +23,7 @@ _$QuoteLineImpl _$$QuoteLineImplFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$$QuoteLineImplToJson(_$QuoteLineImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'catalog_item_id': instance.catalogItemId,
+      if (instance.catalogItemId case final value?) 'catalog_item_id': value,
       'designation': instance.designation,
       'unit': instance.unit,
       'quantity': instance.quantity,
@@ -75,13 +75,21 @@ const _$QuoteStatusEnumMap = {
 
 _$QuoteLineInputImpl _$$QuoteLineInputImplFromJson(Map<String, dynamic> json) =>
     _$QuoteLineInputImpl(
-      catalogItemId: json['catalog_item_id'] as String,
+      catalogItemId: json['catalog_item_id'] as String?,
       quantity: json['quantity'] as String,
+      designation: json['designation'] as String?,
+      unit: json['unit'] as String?,
+      unitPriceHt: json['unit_price_ht'] as String?,
+      vatRate: json['vat_rate'] as String?,
     );
 
 Map<String, dynamic> _$$QuoteLineInputImplToJson(
   _$QuoteLineInputImpl instance,
 ) => <String, dynamic>{
-  'catalog_item_id': instance.catalogItemId,
+  if (instance.catalogItemId case final value?) 'catalog_item_id': value,
   'quantity': instance.quantity,
+  if (instance.designation case final value?) 'designation': value,
+  if (instance.unit case final value?) 'unit': value,
+  if (instance.unitPriceHt case final value?) 'unit_price_ht': value,
+  if (instance.vatRate case final value?) 'vat_rate': value,
 };

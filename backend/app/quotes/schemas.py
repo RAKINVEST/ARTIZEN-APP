@@ -1,8 +1,10 @@
 """Pydantic schemas for the quotes module.
 
-``QuoteLineCreate`` intentionally has no price field: the only input is
-which catalog item and how much of it — the amount is always derived by
-``QuoteCalculator`` from the catalog, never supplied by the caller.
+``QuoteLineCreate`` accepts two shapes (décision 5): a **catalog line**
+(``catalog_item_id`` set, with an *optional* ``unit_price_ht`` override) or a
+**free line** (``catalog_item_id`` null, price/désignation typed from scratch).
+A supplied price is only ever an input to ``QuoteCalculator`` — which stays the
+one place any total is computed — never an amount trusted as-is.
 """
 
 import uuid
@@ -10,7 +12,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.quotes.models import QuoteStatus
 
@@ -35,7 +37,24 @@ class QuoteReadiness(BaseModel):
 
 
 class QuoteLineCreate(BaseModel):
-    catalog_item_id: uuid.UUID
+    """A quote line to price — a catalog article or a free line (décision 5).
+
+    Disambiguated by ``catalog_item_id``:
+
+    - **Catalog line** (``catalog_item_id`` set): the service snapshots
+      designation/unit/VAT from the catalog; ``unit_price_ht`` is an *optional*
+      override ("un prix peut différer de celui du catalogue"). The other
+      free-line fields are ignored.
+    - **Free line** (``catalog_item_id`` null/absent): typed from scratch
+      (péage, location, intervention exceptionnelle), so ``designation``,
+      ``unit``, ``unit_price_ht`` and ``vat_rate`` are all **required**.
+
+    A supplied price is never trusted as an amount: it is only an input to
+    ``QuoteCalculator``, still the one place a total is computed (décision 3).
+    The AI never fills these — a custom price is a human act.
+    """
+
+    catalog_item_id: uuid.UUID | None = None
     # Bounded to exactly what QuoteLine.quantity's Numeric(10, 2) column can
     # hold. Without this, PostgreSQL silently rounds the persisted quantity
     # while QuoteCalculator has already computed total_ht from the unrounded
@@ -43,6 +62,39 @@ class QuoteLineCreate(BaseModel):
     # artisan cannot justify. A quantity that doesn't fit must be refused
     # (422), never silently altered.
     quantity: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
+    # Free-line fields — also the optional price override for a catalog line.
+    # Bounds mirror the QuoteLine columns (Numeric(10,2) price, Numeric(5,2)
+    # rate) so a value that can't be stored is refused (422), never truncated.
+    designation: str | None = Field(default=None, min_length=1, max_length=255)
+    unit: str | None = Field(default=None, min_length=1, max_length=32)
+    unit_price_ht: Decimal | None = Field(
+        default=None, gt=0, max_digits=10, decimal_places=2
+    )
+    vat_rate: Decimal | None = Field(
+        default=None, ge=0, le=100, max_digits=5, decimal_places=2
+    )
+
+    @model_validator(mode="after")
+    def _check_line_shape(self) -> "QuoteLineCreate":
+        """A free line must carry everything the catalog would have supplied."""
+        if self.catalog_item_id is None:
+            missing = [
+                name
+                for name, value in (
+                    ("designation", self.designation),
+                    ("unit", self.unit),
+                    ("unit_price_ht", self.unit_price_ht),
+                    ("vat_rate", self.vat_rate),
+                )
+                if value is None
+            ]
+            if missing:
+                raise ValueError(
+                    "A free line (no catalog_item_id) requires: "
+                    + ", ".join(missing)
+                    + "."
+                )
+        return self
 
 
 class QuoteCreate(BaseModel):
@@ -76,7 +128,8 @@ class QuoteLineCalculation(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    catalog_item_id: uuid.UUID
+    # Null for a free line — it has no catalog article behind it.
+    catalog_item_id: uuid.UUID | None
     designation: str
     unit: str
     quantity: Decimal
@@ -105,7 +158,9 @@ class QuoteLineRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    catalog_item_id: uuid.UUID
+    # Null for a free line — it has no catalog article behind it (and becomes
+    # null on an existing line if its catalog item is later deleted, SET NULL).
+    catalog_item_id: uuid.UUID | None
     designation: str
     unit: str
     quantity: Decimal

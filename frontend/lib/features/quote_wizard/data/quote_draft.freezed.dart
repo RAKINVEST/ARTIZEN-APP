@@ -17,12 +17,25 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$DraftLine {
-  String get catalogItemId => throw _privateConstructorUsedError;
+  /// Stable identity of the line within the draft. For a catalog line it is
+  /// the catalog item's id (so ticking the same article twice bumps its
+  /// quantity rather than duplicating it); for a free line it is a generated
+  /// key ([newFreeLineId]), so two free lines never collapse into one.
+  String get id => throw _privateConstructorUsedError;
+
+  /// Null for a free line — décision 5.
+  String? get catalogItemId => throw _privateConstructorUsedError;
   String get designation => throw _privateConstructorUsedError;
   String get unit => throw _privateConstructorUsedError;
   num get quantity => throw _privateConstructorUsedError;
   String get unitPriceHt => throw _privateConstructorUsedError;
   String get vatRate => throw _privateConstructorUsedError;
+
+  /// True once the artisan set a price different from the catalog's. Only
+  /// then does the override travel to the backend for a catalog line — an
+  /// untouched catalog line sends no price, so the server re-reads the
+  /// current catalog price exactly as before this feature.
+  bool get priceOverridden => throw _privateConstructorUsedError;
 
   /// Create a copy of DraftLine
   /// with the given fields replaced by the non-null parameter values.
@@ -37,12 +50,14 @@ abstract class $DraftLineCopyWith<$Res> {
       _$DraftLineCopyWithImpl<$Res, DraftLine>;
   @useResult
   $Res call({
-    String catalogItemId,
+    String id,
+    String? catalogItemId,
     String designation,
     String unit,
     num quantity,
     String unitPriceHt,
     String vatRate,
+    bool priceOverridden,
   });
 }
 
@@ -61,19 +76,25 @@ class _$DraftLineCopyWithImpl<$Res, $Val extends DraftLine>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? catalogItemId = null,
+    Object? id = null,
+    Object? catalogItemId = freezed,
     Object? designation = null,
     Object? unit = null,
     Object? quantity = null,
     Object? unitPriceHt = null,
     Object? vatRate = null,
+    Object? priceOverridden = null,
   }) {
     return _then(
       _value.copyWith(
-            catalogItemId: null == catalogItemId
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            catalogItemId: freezed == catalogItemId
                 ? _value.catalogItemId
                 : catalogItemId // ignore: cast_nullable_to_non_nullable
-                      as String,
+                      as String?,
             designation: null == designation
                 ? _value.designation
                 : designation // ignore: cast_nullable_to_non_nullable
@@ -94,6 +115,10 @@ class _$DraftLineCopyWithImpl<$Res, $Val extends DraftLine>
                 ? _value.vatRate
                 : vatRate // ignore: cast_nullable_to_non_nullable
                       as String,
+            priceOverridden: null == priceOverridden
+                ? _value.priceOverridden
+                : priceOverridden // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -110,12 +135,14 @@ abstract class _$$DraftLineImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    String catalogItemId,
+    String id,
+    String? catalogItemId,
     String designation,
     String unit,
     num quantity,
     String unitPriceHt,
     String vatRate,
+    bool priceOverridden,
   });
 }
 
@@ -133,19 +160,25 @@ class __$$DraftLineImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? catalogItemId = null,
+    Object? id = null,
+    Object? catalogItemId = freezed,
     Object? designation = null,
     Object? unit = null,
     Object? quantity = null,
     Object? unitPriceHt = null,
     Object? vatRate = null,
+    Object? priceOverridden = null,
   }) {
     return _then(
       _$DraftLineImpl(
-        catalogItemId: null == catalogItemId
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        catalogItemId: freezed == catalogItemId
             ? _value.catalogItemId
             : catalogItemId // ignore: cast_nullable_to_non_nullable
-                  as String,
+                  as String?,
         designation: null == designation
             ? _value.designation
             : designation // ignore: cast_nullable_to_non_nullable
@@ -166,6 +199,10 @@ class __$$DraftLineImplCopyWithImpl<$Res>
             ? _value.vatRate
             : vatRate // ignore: cast_nullable_to_non_nullable
                   as String,
+        priceOverridden: null == priceOverridden
+            ? _value.priceOverridden
+            : priceOverridden // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -175,16 +212,26 @@ class __$$DraftLineImplCopyWithImpl<$Res>
 
 class _$DraftLineImpl implements _DraftLine {
   const _$DraftLineImpl({
-    required this.catalogItemId,
+    required this.id,
+    this.catalogItemId,
     required this.designation,
     required this.unit,
     required this.quantity,
     required this.unitPriceHt,
     required this.vatRate,
+    this.priceOverridden = false,
   });
 
+  /// Stable identity of the line within the draft. For a catalog line it is
+  /// the catalog item's id (so ticking the same article twice bumps its
+  /// quantity rather than duplicating it); for a free line it is a generated
+  /// key ([newFreeLineId]), so two free lines never collapse into one.
   @override
-  final String catalogItemId;
+  final String id;
+
+  /// Null for a free line — décision 5.
+  @override
+  final String? catalogItemId;
   @override
   final String designation;
   @override
@@ -196,9 +243,17 @@ class _$DraftLineImpl implements _DraftLine {
   @override
   final String vatRate;
 
+  /// True once the artisan set a price different from the catalog's. Only
+  /// then does the override travel to the backend for a catalog line — an
+  /// untouched catalog line sends no price, so the server re-reads the
+  /// current catalog price exactly as before this feature.
+  @override
+  @JsonKey()
+  final bool priceOverridden;
+
   @override
   String toString() {
-    return 'DraftLine(catalogItemId: $catalogItemId, designation: $designation, unit: $unit, quantity: $quantity, unitPriceHt: $unitPriceHt, vatRate: $vatRate)';
+    return 'DraftLine(id: $id, catalogItemId: $catalogItemId, designation: $designation, unit: $unit, quantity: $quantity, unitPriceHt: $unitPriceHt, vatRate: $vatRate, priceOverridden: $priceOverridden)';
   }
 
   @override
@@ -206,6 +261,7 @@ class _$DraftLineImpl implements _DraftLine {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$DraftLineImpl &&
+            (identical(other.id, id) || other.id == id) &&
             (identical(other.catalogItemId, catalogItemId) ||
                 other.catalogItemId == catalogItemId) &&
             (identical(other.designation, designation) ||
@@ -215,18 +271,22 @@ class _$DraftLineImpl implements _DraftLine {
                 other.quantity == quantity) &&
             (identical(other.unitPriceHt, unitPriceHt) ||
                 other.unitPriceHt == unitPriceHt) &&
-            (identical(other.vatRate, vatRate) || other.vatRate == vatRate));
+            (identical(other.vatRate, vatRate) || other.vatRate == vatRate) &&
+            (identical(other.priceOverridden, priceOverridden) ||
+                other.priceOverridden == priceOverridden));
   }
 
   @override
   int get hashCode => Object.hash(
     runtimeType,
+    id,
     catalogItemId,
     designation,
     unit,
     quantity,
     unitPriceHt,
     vatRate,
+    priceOverridden,
   );
 
   /// Create a copy of DraftLine
@@ -240,16 +300,26 @@ class _$DraftLineImpl implements _DraftLine {
 
 abstract class _DraftLine implements DraftLine {
   const factory _DraftLine({
-    required final String catalogItemId,
+    required final String id,
+    final String? catalogItemId,
     required final String designation,
     required final String unit,
     required final num quantity,
     required final String unitPriceHt,
     required final String vatRate,
+    final bool priceOverridden,
   }) = _$DraftLineImpl;
 
+  /// Stable identity of the line within the draft. For a catalog line it is
+  /// the catalog item's id (so ticking the same article twice bumps its
+  /// quantity rather than duplicating it); for a free line it is a generated
+  /// key ([newFreeLineId]), so two free lines never collapse into one.
   @override
-  String get catalogItemId;
+  String get id;
+
+  /// Null for a free line — décision 5.
+  @override
+  String? get catalogItemId;
   @override
   String get designation;
   @override
@@ -260,6 +330,13 @@ abstract class _DraftLine implements DraftLine {
   String get unitPriceHt;
   @override
   String get vatRate;
+
+  /// True once the artisan set a price different from the catalog's. Only
+  /// then does the override travel to the backend for a catalog line — an
+  /// untouched catalog line sends no price, so the server re-reads the
+  /// current catalog price exactly as before this feature.
+  @override
+  bool get priceOverridden;
 
   /// Create a copy of DraftLine
   /// with the given fields replaced by the non-null parameter values.

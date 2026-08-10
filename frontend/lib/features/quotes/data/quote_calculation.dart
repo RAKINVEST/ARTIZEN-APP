@@ -11,7 +11,8 @@ part 'quote_calculation.g.dart';
 @freezed
 class QuoteCalculationLine with _$QuoteCalculationLine {
   const factory QuoteCalculationLine({
-    required String catalogItemId,
+    // Null for a free line — the priced preview echoes back what was sent.
+    String? catalogItemId,
     required String designation,
     required String unit,
     required String quantity,

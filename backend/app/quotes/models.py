@@ -1,12 +1,15 @@
 """ORM models for the quotes module: ``Quote`` and ``QuoteLine``.
 
-A ``QuoteLine`` always references an existing ``CatalogItem`` — there is
-no free-text price in this first version, Artizen never invents amounts.
-``designation``, ``unit``, ``unit_price_ht`` and ``vat_rate`` are copied
-("snapshotted") from the ``CatalogItem`` at the moment the line is
-created, rather than looked up live every time the quote is read: if the
-artisan later changes a price in the catalog, past quotes must keep
-showing the amounts they were actually issued with.
+A ``QuoteLine`` is a **photograph** (décision 5): ``designation``, ``unit``,
+``unit_price_ht`` and ``vat_rate`` are copied onto the line when it is created,
+not looked up live — so if the artisan later changes a catalog price, past
+quotes keep showing the amounts they were actually issued with.
+
+A line may come from a catalog article (``catalog_item_id`` set — only a trace
+of origin) or be a **free line** typed from scratch (``catalog_item_id`` null:
+péage, location, intervention exceptionnelle). Its price may differ from the
+catalog's. Artizen still never *invents* an amount: a price is only ever an
+input to ``QuoteCalculator``, which stays the one place a total is computed.
 """
 
 import enum
@@ -132,10 +135,13 @@ class QuoteLine(Base, UUIDMixin, TimestampMixin):
     quote_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("quotes.id", ondelete="CASCADE"), index=True
     )
-    # RESTRICT: a catalog item referenced by a quote line can only be
-    # deactivated (CatalogService.deactivate_item), never hard-deleted.
-    catalog_item_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("catalog_items.id", ondelete="RESTRICT")
+    # SET NULL + nullable (décision 5): catalog_item_id is a trace of origin,
+    # not a dependency. Deleting a catalog item nulls it on the lines that used
+    # it — each keeps its own snapshot, so past quotes stay intact while the
+    # artisan can still prune their catalog. Null from the start for a free
+    # line, which references no catalog article at all.
+    catalog_item_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("catalog_items.id", ondelete="SET NULL"), nullable=True
     )
     designation: Mapped[str]
     unit: Mapped[str]

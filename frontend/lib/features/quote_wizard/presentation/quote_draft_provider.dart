@@ -31,43 +31,78 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
     state = state.copyWith(clientId: null, clientLabel: null);
   }
 
-  /// Add an article. If it's already in the draft, bump its quantity rather
-  /// than duplicate the line — ticking it twice means "more of it", not a
-  /// second line.
+  /// Add a line. If a line with the same [DraftLine.id] is already in the draft
+  /// (i.e. the same catalog article ticked again), bump its quantity rather
+  /// than duplicate it. A free line carries a unique id, so it always appends —
+  /// two free lines never collapse into one.
   void addArticle(DraftLine line) {
-    final existing = state.lines.indexWhere(
-      (l) => l.catalogItemId == line.catalogItemId,
-    );
+    final existing = state.lines.indexWhere((l) => l.id == line.id);
     if (existing >= 0) {
-      setQuantity(
-        line.catalogItemId,
-        state.lines[existing].quantity + line.quantity,
-      );
+      setQuantity(line.id, state.lines[existing].quantity + line.quantity);
       return;
     }
     state = state.copyWith(lines: [...state.lines, line]);
   }
 
-  void removeLine(String catalogItemId) {
+  void removeLine(String id) {
     state = state.copyWith(
-      lines: state.lines
-          .where((l) => l.catalogItemId != catalogItemId)
-          .toList(),
+      lines: state.lines.where((l) => l.id != id).toList(),
     );
   }
 
   /// Set a line's quantity. Zero or less removes it — the artisan stepped it
   /// down to nothing, which means they no longer want it.
-  void setQuantity(String catalogItemId, num quantity) {
+  void setQuantity(String id, num quantity) {
     if (quantity <= 0) {
-      removeLine(catalogItemId);
+      removeLine(id);
       return;
     }
     state = state.copyWith(
       lines: [
         for (final line in state.lines)
-          if (line.catalogItemId == catalogItemId)
-            line.copyWith(quantity: quantity)
+          if (line.id == id) line.copyWith(quantity: quantity) else line,
+      ],
+    );
+  }
+
+  /// Override a line's unit price (décision 5 — "un prix peut différer de celui
+  /// du catalogue"). Marks it overridden so a catalog line's new price travels
+  /// to the backend instead of being re-read from the catalog. The calculator
+  /// still computes every total (décision 3) — this only changes an input.
+  void setUnitPrice(String id, String unitPriceHt) {
+    state = state.copyWith(
+      lines: [
+        for (final line in state.lines)
+          if (line.id == id)
+            line.copyWith(unitPriceHt: unitPriceHt, priceOverridden: true)
+          else
+            line,
+      ],
+    );
+  }
+
+  /// Replace the editable fields of a free line (its whole snapshot). Only for
+  /// lines the artisan typed — a catalog line's désignation/unité stay the
+  /// catalog's.
+  void updateFreeLine(
+    String id, {
+    required String designation,
+    required String unit,
+    required num quantity,
+    required String unitPriceHt,
+    required String vatRate,
+  }) {
+    state = state.copyWith(
+      lines: [
+        for (final line in state.lines)
+          if (line.id == id)
+            line.copyWith(
+              designation: designation,
+              unit: unit,
+              quantity: quantity,
+              unitPriceHt: unitPriceHt,
+              vatRate: vatRate,
+            )
           else
             line,
       ],
@@ -89,13 +124,7 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
     final calculation = await ref
         .read(quotesRepositoryProvider)
         .calculate(
-          lines: [
-            for (final line in state.lines)
-              QuoteLineInput(
-                catalogItemId: line.catalogItemId,
-                quantity: line.quantity.toString(),
-              ),
-          ],
+          lines: [for (final line in state.lines) line.toInput()],
         );
     state = state.copyWith(calculation: calculation);
   }
@@ -225,14 +254,24 @@ void loadQuoteForEdit(
   notifier.reset();
   notifier.selectClient(id: quote.clientId, label: clientLabel);
   for (final line in quote.lines) {
+    // A former free line — or one whose catalog item was later deleted (SET
+    // NULL) — has no catalogItemId: it keeps its snapshot and stays a free line.
+    final catalogItemId = line.catalogItemId;
     notifier.addArticle(
       DraftLine(
-        catalogItemId: line.catalogItemId,
+        id: catalogItemId ?? newFreeLineId(),
+        catalogItemId: catalogItemId,
         designation: line.designation,
         unit: line.unit,
         quantity: num.tryParse(line.quantity) ?? 1,
         unitPriceHt: line.unitPriceHt,
         vatRate: line.vatRate,
+        // A brouillon is a photograph (décision 5): reopening it must preserve
+        // the exact price shown, not silently re-fetch the current catalog one.
+        // So a reopened catalog line travels as an override of its snapshot
+        // price; a free line already carries its whole snapshot. (To get the
+        // current catalog price, the artisan removes and re-adds the line.)
+        priceOverridden: catalogItemId != null,
       ),
     );
   }
@@ -259,6 +298,9 @@ void seedWizardFromCatalogItems(
   for (final entry in lines) {
     notifier.addArticle(
       DraftLine(
+        // Catalog line: its id is the catalog item's id. The copilote never
+        // supplies a custom price (Invariant #1), so priceOverridden stays false.
+        id: entry.item.id,
         catalogItemId: entry.item.id,
         designation: entry.item.designation,
         unit: entry.item.unit,

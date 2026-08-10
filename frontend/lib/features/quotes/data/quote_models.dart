@@ -10,7 +10,9 @@ part 'quote_models.g.dart';
 class QuoteLine with _$QuoteLine {
   const factory QuoteLine({
     required String id,
-    required String catalogItemId,
+    // Null for a free line (décision 5), or once the catalog item behind a
+    // line has been deleted (backend SET NULL). The snapshot below still holds.
+    String? catalogItemId,
     required String designation,
     required String unit,
     required String quantity,
@@ -88,14 +90,24 @@ class Quote with _$Quote {
   factory Quote.fromJson(Map<String, dynamic> json) => _$QuoteFromJson(json);
 }
 
-/// Mirrors `QuoteLineCreate`: only a catalog item and a quantity — no price
-/// field exists here, structurally matching the backend's "no free price"
-/// rule (see `app/quotes/schemas.py`).
+/// Mirrors `QuoteLineCreate` (décision 5). Two shapes:
+/// - **catalog line** — [catalogItemId] set, [unitPriceHt] an *optional*
+///   override of the catalog price; the other fields stay null;
+/// - **free line** — [catalogItemId] null, with [designation], [unit],
+///   [unitPriceHt] and [vatRate] all supplied.
+///
+/// Null fields are omitted from the JSON (`include_if_null: false`), so a plain
+/// catalog line stays `{catalog_item_id, quantity}` on the wire — identical to
+/// before this feature — and the backend re-reads the current catalog price.
 @freezed
 class QuoteLineInput with _$QuoteLineInput {
   const factory QuoteLineInput({
-    required String catalogItemId,
+    String? catalogItemId,
     required String quantity,
+    String? designation,
+    String? unit,
+    String? unitPriceHt,
+    String? vatRate,
   }) = _QuoteLineInput;
 
   factory QuoteLineInput.fromJson(Map<String, dynamic> json) =>

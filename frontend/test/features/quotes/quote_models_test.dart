@@ -45,7 +45,8 @@ void main() {
 
   group('QuoteLineInput', () {
     test(
-      'toJson carries only catalog_item_id and quantity — no price field exists',
+      'a plain catalog line carries only catalog_item_id and quantity '
+      '(no price unless overridden — free-line fields are omitted)',
       () {
         const input = QuoteLineInput(catalogItemId: 'i1', quantity: '3');
 

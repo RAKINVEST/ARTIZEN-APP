@@ -8,6 +8,9 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../support/fake_repositories.dart';
 
 DraftLine _line(String id, {num quantity = 1}) => DraftLine(
+  // A catalog line's identity is its catalog item id (id == catalogItemId), so
+  // operations keyed on either behave the same.
+  id: id,
   catalogItemId: id,
   designation: 'Article $id',
   unit: 'unité',

@@ -125,6 +125,7 @@ void main() {
     notifier.selectClient(id: 'old-client', label: 'Ancien client');
     notifier.addArticle(
       const DraftLine(
+        id: 'stale',
         catalogItemId: 'stale',
         designation: 'Ligne périmée',
         unit: 'u',

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/debouncer.dart';
+import '../../../core/utils/decimal_input.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../shared/widgets/debounced_search_field.dart';
 import '../../branding/presentation/branding_providers.dart';
@@ -12,7 +13,6 @@ import '../../catalog/presentation/catalog_providers.dart';
 import '../../clients/data/client_model.dart';
 import '../../clients/presentation/clients_providers.dart';
 import '../../quotes/data/quote_calculation.dart';
-import '../../quotes/data/quote_models.dart';
 import '../../quotes/presentation/quotes_providers.dart';
 import '../data/quote_draft.dart';
 import 'draft_quote_preview_screen.dart';
@@ -274,6 +274,7 @@ void _addToDraft(WidgetRef ref, CatalogItem item, num quantity) {
       .read(quoteDraftProvider.notifier)
       .addArticle(
         DraftLine(
+          id: item.id,
           catalogItemId: item.id,
           designation: item.designation,
           unit: item.unit,
@@ -300,53 +301,65 @@ class _CatalogueStep extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 760),
         child: DefaultTabController(
           length: 3,
-          child: Column(
+          child: Stack(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  ArtizenSpacing.md,
-                  ArtizenSpacing.md,
-                  ArtizenSpacing.md,
-                  ArtizenSpacing.xs,
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: ArtizenColors.infoSurface,
-                      child: Icon(
-                        WizardStep.catalogue.icon,
-                        color: ArtizenColors.nightBlue,
-                      ),
+              Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      ArtizenSpacing.md,
+                      ArtizenSpacing.md,
+                      ArtizenSpacing.md,
+                      ArtizenSpacing.xs,
                     ),
-                    const SizedBox(width: ArtizenSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        WizardStep.catalogue.question,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: ArtizenColors.infoSurface,
+                          child: Icon(
+                            WizardStep.catalogue.icon,
+                            color: ArtizenColors.nightBlue,
+                          ),
+                        ),
+                        const SizedBox(width: ArtizenSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            WizardStep.catalogue.question,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const TabBar(
-                labelColor: kArtizenViolet,
-                unselectedLabelColor: ArtizenColors.textSecondary,
-                indicatorColor: kArtizenViolet,
-                labelStyle: TextStyle(fontWeight: FontWeight.w700),
-                tabs: [
-                  Tab(text: 'Catalogue'),
-                  Tab(text: 'Articles'),
-                  Tab(text: 'Caisse à outils'),
+                  ),
+                  const TabBar(
+                    labelColor: kArtizenViolet,
+                    unselectedLabelColor: ArtizenColors.textSecondary,
+                    indicatorColor: kArtizenViolet,
+                    labelStyle: TextStyle(fontWeight: FontWeight.w700),
+                    tabs: [
+                      Tab(text: 'Catalogue'),
+                      Tab(text: 'Articles'),
+                      Tab(text: 'Caisse à outils'),
+                    ],
+                  ),
+                  const Expanded(
+                    child: TabBarView(
+                      children: [
+                        _CatalogueBrowseTab(),
+                        _CatalogueArticlesTab(),
+                        _CatalogueToolboxTab(),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-              const Expanded(
-                child: TabBarView(
-                  children: [
-                    _CatalogueBrowseTab(),
-                    _CatalogueArticlesTab(),
-                    _CatalogueToolboxTab(),
-                  ],
-                ),
+              // Overlaid, so it steals no height from the article lists — an
+              // always-available entry to add a line typed from scratch. A free
+              // line lets a devis exist entirely without the catalogue.
+              const Positioned(
+                top: ArtizenSpacing.xs,
+                right: ArtizenSpacing.xs,
+                child: _AddFreeLineButton(),
               ),
             ],
           ),
@@ -371,7 +384,8 @@ class _ArticleList extends ConsumerWidget {
     final quantityByItem = ref.watch(
       quoteDraftProvider.select(
         (draft) => {
-          for (final line in draft.lines) line.catalogItemId: line.quantity,
+          for (final line in draft.lines)
+            if (line.catalogItemId != null) line.catalogItemId!: line.quantity,
         },
       ),
     );
@@ -988,8 +1002,9 @@ class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
             OutlinedButton.icon(
               icon: const Icon(Icons.visibility_outlined),
               label: const Text('Aperçu du devis'),
-              onPressed:
-                  draft.clientId == null ? null : () => _openPreview(draft),
+              onPressed: draft.clientId == null
+                  ? null
+                  : () => _openPreview(draft),
             ),
           ],
         ),
@@ -1026,43 +1041,72 @@ class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
         ),
       ];
     }
-    // The line total is the backend's, matched by article — null (shown as "—")
-    // until the first calculation lands.
-    final totalByItem = {
-      for (final line
-          in draft.calculation?.lines ?? const <QuoteCalculationLine>[])
-        line.catalogItemId: line.totalHt,
-    };
+    // Line totals are the backend's, in the same order as the lines that were
+    // sent (the service preserves order) — matched by index, so a free line
+    // (no catalogItemId to key on) lines up too. "—" until the first
+    // calculation lands, or while a stale calculation holds fewer lines.
+    final calcLines =
+        draft.calculation?.lines ?? const <QuoteCalculationLine>[];
+    final notifier = ref.read(quoteDraftProvider.notifier);
     return [
-      for (final line in draft.lines)
+      for (final (index, line) in draft.lines.indexed)
         _EditableLine(
           line: line,
-          totalHt: totalByItem[line.catalogItemId],
-          onIncrement: () => ref
-              .read(quoteDraftProvider.notifier)
-              .setQuantity(line.catalogItemId, line.quantity + 1),
-          onDecrement: () => ref
-              .read(quoteDraftProvider.notifier)
-              .setQuantity(line.catalogItemId, line.quantity - 1),
-          onRemove: () => ref
-              .read(quoteDraftProvider.notifier)
-              .removeLine(line.catalogItemId),
+          totalHt: index < calcLines.length ? calcLines[index].totalHt : null,
+          onIncrement: () => notifier.setQuantity(line.id, line.quantity + 1),
+          onDecrement: () => notifier.setQuantity(line.id, line.quantity - 1),
+          onRemove: () => notifier.removeLine(line.id),
+          onEditPrice: () => _editPrice(line),
+          onEditFreeLine: line.catalogItemId == null
+              ? () => _editFreeLine(line)
+              : null,
         ),
       const SizedBox(height: ArtizenSpacing.sm),
-      _TotalsCard(calculation: draft.calculation, recalculating: _recalculating),
+      _TotalsCard(
+        calculation: draft.calculation,
+        recalculating: _recalculating,
+      ),
     ];
+  }
+
+  /// Override a line's unit price (décision 5). A small dialog rather than
+  /// inline editing keeps the row calm; the backend re-prices on the next
+  /// recalculation — nothing is multiplied here.
+  Future<void> _editPrice(DraftLine line) async {
+    final price = await showDialog<String>(
+      context: context,
+      builder: (_) => _PriceEditDialog(initial: line.unitPriceHt),
+    );
+    if (price != null) {
+      ref.read(quoteDraftProvider.notifier).setUnitPrice(line.id, price);
+    }
+  }
+
+  /// Edit a free line's whole snapshot (its désignation, unité, prix, TVA).
+  Future<void> _editFreeLine(DraftLine line) async {
+    final result = await showModalBottomSheet<FreeLineValues>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _FreeLineSheet(initial: line),
+    );
+    if (result != null) {
+      ref
+          .read(quoteDraftProvider.notifier)
+          .updateFreeLine(
+            line.id,
+            designation: result.designation,
+            unit: result.unit,
+            quantity: result.quantity,
+            unitPriceHt: result.unitPriceHt,
+            vatRate: result.vatRate,
+          );
+    }
   }
 
   void _openPreview(QuoteDraft draft) {
     final clientId = draft.clientId;
     if (clientId == null || draft.lines.isEmpty) return;
-    final lines = [
-      for (final line in draft.lines)
-        QuoteLineInput(
-          catalogItemId: line.catalogItemId,
-          quantity: line.quantity.toString(),
-        ),
-    ];
+    final lines = [for (final line in draft.lines) line.toInput()];
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) =>
@@ -1082,6 +1126,8 @@ class _EditableLine extends StatelessWidget {
     required this.onIncrement,
     required this.onDecrement,
     required this.onRemove,
+    required this.onEditPrice,
+    this.onEditFreeLine,
   });
 
   final DraftLine line;
@@ -1089,6 +1135,12 @@ class _EditableLine extends StatelessWidget {
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
   final VoidCallback onRemove;
+  final VoidCallback onEditPrice;
+
+  /// Only set for a free line — reopens the full editor for its snapshot.
+  final VoidCallback? onEditFreeLine;
+
+  bool get _isFree => line.catalogItemId == null;
 
   String get _quantityLabel => line.quantity % 1 == 0
       ? line.quantity.toInt().toString()
@@ -1113,6 +1165,23 @@ class _EditableLine extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
+                if (_isFree)
+                  Padding(
+                    padding: const EdgeInsets.only(right: ArtizenSpacing.xs),
+                    child: _LineBadge(
+                      label: 'Libre',
+                      color: kArtizenViolet,
+                      onTap: onEditFreeLine,
+                    ),
+                  )
+                else if (line.priceOverridden)
+                  Padding(
+                    padding: const EdgeInsets.only(right: ArtizenSpacing.xs),
+                    child: _LineBadge(
+                      label: 'Prix perso',
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
                   tooltip: 'Retirer la ligne',
@@ -1120,11 +1189,32 @@ class _EditableLine extends StatelessWidget {
                 ),
               ],
             ),
-            Text(
-              'PU ${line.unitPriceHt} € HT · ${line.unit}',
-              style: const TextStyle(
-                color: ArtizenColors.textSecondary,
-                fontSize: 12,
+            // Tapping the price edits it — an override for a catalog line, the
+            // free line's own price otherwise. The backend re-prices; nothing
+            // is multiplied here.
+            InkWell(
+              onTap: onEditPrice,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'PU ${line.unitPriceHt} € HT · ${line.unit}',
+                        style: const TextStyle(
+                          color: ArtizenColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: ArtizenSpacing.xs),
+                    const Icon(
+                      Icons.edit_outlined,
+                      size: 14,
+                      color: ArtizenColors.textSecondary,
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: ArtizenSpacing.xs),
@@ -1158,6 +1248,323 @@ class _EditableLine extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A small pill — "Libre" on a free line, "Prix perso" once a catalog line's
+/// price is overridden. Tappable only when [onTap] is given (the free-line
+/// badge reopens its editor).
+class _LineBadge extends StatelessWidget {
+  const _LineBadge({required this.label, required this.color, this.onTap});
+
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final chip = DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+    if (onTap == null) return chip;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: chip,
+    );
+  }
+}
+
+/// A button (in the Catalogue step) that opens the free-line editor and adds
+/// the result to the draft — a line typed from scratch, no catalog article.
+class _AddFreeLineButton extends ConsumerWidget {
+  const _AddFreeLineButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return TextButton.icon(
+      icon: const Icon(Icons.playlist_add),
+      label: const Text('Ligne libre'),
+      onPressed: () async {
+        final result = await showModalBottomSheet<FreeLineValues>(
+          context: context,
+          isScrollControlled: true,
+          builder: (_) => const _FreeLineSheet(),
+        );
+        if (result == null) return;
+        ref
+            .read(quoteDraftProvider.notifier)
+            .addArticle(
+              DraftLine(
+                id: newFreeLineId(),
+                designation: result.designation,
+                unit: result.unit,
+                quantity: result.quantity,
+                unitPriceHt: result.unitPriceHt,
+                vatRate: result.vatRate,
+              ),
+            );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Ligne libre « ${result.designation} » ajoutée.'),
+            ),
+          );
+        }
+      },
+    );
+  }
+}
+
+/// The values a free line carries — returned by [_FreeLineSheet] to its caller.
+class FreeLineValues {
+  const FreeLineValues({
+    required this.designation,
+    required this.unit,
+    required this.quantity,
+    required this.unitPriceHt,
+    required this.vatRate,
+  });
+
+  final String designation;
+  final String unit;
+  final num quantity;
+  final String unitPriceHt;
+  final String vatRate;
+}
+
+/// The form for a free line — création or édition. Decimals are validated and
+/// normalized (comma → dot) on the way out, so a French keyboard never earns a
+/// 422 on submit. No amount is computed here: the backend prices the line.
+class _FreeLineSheet extends StatefulWidget {
+  const _FreeLineSheet({this.initial});
+
+  final DraftLine? initial;
+
+  @override
+  State<_FreeLineSheet> createState() => _FreeLineSheetState();
+}
+
+class _FreeLineSheetState extends State<_FreeLineSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _designation;
+  late final TextEditingController _unit;
+  late final TextEditingController _quantity;
+  late final TextEditingController _price;
+  late final TextEditingController _vat;
+
+  @override
+  void initState() {
+    super.initState();
+    final i = widget.initial;
+    _designation = TextEditingController(text: i?.designation ?? '');
+    _unit = TextEditingController(text: i?.unit ?? 'u');
+    _quantity = TextEditingController(
+      text: i == null
+          ? '1'
+          : (i.quantity % 1 == 0
+                ? i.quantity.toInt().toString()
+                : i.quantity.toString()),
+    );
+    _price = TextEditingController(text: i?.unitPriceHt ?? '');
+    _vat = TextEditingController(text: i?.vatRate ?? '20');
+  }
+
+  @override
+  void dispose() {
+    _designation.dispose();
+    _unit.dispose();
+    _quantity.dispose();
+    _price.dispose();
+    _vat.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.of(context).pop(
+      FreeLineValues(
+        designation: _designation.text.trim(),
+        unit: _unit.text.trim(),
+        quantity: num.parse(DecimalInput.normalize(_quantity.text)),
+        unitPriceHt: DecimalInput.normalize(_price.text),
+        vatRate: DecimalInput.normalize(_vat.text),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: ArtizenSpacing.md,
+          right: ArtizenSpacing.md,
+          top: ArtizenSpacing.md,
+          bottom: MediaQuery.of(context).viewInsets.bottom + ArtizenSpacing.md,
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                widget.initial == null
+                    ? 'Nouvelle ligne libre'
+                    : 'Modifier la ligne libre',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: ArtizenSpacing.xs),
+              const Text(
+                'Un article hors catalogue (péage, location, prestation '
+                'exceptionnelle). Le total est calculé par le serveur.',
+                style: TextStyle(
+                  color: ArtizenColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: ArtizenSpacing.sm),
+              TextFormField(
+                controller: _designation,
+                decoration: const InputDecoration(labelText: 'Désignation'),
+                textCapitalization: TextCapitalization.sentences,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Requis' : null,
+              ),
+              const SizedBox(height: ArtizenSpacing.xs),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _unit,
+                      decoration: const InputDecoration(labelText: 'Unité'),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Requis' : null,
+                    ),
+                  ),
+                  const SizedBox(width: ArtizenSpacing.sm),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _quantity,
+                      decoration: const InputDecoration(labelText: 'Quantité'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      validator: (v) =>
+                          DecimalInput.validate(v, exclusiveMin: true),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: ArtizenSpacing.xs),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _price,
+                      decoration: const InputDecoration(
+                        labelText: 'Prix HT (€)',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      validator: (v) =>
+                          DecimalInput.validate(v, exclusiveMin: true),
+                    ),
+                  ),
+                  const SizedBox(width: ArtizenSpacing.sm),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _vat,
+                      decoration: const InputDecoration(labelText: 'TVA (%)'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      validator: (v) => DecimalInput.validate(v),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: ArtizenSpacing.md),
+              FilledButton(
+                onPressed: _submit,
+                child: Text(
+                  widget.initial == null ? 'Ajouter la ligne' : 'Enregistrer',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A one-field dialog to override a line's unit price (décision 5).
+class _PriceEditDialog extends StatefulWidget {
+  const _PriceEditDialog({required this.initial});
+
+  final String initial;
+
+  @override
+  State<_PriceEditDialog> createState() => _PriceEditDialogState();
+}
+
+class _PriceEditDialogState extends State<_PriceEditDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _price = TextEditingController(
+    text: widget.initial,
+  );
+
+  @override
+  void dispose() {
+    _price.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.of(context).pop(DecimalInput.normalize(_price.text));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Prix personnalisé'),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          controller: _price,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Prix HT (€)'),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          validator: (v) => DecimalInput.validate(v, exclusiveMin: true),
+          onFieldSubmitted: (_) => _submit(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Annuler'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Appliquer')),
+      ],
     );
   }
 }
@@ -1423,13 +1830,7 @@ class _CreerStepState extends ConsumerState<_CreerStep> {
           .read(quotesNotifierProvider.notifier)
           .createQuote(
             clientId: draft.clientId!,
-            lines: [
-              for (final line in draft.lines)
-                QuoteLineInput(
-                  catalogItemId: line.catalogItemId,
-                  quantity: line.quantity.toString(),
-                ),
-            ],
+            lines: [for (final line in draft.lines) line.toInput()],
           );
       // Reopened a brouillon to edit? The edits now live in this fresh quote,
       // so the original is removed — delete + recreate is how a quote is
