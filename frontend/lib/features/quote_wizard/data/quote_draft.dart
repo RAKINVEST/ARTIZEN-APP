@@ -85,6 +85,15 @@ class QuoteDraft with _$QuoteDraft {
     String? clientLabel,
     @Default(<DraftLine>[]) List<DraftLine> lines,
     QuoteCalculation? calculation,
+
+    /// Discount + deposit the artisan set (décision 5: quote-level, not lines).
+    /// ``*Type`` is `'percent'` | `'amount'` | null; ``*Value`` is the entered
+    /// percentage or euro amount, as a string like the rest of the draft. The
+    /// backend computes every amount — these are only the inputs it is sent.
+    String? discountType,
+    String? discountValue,
+    String? depositType,
+    String? depositValue,
   }) = _QuoteDraft;
 
   const QuoteDraft._();

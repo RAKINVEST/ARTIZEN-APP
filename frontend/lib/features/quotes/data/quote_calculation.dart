@@ -30,9 +30,22 @@ class QuoteCalculationLine with _$QuoteCalculationLine {
 @freezed
 class QuoteCalculation with _$QuoteCalculation {
   const factory QuoteCalculation({
+    /// The GROSS subtotal (sum of the lines, before any discount).
     required String totalHt,
     required String totalVat,
     required String totalTtc,
+    // Discount + deposit (V1.1 #3) — every figure computed by the backend. With
+    // no discount, net == gross; with no deposit, balanceDue == net TTC.
+    String? discountType,
+    @Default('0.00') String discountValue,
+    @Default('0.00') String discountAmount,
+    @Default('0.00') String netTotalHt,
+    @Default('0.00') String netTotalVat,
+    @Default('0.00') String netTotalTtc,
+    String? depositType,
+    @Default('0.00') String depositValue,
+    @Default('0.00') String depositAmount,
+    @Default('0.00') String balanceDue,
     @Default(<QuoteCalculationLine>[]) List<QuoteCalculationLine> lines,
   }) = _QuoteCalculation;
 

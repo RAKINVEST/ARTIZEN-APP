@@ -54,6 +54,8 @@ class _LiveDevisPreviewState extends ConsumerState<LiveDevisPreview> {
   /// for free lines).
   String _signatureOf(QuoteDraft draft) =>
       '${draft.clientId}|'
+      '${draft.discountType}:${draft.discountValue}:'
+      '${draft.depositType}:${draft.depositValue}|'
       '${draft.lines.map((l) => '${l.id}:${l.quantity}:${l.unitPriceHt}:'
           '${l.vatRate}:${l.designation}:${l.unit}').join(',')}';
 
@@ -68,9 +70,14 @@ class _LiveDevisPreviewState extends ConsumerState<LiveDevisPreview> {
     final lines = [for (final line in draft.lines) line.toInput()];
     if (mounted) setState(() => _pdf = const AsyncValue.loading());
     final next = await AsyncValue.guard(
-      () => ref
-          .read(quotesRepositoryProvider)
-          .previewDraftPdf(clientId: clientId, lines: lines),
+      () => ref.read(quotesRepositoryProvider).previewDraftPdf(
+        clientId: clientId,
+        lines: lines,
+        discountType: draft.discountType,
+        discountValue: draft.discountValue,
+        depositType: draft.depositType,
+        depositValue: draft.depositValue,
+      ),
     );
     if (mounted) setState(() => _pdf = next);
   }

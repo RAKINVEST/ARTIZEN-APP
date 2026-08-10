@@ -63,10 +63,30 @@ class DocumentVatRow:
 
 @dataclass(frozen=True)
 class DocumentTotals:
+    #: The gross subtotal HT — the sum of the lines, before any discount.
     total_ht: Decimal
+    #: The VAT owed and the TTC, **net** of any discount. With no discount they
+    #: equal the gross figures, so a document without one renders exactly as
+    #: before this feature.
     total_vat: Decimal
     total_ttc: Decimal
     vat_rows: list[DocumentVatRow] = field(default_factory=list)
+    #: Optional discount + deposit — generic monetary figures (a quote's remise
+    #: and acompte, an invoice's later). ``net_total_ht`` is the HT after the
+    #: discount; ``balance_due`` the TTC after the deposit. Left ``None`` / ``0``
+    #: when the document carries neither, and the renderer then omits their rows.
+    net_total_ht: Decimal | None = None
+    discount_amount: Decimal = Decimal("0.00")
+    deposit_amount: Decimal = Decimal("0.00")
+    balance_due: Decimal | None = None
+
+    @property
+    def has_discount(self) -> bool:
+        return self.discount_amount > 0
+
+    @property
+    def has_deposit(self) -> bool:
+        return self.deposit_amount > 0
 
 
 @dataclass(frozen=True)

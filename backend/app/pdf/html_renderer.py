@@ -368,26 +368,53 @@ class HtmlPdfRenderer:
   <thead><tr><th class="l">Taux de TVA</th><th>Base HT</th><th>Montant TVA</th></tr></thead>
   <tbody>{vrows}</tbody></table>"""
 
-        if document.show_vat:
-            summary = (
-                f'<div class="sum-row"><span class="lbl">Montant HT</span>'
-                f'<span class="val">{_money(t.total_ht)} €</span></div>'
-                f'<div class="sum-row"><span class="lbl">Montant TVA</span>'
-                f'<span class="val">{_money(t.total_vat)} €</span></div>'
+        def _sum_row(label: str, value: str) -> str:
+            return (
+                f'<div class="sum-row"><span class="lbl">{label}</span>'
+                f'<span class="val">{value}</span></div>'
             )
+
+        # HT block: with a discount, show the subtotal, the discount and the net
+        # HT; without one, a single "Montant HT" line (unchanged).
+        if t.has_discount and t.net_total_ht is not None:
+            summary = (
+                _sum_row("Sous-total HT", f"{_money(t.total_ht)} €")
+                + _sum_row("Remise", f"− {_money(t.discount_amount)} €")
+                + _sum_row("Total HT net", f"{_money(t.net_total_ht)} €")
+            )
+        else:
+            summary = _sum_row("Montant HT", f"{_money(t.total_ht)} €")
+
+        if document.show_vat:
+            summary += _sum_row("Montant TVA", f"{_money(t.total_vat)} €")
             ttc_label = "MONTANT TTC"
         else:
-            summary = ""
+            # Franchise-en-base: no VAT. Keep the previous behaviour of an empty
+            # summary when there is also nothing to deduct.
+            if not t.has_discount:
+                summary = ""
             ttc_label = "TOTAL"
 
-        # "Reste à payer" equals the TTC until an acompte/déduction is captured
-        # (Phase 3).
+        # A deposit turns "reste à payer" into an "Acompte" line plus the
+        # remaining balance; without one it stays the TTC (unchanged).
+        if t.has_deposit and t.balance_due is not None:
+            reste = (
+                _sum_row("Acompte à verser", f"{_money(t.deposit_amount)} €")
+                + f'<div class="reste-box"><span>SOLDE À LA LIVRAISON</span>'
+                f'<span class="amount">{_money(t.balance_due)} €</span></div>'
+            )
+        else:
+            reste = (
+                f'<div class="reste-box"><span>RESTE À PAYER</span>'
+                f'<span class="amount">{_money(t.total_ttc)} €</span></div>'
+            )
+
         return f"""<div class="totals">
   <div class="left">{vat_table}</div>
   <div class="right">
     {summary}
     <div class="ttc-box"><span>{ttc_label}</span><span class="amount">{_money(t.total_ttc)} €</span></div>
-    <div class="reste-box"><span>RESTE À PAYER</span><span class="amount">{_money(t.total_ttc)} €</span></div>
+    {reste}
   </div>
 </div>"""
 

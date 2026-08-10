@@ -25,20 +25,34 @@ abstract class QuotesRepository {
     required String companyId,
     required String clientId,
     required List<QuoteLineInput> lines,
+    String? discountType,
+    String? discountValue,
+    String? depositType,
+    String? depositValue,
   });
 
-  /// Prices the given (catalog item, quantity) pairs **without persisting
-  /// anything** — no quote, no number burned. Feeds the guided assistant's
-  /// live total while the artisan edits. The backend is the sole authority on
-  /// the amounts; company scoping comes from the JWT, not the payload.
-  Future<QuoteCalculation> calculate({required List<QuoteLineInput> lines});
+  /// Prices the given lines **without persisting anything** — no quote, no
+  /// number burned. Feeds the guided assistant's live total while the artisan
+  /// edits, including any discount/deposit (V1.1 #3). The backend is the sole
+  /// authority on the amounts; company scoping comes from the JWT.
+  Future<QuoteCalculation> calculate({
+    required List<QuoteLineInput> lines,
+    String? discountType,
+    String? discountValue,
+    String? depositType,
+    String? depositValue,
+  });
 
   /// Renders the wizard's "prêt à remplir" preview: the selected client + the
-  /// draft lines, as the exact premium PDF a real quote produces — without
-  /// creating anything or burning a number. Returns the raw PDF bytes.
+  /// draft lines (with any discount/deposit), as the exact premium PDF a real
+  /// quote produces — without creating anything or burning a number.
   Future<Uint8List> previewDraftPdf({
     required String clientId,
     required List<QuoteLineInput> lines,
+    String? discountType,
+    String? discountValue,
+    String? depositType,
+    String? depositValue,
   });
 
   /// Moves the quote along its commercial life. The backend refuses an

@@ -943,7 +943,15 @@ class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
     // upstream) asks the backend to re-price. The backend is the only place a
     // total is ever computed (décision 3); Flutter just shows its answer.
     ref.listen(
-      quoteDraftProvider.select((draft) => draft.lines),
+      quoteDraftProvider.select(
+        (draft) => (
+          draft.lines,
+          draft.discountType,
+          draft.discountValue,
+          draft.depositType,
+          draft.depositValue,
+        ),
+      ),
       (_, _) => _scheduleRecalc(),
     );
 
@@ -1062,6 +1070,8 @@ class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
               : null,
         ),
       const SizedBox(height: ArtizenSpacing.sm),
+      const _AdjustmentsCard(),
+      const SizedBox(height: ArtizenSpacing.sm),
       _TotalsCard(
         calculation: draft.calculation,
         recalculating: _recalculating,
@@ -1109,8 +1119,14 @@ class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
     final lines = [for (final line in draft.lines) line.toInput()];
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            DraftQuotePreviewScreen(clientId: clientId, lines: lines),
+        builder: (_) => DraftQuotePreviewScreen(
+          clientId: clientId,
+          lines: lines,
+          discountType: draft.discountType,
+          discountValue: draft.discountValue,
+          depositType: draft.depositType,
+          depositValue: draft.depositValue,
+        ),
       ),
     );
   }
@@ -1580,20 +1596,40 @@ class _TotalsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final calc = calculation;
+    final hasDiscount = calc != null && calc.discountAmount != '0.00';
+    final hasDeposit = calc != null && calc.depositAmount != '0.00';
     return Card(
       color: ArtizenColors.infoSurface,
       child: Padding(
         padding: const EdgeInsets.all(ArtizenSpacing.md),
         child: Column(
           children: [
-            _RecapRow('Total HT', calc == null ? '—' : '${calc.totalHt} €'),
-            _RecapRow('TVA', calc == null ? '—' : '${calc.totalVat} €'),
+            // With a discount, show the subtotal, the remise and the net HT;
+            // without one, a single "Total HT" line — the figures are the
+            // backend's (décision 3), never multiplied here.
+            if (!hasDiscount)
+              _RecapRow('Total HT', calc == null ? '—' : '${calc.totalHt} €')
+            else ...[
+              _RecapRow('Sous-total HT', '${calc.totalHt} €'),
+              _RecapRow('Remise', '− ${calc.discountAmount} €'),
+              _RecapRow('Total HT net', '${calc.netTotalHt} €'),
+            ],
+            _RecapRow('TVA', calc == null ? '—' : '${calc.netTotalVat} €'),
             const Divider(),
             _RecapRow(
               'Total TTC',
-              calc == null ? '—' : '${calc.totalTtc} €',
+              calc == null ? '—' : '${calc.netTotalTtc} €',
               strong: true,
             ),
+            if (hasDeposit) ...[
+              const SizedBox(height: ArtizenSpacing.xs),
+              _RecapRow('Acompte à verser', '${calc.depositAmount} €'),
+              _RecapRow(
+                'Solde à la livraison',
+                '${calc.balanceDue} €',
+                strong: true,
+              ),
+            ],
             if (recalculating)
               const Padding(
                 padding: EdgeInsets.only(top: ArtizenSpacing.xs),
@@ -1654,6 +1690,8 @@ class _RecapStepState extends ConsumerState<_RecapStep> {
     }
 
     final calc = draft.calculation;
+    final hasDiscount = calc != null && calc.discountAmount != '0.00';
+    final hasDeposit = calc != null && calc.depositAmount != '0.00';
     final totalByItem = {
       for (final line in calc?.lines ?? const <QuoteCalculationLine>[])
         line.catalogItemId: line.totalHt,
@@ -1676,17 +1714,30 @@ class _RecapStepState extends ConsumerState<_RecapStep> {
                   '$lineCount article${lineCount > 1 ? 's' : ''}',
                 ),
                 const Divider(),
-                _CheckItem(
-                  'Total HT',
-                  calc == null ? '…' : '${calc.totalHt} €',
-                ),
-                _CheckItem('TVA', calc == null ? '…' : '${calc.totalVat} €'),
+                if (hasDiscount) ...[
+                  _CheckItem('Sous-total HT', '${calc.totalHt} €'),
+                  _CheckItem('Remise', '− ${calc.discountAmount} €'),
+                  _CheckItem('Total HT net', '${calc.netTotalHt} €'),
+                ] else
+                  _CheckItem(
+                    'Total HT',
+                    calc == null ? '…' : '${calc.netTotalHt} €',
+                  ),
+                _CheckItem('TVA', calc == null ? '…' : '${calc.netTotalVat} €'),
                 const Divider(),
                 _CheckItem(
                   'Total TTC',
-                  calc == null ? '…' : '${calc.totalTtc} €',
+                  calc == null ? '…' : '${calc.netTotalTtc} €',
                   strong: true,
                 ),
+                if (hasDeposit) ...[
+                  _CheckItem('Acompte à verser', '${calc.depositAmount} €'),
+                  _CheckItem(
+                    'Solde à la livraison',
+                    '${calc.balanceDue} €',
+                    strong: true,
+                  ),
+                ],
               ],
             ),
           ),
@@ -1774,6 +1825,153 @@ class _RecapLineRow extends StatelessWidget {
   }
 }
 
+/// Lets the artisan set a quote-level discount and deposit (décision 5). Both
+/// are optional; the value field is enabled only once a type (% or €) is
+/// picked. Every euro is computed by the backend on the next recalculation —
+/// this only collects the parameters.
+class _AdjustmentsCard extends ConsumerStatefulWidget {
+  const _AdjustmentsCard();
+
+  @override
+  ConsumerState<_AdjustmentsCard> createState() => _AdjustmentsCardState();
+}
+
+class _AdjustmentsCardState extends ConsumerState<_AdjustmentsCard> {
+  late final TextEditingController _discount;
+  late final TextEditingController _deposit;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = ref.read(quoteDraftProvider);
+    _discount = TextEditingController(text: draft.discountValue ?? '');
+    _deposit = TextEditingController(text: draft.depositValue ?? '');
+  }
+
+  @override
+  void dispose() {
+    _discount.dispose();
+    _deposit.dispose();
+    super.dispose();
+  }
+
+  String _value(String raw) => DecimalInput.normalize(raw.isEmpty ? '0' : raw);
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = ref.read(quoteDraftProvider.notifier);
+    final discountType = ref.watch(
+      quoteDraftProvider.select((d) => d.discountType),
+    );
+    final depositType = ref.watch(
+      quoteDraftProvider.select((d) => d.depositType),
+    );
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(ArtizenSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Remise et acompte',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: ArtizenSpacing.xs),
+            _AdjustmentRow(
+              label: 'Remise',
+              noneLabel: 'Aucune',
+              type: discountType,
+              controller: _discount,
+              onTypeChanged: (type) {
+                if (type == null) {
+                  notifier.clearDiscount();
+                } else {
+                  notifier.setDiscount(type, _value(_discount.text));
+                }
+              },
+              onValueChanged: (raw) {
+                final type = ref.read(quoteDraftProvider).discountType;
+                if (type != null) notifier.setDiscount(type, _value(raw));
+              },
+            ),
+            const SizedBox(height: ArtizenSpacing.xs),
+            _AdjustmentRow(
+              label: 'Acompte',
+              noneLabel: 'Aucun',
+              type: depositType,
+              controller: _deposit,
+              onTypeChanged: (type) {
+                if (type == null) {
+                  notifier.clearDeposit();
+                } else {
+                  notifier.setDeposit(type, _value(_deposit.text));
+                }
+              },
+              onValueChanged: (raw) {
+                final type = ref.read(quoteDraftProvider).depositType;
+                if (type != null) notifier.setDeposit(type, _value(raw));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One "type + value" line of [_AdjustmentsCard]. The value field is disabled
+/// (and shows a dash) until a percentage or euro type is chosen.
+class _AdjustmentRow extends StatelessWidget {
+  const _AdjustmentRow({
+    required this.label,
+    required this.noneLabel,
+    required this.type,
+    required this.controller,
+    required this.onTypeChanged,
+    required this.onValueChanged,
+  });
+
+  final String label;
+  final String noneLabel;
+  final String? type;
+  final TextEditingController controller;
+  final ValueChanged<String?> onTypeChanged;
+  final ValueChanged<String> onValueChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(width: 72, child: Text(label)),
+        DropdownButton<String?>(
+          value: type,
+          onChanged: onTypeChanged,
+          items: [
+            DropdownMenuItem(value: null, child: Text(noneLabel)),
+            const DropdownMenuItem(value: 'percent', child: Text('%')),
+            const DropdownMenuItem(value: 'amount', child: Text('€')),
+          ],
+        ),
+        const SizedBox(width: ArtizenSpacing.sm),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            enabled: type != null,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: type == 'percent'
+                  ? '0 – 100'
+                  : (type == 'amount' ? 'Montant €' : '—'),
+            ),
+            onChanged: onValueChanged,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _RecapRow extends StatelessWidget {
   const _RecapRow(this.label, this.value, {this.strong = false});
 
@@ -1831,6 +2029,10 @@ class _CreerStepState extends ConsumerState<_CreerStep> {
           .createQuote(
             clientId: draft.clientId!,
             lines: [for (final line in draft.lines) line.toInput()],
+            discountType: draft.discountType,
+            discountValue: draft.discountValue,
+            depositType: draft.depositType,
+            depositValue: draft.depositValue,
           );
       // Reopened a brouillon to edit? The edits now live in this fresh quote,
       // so the original is removed — delete + recreate is how a quote is
@@ -1896,7 +2098,7 @@ class _CreerStepState extends ConsumerState<_CreerStep> {
                 ),
                 _CheckItem(
                   'Total TTC',
-                  calc == null ? '…' : '${calc.totalTtc} €',
+                  calc == null ? '…' : '${calc.netTotalTtc} €',
                   strong: true,
                 ),
               ],
@@ -2001,7 +2203,7 @@ class _ConfirmationStep extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${quote.totalTtc} € TTC',
+                  '${quote.netTotalTtc} € TTC',
                   style: const TextStyle(color: ArtizenColors.textSecondary),
                 ),
               ],

@@ -46,3 +46,15 @@ class QuoteHasNoRecipientError(AppException):
 
     status_code = 422
     error_code = "quote_no_recipient"
+
+
+class InvalidQuoteAdjustmentError(AppException):
+    """Raised when a discount or deposit amount exceeds its base.
+
+    422: the payload is well-formed but a euro discount larger than the
+    subtotal — or a euro deposit larger than the net total — cannot be applied.
+    (Percentage bounds, 0–100, are caught earlier by the schema.)
+    """
+
+    status_code = 422
+    error_code = "invalid_quote_adjustment"

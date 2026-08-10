@@ -261,13 +261,20 @@ def quote_to_document(
             for line in lines
         ],
         totals=DocumentTotals(
+            # total_ht is the GROSS subtotal; total_vat/total_ttc are NET of the
+            # discount (equal to gross when there is none). vat_breakdown is the
+            # net per-rate summary the service already re-derived.
             total_ht=quote.total_ht,
-            total_vat=quote.total_vat,
-            total_ttc=quote.total_ttc,
+            total_vat=quote.net_total_vat,
+            total_ttc=quote.net_total_ttc,
             vat_rows=[
                 DocumentVatRow(rate=b.rate, base_ht=b.base_ht, vat_amount=b.vat_amount)
                 for b in vat_breakdown
             ],
+            net_total_ht=quote.net_total_ht,
+            discount_amount=quote.discount_amount,
+            deposit_amount=quote.deposit_amount,
+            balance_due=quote.balance_due,
         ),
         legal_mentions=_quote_legal_mentions(profile.company),
         branding=DocumentBranding(

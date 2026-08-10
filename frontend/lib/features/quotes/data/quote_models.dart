@@ -79,9 +79,23 @@ class Quote with _$Quote {
     /// `id` is a UUID nobody reads out loud.
     required String quoteNumber,
     required QuoteStatus status,
+    // The GROSS subtotal (sum of the lines, before discount).
     required String totalHt,
     required String totalVat,
     required String totalTtc,
+    // Discount + deposit (V1.1 #3), all computed by the backend and
+    // snapshotted. Net == gross with no discount; balanceDue == net TTC with
+    // no deposit. Defaulted so a pre-V1.1.3 quote still parses.
+    String? discountType,
+    @Default('0.00') String discountValue,
+    @Default('0.00') String discountAmount,
+    @Default('0.00') String netTotalHt,
+    @Default('0.00') String netTotalVat,
+    @Default('0.00') String netTotalTtc,
+    String? depositType,
+    @Default('0.00') String depositValue,
+    @Default('0.00') String depositAmount,
+    @Default('0.00') String balanceDue,
     required List<QuoteLine> lines,
     required DateTime createdAt,
     required DateTime updatedAt,

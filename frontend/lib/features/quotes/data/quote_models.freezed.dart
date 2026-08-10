@@ -392,10 +392,24 @@ mixin _$Quote {
   /// "DEV-2026-0001" — what the artisan and their customer actually use.
   /// `id` is a UUID nobody reads out loud.
   String get quoteNumber => throw _privateConstructorUsedError;
-  QuoteStatus get status => throw _privateConstructorUsedError;
+  QuoteStatus get status =>
+      throw _privateConstructorUsedError; // The GROSS subtotal (sum of the lines, before discount).
   String get totalHt => throw _privateConstructorUsedError;
   String get totalVat => throw _privateConstructorUsedError;
-  String get totalTtc => throw _privateConstructorUsedError;
+  String get totalTtc =>
+      throw _privateConstructorUsedError; // Discount + deposit (V1.1 #3), all computed by the backend and
+  // snapshotted. Net == gross with no discount; balanceDue == net TTC with
+  // no deposit. Defaulted so a pre-V1.1.3 quote still parses.
+  String? get discountType => throw _privateConstructorUsedError;
+  String get discountValue => throw _privateConstructorUsedError;
+  String get discountAmount => throw _privateConstructorUsedError;
+  String get netTotalHt => throw _privateConstructorUsedError;
+  String get netTotalVat => throw _privateConstructorUsedError;
+  String get netTotalTtc => throw _privateConstructorUsedError;
+  String? get depositType => throw _privateConstructorUsedError;
+  String get depositValue => throw _privateConstructorUsedError;
+  String get depositAmount => throw _privateConstructorUsedError;
+  String get balanceDue => throw _privateConstructorUsedError;
   List<QuoteLine> get lines => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
@@ -423,6 +437,16 @@ abstract class $QuoteCopyWith<$Res> {
     String totalHt,
     String totalVat,
     String totalTtc,
+    String? discountType,
+    String discountValue,
+    String discountAmount,
+    String netTotalHt,
+    String netTotalVat,
+    String netTotalTtc,
+    String? depositType,
+    String depositValue,
+    String depositAmount,
+    String balanceDue,
     List<QuoteLine> lines,
     DateTime createdAt,
     DateTime updatedAt,
@@ -452,6 +476,16 @@ class _$QuoteCopyWithImpl<$Res, $Val extends Quote>
     Object? totalHt = null,
     Object? totalVat = null,
     Object? totalTtc = null,
+    Object? discountType = freezed,
+    Object? discountValue = null,
+    Object? discountAmount = null,
+    Object? netTotalHt = null,
+    Object? netTotalVat = null,
+    Object? netTotalTtc = null,
+    Object? depositType = freezed,
+    Object? depositValue = null,
+    Object? depositAmount = null,
+    Object? balanceDue = null,
     Object? lines = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -490,6 +524,46 @@ class _$QuoteCopyWithImpl<$Res, $Val extends Quote>
                 ? _value.totalTtc
                 : totalTtc // ignore: cast_nullable_to_non_nullable
                       as String,
+            discountType: freezed == discountType
+                ? _value.discountType
+                : discountType // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            discountValue: null == discountValue
+                ? _value.discountValue
+                : discountValue // ignore: cast_nullable_to_non_nullable
+                      as String,
+            discountAmount: null == discountAmount
+                ? _value.discountAmount
+                : discountAmount // ignore: cast_nullable_to_non_nullable
+                      as String,
+            netTotalHt: null == netTotalHt
+                ? _value.netTotalHt
+                : netTotalHt // ignore: cast_nullable_to_non_nullable
+                      as String,
+            netTotalVat: null == netTotalVat
+                ? _value.netTotalVat
+                : netTotalVat // ignore: cast_nullable_to_non_nullable
+                      as String,
+            netTotalTtc: null == netTotalTtc
+                ? _value.netTotalTtc
+                : netTotalTtc // ignore: cast_nullable_to_non_nullable
+                      as String,
+            depositType: freezed == depositType
+                ? _value.depositType
+                : depositType // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            depositValue: null == depositValue
+                ? _value.depositValue
+                : depositValue // ignore: cast_nullable_to_non_nullable
+                      as String,
+            depositAmount: null == depositAmount
+                ? _value.depositAmount
+                : depositAmount // ignore: cast_nullable_to_non_nullable
+                      as String,
+            balanceDue: null == balanceDue
+                ? _value.balanceDue
+                : balanceDue // ignore: cast_nullable_to_non_nullable
+                      as String,
             lines: null == lines
                 ? _value.lines
                 : lines // ignore: cast_nullable_to_non_nullable
@@ -525,6 +599,16 @@ abstract class _$$QuoteImplCopyWith<$Res> implements $QuoteCopyWith<$Res> {
     String totalHt,
     String totalVat,
     String totalTtc,
+    String? discountType,
+    String discountValue,
+    String discountAmount,
+    String netTotalHt,
+    String netTotalVat,
+    String netTotalTtc,
+    String? depositType,
+    String depositValue,
+    String depositAmount,
+    String balanceDue,
     List<QuoteLine> lines,
     DateTime createdAt,
     DateTime updatedAt,
@@ -553,6 +637,16 @@ class __$$QuoteImplCopyWithImpl<$Res>
     Object? totalHt = null,
     Object? totalVat = null,
     Object? totalTtc = null,
+    Object? discountType = freezed,
+    Object? discountValue = null,
+    Object? discountAmount = null,
+    Object? netTotalHt = null,
+    Object? netTotalVat = null,
+    Object? netTotalTtc = null,
+    Object? depositType = freezed,
+    Object? depositValue = null,
+    Object? depositAmount = null,
+    Object? balanceDue = null,
     Object? lines = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -591,6 +685,46 @@ class __$$QuoteImplCopyWithImpl<$Res>
             ? _value.totalTtc
             : totalTtc // ignore: cast_nullable_to_non_nullable
                   as String,
+        discountType: freezed == discountType
+            ? _value.discountType
+            : discountType // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        discountValue: null == discountValue
+            ? _value.discountValue
+            : discountValue // ignore: cast_nullable_to_non_nullable
+                  as String,
+        discountAmount: null == discountAmount
+            ? _value.discountAmount
+            : discountAmount // ignore: cast_nullable_to_non_nullable
+                  as String,
+        netTotalHt: null == netTotalHt
+            ? _value.netTotalHt
+            : netTotalHt // ignore: cast_nullable_to_non_nullable
+                  as String,
+        netTotalVat: null == netTotalVat
+            ? _value.netTotalVat
+            : netTotalVat // ignore: cast_nullable_to_non_nullable
+                  as String,
+        netTotalTtc: null == netTotalTtc
+            ? _value.netTotalTtc
+            : netTotalTtc // ignore: cast_nullable_to_non_nullable
+                  as String,
+        depositType: freezed == depositType
+            ? _value.depositType
+            : depositType // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        depositValue: null == depositValue
+            ? _value.depositValue
+            : depositValue // ignore: cast_nullable_to_non_nullable
+                  as String,
+        depositAmount: null == depositAmount
+            ? _value.depositAmount
+            : depositAmount // ignore: cast_nullable_to_non_nullable
+                  as String,
+        balanceDue: null == balanceDue
+            ? _value.balanceDue
+            : balanceDue // ignore: cast_nullable_to_non_nullable
+                  as String,
         lines: null == lines
             ? _value._lines
             : lines // ignore: cast_nullable_to_non_nullable
@@ -620,6 +754,16 @@ class _$QuoteImpl implements _Quote {
     required this.totalHt,
     required this.totalVat,
     required this.totalTtc,
+    this.discountType,
+    this.discountValue = '0.00',
+    this.discountAmount = '0.00',
+    this.netTotalHt = '0.00',
+    this.netTotalVat = '0.00',
+    this.netTotalTtc = '0.00',
+    this.depositType,
+    this.depositValue = '0.00',
+    this.depositAmount = '0.00',
+    this.balanceDue = '0.00',
     required final List<QuoteLine> lines,
     required this.createdAt,
     required this.updatedAt,
@@ -641,12 +785,44 @@ class _$QuoteImpl implements _Quote {
   final String quoteNumber;
   @override
   final QuoteStatus status;
+  // The GROSS subtotal (sum of the lines, before discount).
   @override
   final String totalHt;
   @override
   final String totalVat;
   @override
   final String totalTtc;
+  // Discount + deposit (V1.1 #3), all computed by the backend and
+  // snapshotted. Net == gross with no discount; balanceDue == net TTC with
+  // no deposit. Defaulted so a pre-V1.1.3 quote still parses.
+  @override
+  final String? discountType;
+  @override
+  @JsonKey()
+  final String discountValue;
+  @override
+  @JsonKey()
+  final String discountAmount;
+  @override
+  @JsonKey()
+  final String netTotalHt;
+  @override
+  @JsonKey()
+  final String netTotalVat;
+  @override
+  @JsonKey()
+  final String netTotalTtc;
+  @override
+  final String? depositType;
+  @override
+  @JsonKey()
+  final String depositValue;
+  @override
+  @JsonKey()
+  final String depositAmount;
+  @override
+  @JsonKey()
+  final String balanceDue;
   final List<QuoteLine> _lines;
   @override
   List<QuoteLine> get lines {
@@ -662,7 +838,7 @@ class _$QuoteImpl implements _Quote {
 
   @override
   String toString() {
-    return 'Quote(id: $id, companyId: $companyId, clientId: $clientId, quoteNumber: $quoteNumber, status: $status, totalHt: $totalHt, totalVat: $totalVat, totalTtc: $totalTtc, lines: $lines, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Quote(id: $id, companyId: $companyId, clientId: $clientId, quoteNumber: $quoteNumber, status: $status, totalHt: $totalHt, totalVat: $totalVat, totalTtc: $totalTtc, discountType: $discountType, discountValue: $discountValue, discountAmount: $discountAmount, netTotalHt: $netTotalHt, netTotalVat: $netTotalVat, netTotalTtc: $netTotalTtc, depositType: $depositType, depositValue: $depositValue, depositAmount: $depositAmount, balanceDue: $balanceDue, lines: $lines, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -683,6 +859,26 @@ class _$QuoteImpl implements _Quote {
                 other.totalVat == totalVat) &&
             (identical(other.totalTtc, totalTtc) ||
                 other.totalTtc == totalTtc) &&
+            (identical(other.discountType, discountType) ||
+                other.discountType == discountType) &&
+            (identical(other.discountValue, discountValue) ||
+                other.discountValue == discountValue) &&
+            (identical(other.discountAmount, discountAmount) ||
+                other.discountAmount == discountAmount) &&
+            (identical(other.netTotalHt, netTotalHt) ||
+                other.netTotalHt == netTotalHt) &&
+            (identical(other.netTotalVat, netTotalVat) ||
+                other.netTotalVat == netTotalVat) &&
+            (identical(other.netTotalTtc, netTotalTtc) ||
+                other.netTotalTtc == netTotalTtc) &&
+            (identical(other.depositType, depositType) ||
+                other.depositType == depositType) &&
+            (identical(other.depositValue, depositValue) ||
+                other.depositValue == depositValue) &&
+            (identical(other.depositAmount, depositAmount) ||
+                other.depositAmount == depositAmount) &&
+            (identical(other.balanceDue, balanceDue) ||
+                other.balanceDue == balanceDue) &&
             const DeepCollectionEquality().equals(other._lines, _lines) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -692,7 +888,7 @@ class _$QuoteImpl implements _Quote {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     id,
     companyId,
@@ -702,10 +898,20 @@ class _$QuoteImpl implements _Quote {
     totalHt,
     totalVat,
     totalTtc,
+    discountType,
+    discountValue,
+    discountAmount,
+    netTotalHt,
+    netTotalVat,
+    netTotalTtc,
+    depositType,
+    depositValue,
+    depositAmount,
+    balanceDue,
     const DeepCollectionEquality().hash(_lines),
     createdAt,
     updatedAt,
-  );
+  ]);
 
   /// Create a copy of Quote
   /// with the given fields replaced by the non-null parameter values.
@@ -731,6 +937,16 @@ abstract class _Quote implements Quote {
     required final String totalHt,
     required final String totalVat,
     required final String totalTtc,
+    final String? discountType,
+    final String discountValue,
+    final String discountAmount,
+    final String netTotalHt,
+    final String netTotalVat,
+    final String netTotalTtc,
+    final String? depositType,
+    final String depositValue,
+    final String depositAmount,
+    final String balanceDue,
     required final List<QuoteLine> lines,
     required final DateTime createdAt,
     required final DateTime updatedAt,
@@ -750,13 +966,35 @@ abstract class _Quote implements Quote {
   @override
   String get quoteNumber;
   @override
-  QuoteStatus get status;
+  QuoteStatus get status; // The GROSS subtotal (sum of the lines, before discount).
   @override
   String get totalHt;
   @override
   String get totalVat;
   @override
-  String get totalTtc;
+  String get totalTtc; // Discount + deposit (V1.1 #3), all computed by the backend and
+  // snapshotted. Net == gross with no discount; balanceDue == net TTC with
+  // no deposit. Defaulted so a pre-V1.1.3 quote still parses.
+  @override
+  String? get discountType;
+  @override
+  String get discountValue;
+  @override
+  String get discountAmount;
+  @override
+  String get netTotalHt;
+  @override
+  String get netTotalVat;
+  @override
+  String get netTotalTtc;
+  @override
+  String? get depositType;
+  @override
+  String get depositValue;
+  @override
+  String get depositAmount;
+  @override
+  String get balanceDue;
   @override
   List<QuoteLine> get lines;
   @override

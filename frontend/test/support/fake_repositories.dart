@@ -227,6 +227,10 @@ class FakeQuotesRepository implements QuotesRepository {
     required String companyId,
     required String clientId,
     required List<QuoteLineInput> lines,
+    String? discountType,
+    String? discountValue,
+    String? depositType,
+    String? depositValue,
   }) async {
     if (createResult == null) throw UnimplementedError();
     _quotes.insert(0, createResult!);
@@ -278,6 +282,10 @@ class FakeQuotesRepository implements QuotesRepository {
   @override
   Future<QuoteCalculation> calculate({
     required List<QuoteLineInput> lines,
+    String? discountType,
+    String? discountValue,
+    String? depositType,
+    String? depositValue,
   }) async {
     num total = 0;
     final calcLines = <QuoteCalculationLine>[];
@@ -298,10 +306,33 @@ class FakeQuotesRepository implements QuotesRepository {
         ),
       );
     }
+    // This stub prices VAT at 0, so net HT == net TTC. Discount/deposit are
+    // resolved just enough for a wizard test to assert the applied figures.
+    num resolve(String? type, String? value, num base) {
+      if (type == null) return 0;
+      final v = num.tryParse(value ?? '0') ?? 0;
+      final amount = type == 'percent' ? base * v / 100 : v;
+      return amount > base ? base : amount;
+    }
+
+    final discountAmount = resolve(discountType, discountValue, total);
+    final netTtc = total - discountAmount;
+    final depositAmount = resolve(depositType, depositValue, netTtc);
+    String money(num n) => n.toStringAsFixed(2);
     return QuoteCalculation(
       totalHt: '$total',
       totalVat: '0',
       totalTtc: '$total',
+      discountType: discountType,
+      discountValue: discountValue ?? '0.00',
+      discountAmount: money(discountAmount),
+      netTotalHt: '$netTtc',
+      netTotalVat: '0',
+      netTotalTtc: '$netTtc',
+      depositType: depositType,
+      depositValue: depositValue ?? '0.00',
+      depositAmount: money(depositAmount),
+      balanceDue: money(netTtc - depositAmount),
       lines: calcLines,
     );
   }
@@ -310,6 +341,10 @@ class FakeQuotesRepository implements QuotesRepository {
   Future<Uint8List> previewDraftPdf({
     required String clientId,
     required List<QuoteLineInput> lines,
+    String? discountType,
+    String? discountValue,
+    String? depositType,
+    String? depositValue,
   }) async {
     // A minimal valid PDF header is enough for tests that only check bytes.
     return Uint8List.fromList('%PDF-1.4 preview'.codeUnits);

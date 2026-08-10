@@ -109,6 +109,27 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
     );
   }
 
+  /// Set the quote-level discount (décision 5). [type] is `'percent'` or
+  /// `'amount'`; [value] the entered figure. The backend computes the euro
+  /// amount and re-prices — nothing is multiplied here.
+  void setDiscount(String type, String value) {
+    state = state.copyWith(discountType: type, discountValue: value);
+  }
+
+  void clearDiscount() {
+    state = state.copyWith(discountType: null, discountValue: null);
+  }
+
+  /// Set the quote-level deposit (acompte). Same shape as the discount; the
+  /// deposit only splits the net TTC — it changes no total.
+  void setDeposit(String type, String value) {
+    state = state.copyWith(depositType: type, depositValue: value);
+  }
+
+  void clearDeposit() {
+    state = state.copyWith(depositType: null, depositValue: null);
+  }
+
   /// Start over — a fresh draft.
   void reset() => state = const QuoteDraft();
 
@@ -121,12 +142,22 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
       state = state.copyWith(calculation: null);
       return;
     }
-    final calculation = await ref
-        .read(quotesRepositoryProvider)
-        .calculate(
-          lines: [for (final line in state.lines) line.toInput()],
-        );
-    state = state.copyWith(calculation: calculation);
+    try {
+      final calculation = await ref
+          .read(quotesRepositoryProvider)
+          .calculate(
+            lines: [for (final line in state.lines) line.toInput()],
+            discountType: state.discountType,
+            discountValue: state.discountValue,
+            depositType: state.depositType,
+            depositValue: state.depositValue,
+          );
+      state = state.copyWith(calculation: calculation);
+    } catch (_) {
+      // A transient invalid input — a discount typed mid-edit that briefly
+      // exceeds the total, say (422). Keep the last good calculation rather
+      // than blank the live preview; a real create surfaces the error itself.
+    }
   }
 }
 
@@ -274,6 +305,15 @@ void loadQuoteForEdit(
         priceOverridden: catalogItemId != null,
       ),
     );
+  }
+  // Restore the quote-level discount/deposit inputs (their *values*, so a
+  // percentage re-resolves to the same amount) — the reopened draft is a
+  // photograph and must reproduce exactly what was shown.
+  if (quote.discountType != null) {
+    notifier.setDiscount(quote.discountType!, quote.discountValue);
+  }
+  if (quote.depositType != null) {
+    notifier.setDeposit(quote.depositType!, quote.depositValue);
   }
   ref.read(selectedFolderProvider.notifier).clear();
   ref.read(createdQuoteProvider.notifier).state = null;

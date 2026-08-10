@@ -14,21 +14,35 @@ class QuoteTotalsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final strong = theme.textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.bold,
+    );
+    final hasDiscount = quote.discountAmount != '0.00';
+    final hasDeposit = quote.depositAmount != '0.00';
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _TotalRow(label: 'Total HT', amount: quote.totalHt),
-            _TotalRow(label: 'TVA', amount: quote.totalVat),
+            // With a discount, show the subtotal, the remise and the net HT;
+            // otherwise a single "Total HT". Every figure is the backend's.
+            if (hasDiscount) ...[
+              _TotalRow(label: 'Sous-total HT', amount: quote.totalHt),
+              _TotalRow(label: 'Remise', amount: quote.discountAmount),
+              _TotalRow(label: 'Total HT net', amount: quote.netTotalHt),
+            ] else
+              _TotalRow(label: 'Total HT', amount: quote.netTotalHt),
+            _TotalRow(label: 'TVA', amount: quote.netTotalVat),
             const Divider(),
-            _TotalRow(
-              label: 'Total TTC',
-              amount: quote.totalTtc,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+            _TotalRow(label: 'Total TTC', amount: quote.netTotalTtc, style: strong),
+            if (hasDeposit) ...[
+              _TotalRow(label: 'Acompte à verser', amount: quote.depositAmount),
+              _TotalRow(
+                label: 'Solde à la livraison',
+                amount: quote.balanceDue,
+                style: strong,
               ),
-            ),
+            ],
           ],
         ),
       ),

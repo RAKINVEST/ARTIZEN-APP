@@ -97,7 +97,38 @@ class QuoteLineCreate(BaseModel):
         return self
 
 
-class QuoteCreate(BaseModel):
+class _QuoteAdjustmentsInput(BaseModel):
+    """The optional discount + deposit set on the whole quote (décision 5:
+    quote fields, not lines). ``*_type`` is ``'percent'`` | ``'amount'`` |
+    ``None`` (no adjustment); ``*_value`` is the percentage or the euro amount.
+    Percentage bounds (0–100) are checked here; the euro bounds that depend on
+    the priced lines (discount ≤ subtotal, deposit ≤ net TTC) are enforced by
+    the service, which answers 422. Amounts are only ever inputs to
+    ``QuoteCalculator`` (décision 3) — the AI never fills them."""
+
+    discount_type: Literal["percent", "amount"] | None = None
+    discount_value: Decimal | None = Field(default=None, ge=0, max_digits=10, decimal_places=2)
+    deposit_type: Literal["percent", "amount"] | None = None
+    deposit_value: Decimal | None = Field(default=None, ge=0, max_digits=10, decimal_places=2)
+
+    @model_validator(mode="after")
+    def _check_adjustments(self) -> "_QuoteAdjustmentsInput":
+        for label, atype, value in (
+            ("discount", self.discount_type, self.discount_value),
+            ("deposit", self.deposit_type, self.deposit_value),
+        ):
+            if atype is None:
+                if value not in (None, Decimal("0")):
+                    raise ValueError(f"{label}_value requires a {label}_type.")
+            else:
+                if value is None:
+                    raise ValueError(f"{label}_type requires a {label}_value.")
+                if atype == "percent" and value > Decimal("100"):
+                    raise ValueError(f"A {label} percentage cannot exceed 100.")
+        return self
+
+
+class QuoteCreate(_QuoteAdjustmentsInput):
     # Always overridden with the authenticated user's company_id (see
     # quotes/router.py) — optional here so callers don't need to send a
     # value that would be ignored anyway.
@@ -106,7 +137,7 @@ class QuoteCreate(BaseModel):
     lines: list[QuoteLineCreate] = Field(min_length=1)
 
 
-class QuoteCalculationRequest(BaseModel):
+class QuoteCalculationRequest(_QuoteAdjustmentsInput):
     """Input of the stateless pricing preview (``POST /quotes/calculate``).
 
     Deliberately lighter than ``QuoteCreate``: no ``client_id``, because no
@@ -140,7 +171,25 @@ class QuoteLineCalculation(BaseModel):
     total_ttc: Decimal
 
 
-class QuoteCalculation(BaseModel):
+class _QuoteAdjustmentsRead(BaseModel):
+    """The discount/deposit outcome carried by a quote or a live calculation:
+    the discount, the net totals after it, then the deposit split of the net
+    TTC. The gross ``total_*`` stays alongside (the subtotal, before discount).
+    Every figure is the backend's — the client only displays them."""
+
+    discount_type: str | None = None
+    discount_value: Decimal = Decimal("0.00")
+    discount_amount: Decimal = Decimal("0.00")
+    net_total_ht: Decimal
+    net_total_vat: Decimal
+    net_total_ttc: Decimal
+    deposit_type: str | None = None
+    deposit_value: Decimal = Decimal("0.00")
+    deposit_amount: Decimal = Decimal("0.00")
+    balance_due: Decimal
+
+
+class QuoteCalculation(_QuoteAdjustmentsRead):
     """What a quote *would* total if it were created right now.
 
     Nothing is persisted: no quote row, no number burned from the counter,
@@ -179,7 +228,7 @@ class QuoteStatusUpdate(BaseModel):
     status: QuoteStatus
 
 
-class QuoteRead(BaseModel):
+class QuoteRead(_QuoteAdjustmentsRead):
     id: uuid.UUID
     company_id: uuid.UUID
     client_id: uuid.UUID

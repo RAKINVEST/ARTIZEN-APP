@@ -77,6 +77,10 @@ async def preview_draft_pdf(
         company_id=payload.company_id,
         client_id=payload.client_id,
         lines_data=payload.lines,
+        discount_type=payload.discount_type,
+        discount_value=payload.discount_value,
+        deposit_type=payload.deposit_type,
+        deposit_value=payload.deposit_value,
     )
     return Response(
         content=pdf,

@@ -106,11 +106,23 @@ class QuotesNotifier extends PagedListNotifier<Quote> {
   Future<Quote> createQuote({
     required String clientId,
     required List<QuoteLineInput> lines,
+    String? discountType,
+    String? discountValue,
+    String? depositType,
+    String? depositValue,
   }) async {
     final companyId = await ref.read(currentCompanyIdProvider.future);
     final quote = await ref
         .read(quotesRepositoryProvider)
-        .create(companyId: companyId, clientId: clientId, lines: lines);
+        .create(
+          companyId: companyId,
+          clientId: clientId,
+          lines: lines,
+          discountType: discountType,
+          discountValue: discountValue,
+          depositType: depositType,
+          depositValue: depositValue,
+        );
     await reload();
     return quote;
   }

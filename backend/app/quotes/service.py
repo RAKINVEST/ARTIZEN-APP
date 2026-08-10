@@ -13,6 +13,7 @@ so this module is naturally "downstream" of both.
 import asyncio
 import logging
 import uuid
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
@@ -25,10 +26,11 @@ from app.clients.repository import ClientRepository
 from app.core.exceptions import NotFoundError
 from app.email.base import EmailAttachment, EmailProvider
 from app.pdf.html_renderer import HtmlPdfRenderer
-from app.quotes.calculator import LineTotals, QuoteCalculator, QuoteTotals
+from app.quotes.calculator import LineTotals, QuoteCalculator, QuoteTotals, VatBucket
 from app.quotes.document_mapper import quote_to_document, sample_document
 from app.quotes.exceptions import (
     InactiveCatalogItemError,
+    InvalidQuoteAdjustmentError,
     InvalidQuoteTransitionError,
     QuoteHasNoRecipientError,
     QuoteNotEditableError,
@@ -74,6 +76,25 @@ def format_quote_number(year: int, sequence: int) -> str:
     return f"{QUOTE_NUMBER_PREFIX}-{year}-{sequence:0{_SEQUENCE_WIDTH}d}"
 
 
+@dataclass
+class _Adjustments:
+    """A quote's resolved discount + deposit — everything computed by
+    ``QuoteCalculator`` and ready to persist or return. ``vat_rows`` is the
+    *net* per-rate summary (after discount) the PDF prints."""
+
+    discount_type: str | None
+    discount_value: Decimal
+    discount_amount: Decimal
+    net_total_ht: Decimal
+    net_total_vat: Decimal
+    net_total_ttc: Decimal
+    deposit_type: str | None
+    deposit_value: Decimal
+    deposit_amount: Decimal
+    balance_due: Decimal
+    vat_rows: list[VatBucket]
+
+
 class QuoteService:
     def __init__(
         self,
@@ -108,11 +129,19 @@ class QuoteService:
         line_models, quote_totals = await self._price_lines(
             company_id=data.company_id, lines_data=data.lines
         )
+        adjustments = self._compute_adjustments(
+            line_models=line_models,
+            discount_type=data.discount_type,
+            discount_value=data.discount_value,
+            deposit_type=data.deposit_type,
+            deposit_value=data.deposit_value,
+        )
         return await self._persist_new_quote(
             company_id=data.company_id,
             client_id=data.client_id,
             line_models=line_models,
             totals=quote_totals,
+            adjustments=adjustments,
         )
 
     async def calculate(self, data: QuoteCalculationRequest) -> QuoteCalculation:
@@ -134,11 +163,19 @@ class QuoteService:
         line_models, totals = await self._price_lines(
             company_id=data.company_id, lines_data=data.lines
         )
+        adjustments = self._compute_adjustments(
+            line_models=line_models,
+            discount_type=data.discount_type,
+            discount_value=data.discount_value,
+            deposit_type=data.deposit_type,
+            deposit_value=data.deposit_value,
+        )
         return QuoteCalculation(
             total_ht=totals.total_ht,
             total_vat=totals.total_vat,
             total_ttc=totals.total_ttc,
             lines=[QuoteLineCalculation.model_validate(line) for line in line_models],
+            **self._adjustment_fields(adjustments),
         )
 
     async def _price_lines(
@@ -216,6 +253,80 @@ class QuoteService:
 
         return line_models, self._calculator.calculate_quote(line_totals)
 
+    def _compute_adjustments(
+        self,
+        *,
+        line_models: list[QuoteLine],
+        discount_type: str | None,
+        discount_value: Decimal | None,
+        deposit_type: str | None,
+        deposit_value: Decimal | None,
+    ) -> _Adjustments:
+        """Resolve the global discount + deposit from already-priced lines.
+
+        The calculator does every monetary computation (résolution %→€,
+        réallocation TVA par taux, solde). This method only enforces the euro
+        bounds that depend on the lines — a discount amount can't exceed the
+        subtotal, a deposit amount can't exceed the net TTC — with a 422.
+        Shared by ``create``/``calculate``/``render_draft_pdf``/``render_pdf``/
+        ``duplicate`` so every path applies the exact same rule.
+        """
+        d_value = discount_value if discount_value is not None else Decimal("0.00")
+        p_value = deposit_value if deposit_value is not None else Decimal("0.00")
+        line_amounts = [
+            (line.vat_rate, line.total_ht, line.total_vat) for line in line_models
+        ]
+        subtotal_ht = sum((line.total_ht for line in line_models), Decimal("0.00"))
+        if discount_type == "amount" and d_value > subtotal_ht:
+            raise InvalidQuoteAdjustmentError(
+                f"A discount of {d_value} exceeds the subtotal {subtotal_ht}."
+            )
+        discounted = self._calculator.apply_discount(
+            line_amounts, discount_type=discount_type, discount_value=d_value
+        )
+        if deposit_type == "amount" and p_value > discounted.net_ttc:
+            raise InvalidQuoteAdjustmentError(
+                f"A deposit of {p_value} exceeds the net total {discounted.net_ttc}."
+            )
+        deposit_amount, balance_due = self._calculator.apply_deposit(
+            discounted.net_ttc, deposit_type=deposit_type, deposit_value=p_value
+        )
+        return _Adjustments(
+            discount_type=discount_type,
+            discount_value=d_value,
+            discount_amount=discounted.discount_amount,
+            net_total_ht=discounted.net_ht,
+            net_total_vat=discounted.net_vat,
+            net_total_ttc=discounted.net_ttc,
+            deposit_type=deposit_type,
+            deposit_value=p_value,
+            deposit_amount=deposit_amount,
+            balance_due=balance_due,
+            vat_rows=discounted.vat_rows,
+        )
+
+    @staticmethod
+    def _adjustment_fields(source: "_Adjustments | Quote") -> dict[str, object]:
+        """The ten discount/deposit fields, read off either an ``_Adjustments``
+        or a persisted ``Quote`` (both expose the same attribute names) — so the
+        Quote row, the ``QuoteCalculation`` and the ``QuoteRead`` are all filled
+        from one place."""
+        return {
+            name: getattr(source, name)
+            for name in (
+                "discount_type",
+                "discount_value",
+                "discount_amount",
+                "net_total_ht",
+                "net_total_vat",
+                "net_total_ttc",
+                "deposit_type",
+                "deposit_value",
+                "deposit_amount",
+                "balance_due",
+            )
+        }
+
     async def _persist_new_quote(
         self,
         *,
@@ -223,6 +334,7 @@ class QuoteService:
         client_id: uuid.UUID,
         line_models: list[QuoteLine],
         totals: QuoteTotals,
+        adjustments: _Adjustments,
     ) -> QuoteRead:
         """Numbers, persists and returns a brand-new DRAFT quote.
 
@@ -250,6 +362,7 @@ class QuoteService:
                 total_ht=totals.total_ht,
                 total_vat=totals.total_vat,
                 total_ttc=totals.total_ttc,
+                **self._adjustment_fields(adjustments),
             )
         )
         for line in line_models:
@@ -337,11 +450,23 @@ class QuoteService:
             )
 
         quote_totals = self._calculator.calculate_quote(line_totals)
+        # The discount/deposit *parameters* are copied and re-applied (not the
+        # stored euro amounts): a percentage re-resolves to the same figure on
+        # the copied lines, and the calculator stays the one place it is
+        # computed — the copy can't silently disagree with the calculator.
+        adjustments = self._compute_adjustments(
+            line_models=line_models,
+            discount_type=original.discount_type,
+            discount_value=original.discount_value,
+            deposit_type=original.deposit_type,
+            deposit_value=original.deposit_value,
+        )
         return await self._persist_new_quote(
             company_id=original.company_id,
             client_id=original.client_id,
             line_models=line_models,
             totals=quote_totals,
+            adjustments=adjustments,
         )
 
     async def render_pdf(self, quote_id: uuid.UUID) -> tuple[str, bytes]:
@@ -370,8 +495,15 @@ class QuoteService:
             raise NotFoundError(f"Client {quote.client_id} not found.")
 
         profile = await self._branding.get_profile(quote.company_id)
-        vat_breakdown = self._calculator.calculate_vat_breakdown(
-            [(line.vat_rate, line.total_ht, line.total_vat) for line in lines]
+        # Re-derive the net per-rate VAT (after the stored discount) from the
+        # line snapshots + the quote's discount params — the exact calculator
+        # path creation used, so the PDF can never disagree with the totals.
+        adjustments = self._compute_adjustments(
+            line_models=lines,
+            discount_type=quote.discount_type,
+            discount_value=quote.discount_value,
+            deposit_type=quote.deposit_type,
+            deposit_value=quote.deposit_value,
         )
         logo = await self._load_asset(profile.brand.logo_path)
         signature = await self._load_asset(profile.brand.signature_path)
@@ -382,7 +514,7 @@ class QuoteService:
             lines=lines,
             client=client,
             profile=profile,
-            vat_breakdown=vat_breakdown,
+            vat_breakdown=adjustments.vat_rows,
             logo=logo,
             signature=signature,
             stamp=stamp,
@@ -396,6 +528,10 @@ class QuoteService:
         company_id: uuid.UUID,
         client_id: uuid.UUID,
         lines_data: list[QuoteLineCreate],
+        discount_type: str | None = None,
+        discount_value: Decimal | None = None,
+        deposit_type: str | None = None,
+        deposit_value: Decimal | None = None,
     ) -> tuple[str, bytes]:
         """The wizard's "prêt à remplir" preview: renders a not-yet-created
         quote (the selected client + the draft lines) to the exact same premium
@@ -410,20 +546,26 @@ class QuoteService:
         line_models, totals = await self._price_lines(
             company_id=company_id, lines_data=lines_data
         )
+        adjustments = self._compute_adjustments(
+            line_models=line_models,
+            discount_type=discount_type,
+            discount_value=discount_value,
+            deposit_type=deposit_type,
+            deposit_value=deposit_value,
+        )
         client = await self._clients.get(client_id)
         if client is None or client.company_id != company_id:
             raise NotFoundError(f"Client {client_id} not found.")
 
         profile = await self._branding.get_profile(company_id)
-        vat_breakdown = self._calculator.calculate_vat_breakdown(
-            [(line.vat_rate, line.total_ht, line.total_vat) for line in line_models]
-        )
         logo = await self._load_asset(profile.brand.logo_path)
         signature = await self._load_asset(profile.brand.signature_path)
         stamp = await self._load_asset(profile.brand.stamp_path)
 
         # An unsaved, transient quote: quote_to_document only reads its number
-        # and totals (the date comes from `issued_on`), so it never needs a row.
+        # and (gross + net) totals — the date comes from `issued_on` — so it
+        # never needs a row. The adjustment fields are set so the preview shows
+        # the same remise/acompte a created quote would.
         draft = Quote(
             company_id=company_id,
             client_id=client_id,
@@ -432,13 +574,14 @@ class QuoteService:
             total_ht=totals.total_ht,
             total_vat=totals.total_vat,
             total_ttc=totals.total_ttc,
+            **self._adjustment_fields(adjustments),
         )
         document = quote_to_document(
             quote=draft,
             lines=line_models,
             client=client,
             profile=profile,
-            vat_breakdown=vat_breakdown,
+            vat_breakdown=adjustments.vat_rows,
             logo=logo,
             signature=signature,
             stamp=stamp,
@@ -672,4 +815,5 @@ class QuoteService:
             lines=[QuoteLineRead.model_validate(line) for line in lines],
             created_at=quote.created_at,
             updated_at=quote.updated_at,
+            **QuoteService._adjustment_fields(quote),
         )

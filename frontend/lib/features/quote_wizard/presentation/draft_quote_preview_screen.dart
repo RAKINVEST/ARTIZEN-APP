@@ -16,11 +16,19 @@ class DraftQuotePreviewScreen extends ConsumerStatefulWidget {
   const DraftQuotePreviewScreen({
     required this.clientId,
     required this.lines,
+    this.discountType,
+    this.discountValue,
+    this.depositType,
+    this.depositValue,
     super.key,
   });
 
   final String clientId;
   final List<QuoteLineInput> lines;
+  final String? discountType;
+  final String? discountValue;
+  final String? depositType;
+  final String? depositValue;
 
   @override
   ConsumerState<DraftQuotePreviewScreen> createState() =>
@@ -43,6 +51,10 @@ class _DraftQuotePreviewScreenState
       () => ref.read(quotesRepositoryProvider).previewDraftPdf(
         clientId: widget.clientId,
         lines: widget.lines,
+        discountType: widget.discountType,
+        discountValue: widget.discountValue,
+        depositType: widget.depositType,
+        depositValue: widget.depositValue,
       ),
     );
     if (mounted) setState(() => _pdf = next);

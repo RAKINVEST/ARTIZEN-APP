@@ -118,7 +118,8 @@ class QuotesListScreen extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              CurrencyFormatter.format(quote.totalTtc),
+                              // The net TTC (== gross when there is no discount).
+                              CurrencyFormatter.format(quote.netTotalTtc),
                               style: const TextStyle(
                                 color: ArtizenColors.textSecondary,
                                 fontSize: 13,

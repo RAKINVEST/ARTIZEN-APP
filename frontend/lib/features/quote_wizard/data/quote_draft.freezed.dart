@@ -353,6 +353,15 @@ mixin _$QuoteDraft {
   List<DraftLine> get lines => throw _privateConstructorUsedError;
   QuoteCalculation? get calculation => throw _privateConstructorUsedError;
 
+  /// Discount + deposit the artisan set (décision 5: quote-level, not lines).
+  /// ``*Type`` is `'percent'` | `'amount'` | null; ``*Value`` is the entered
+  /// percentage or euro amount, as a string like the rest of the draft. The
+  /// backend computes every amount — these are only the inputs it is sent.
+  String? get discountType => throw _privateConstructorUsedError;
+  String? get discountValue => throw _privateConstructorUsedError;
+  String? get depositType => throw _privateConstructorUsedError;
+  String? get depositValue => throw _privateConstructorUsedError;
+
   /// Create a copy of QuoteDraft
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -372,6 +381,10 @@ abstract class $QuoteDraftCopyWith<$Res> {
     String? clientLabel,
     List<DraftLine> lines,
     QuoteCalculation? calculation,
+    String? discountType,
+    String? discountValue,
+    String? depositType,
+    String? depositValue,
   });
 
   $QuoteCalculationCopyWith<$Res>? get calculation;
@@ -396,6 +409,10 @@ class _$QuoteDraftCopyWithImpl<$Res, $Val extends QuoteDraft>
     Object? clientLabel = freezed,
     Object? lines = null,
     Object? calculation = freezed,
+    Object? discountType = freezed,
+    Object? discountValue = freezed,
+    Object? depositType = freezed,
+    Object? depositValue = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -415,6 +432,22 @@ class _$QuoteDraftCopyWithImpl<$Res, $Val extends QuoteDraft>
                 ? _value.calculation
                 : calculation // ignore: cast_nullable_to_non_nullable
                       as QuoteCalculation?,
+            discountType: freezed == discountType
+                ? _value.discountType
+                : discountType // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            discountValue: freezed == discountValue
+                ? _value.discountValue
+                : discountValue // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            depositType: freezed == depositType
+                ? _value.depositType
+                : depositType // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            depositValue: freezed == depositValue
+                ? _value.depositValue
+                : depositValue // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -449,6 +482,10 @@ abstract class _$$QuoteDraftImplCopyWith<$Res>
     String? clientLabel,
     List<DraftLine> lines,
     QuoteCalculation? calculation,
+    String? discountType,
+    String? discountValue,
+    String? depositType,
+    String? depositValue,
   });
 
   @override
@@ -473,6 +510,10 @@ class __$$QuoteDraftImplCopyWithImpl<$Res>
     Object? clientLabel = freezed,
     Object? lines = null,
     Object? calculation = freezed,
+    Object? discountType = freezed,
+    Object? discountValue = freezed,
+    Object? depositType = freezed,
+    Object? depositValue = freezed,
   }) {
     return _then(
       _$QuoteDraftImpl(
@@ -492,6 +533,22 @@ class __$$QuoteDraftImplCopyWithImpl<$Res>
             ? _value.calculation
             : calculation // ignore: cast_nullable_to_non_nullable
                   as QuoteCalculation?,
+        discountType: freezed == discountType
+            ? _value.discountType
+            : discountType // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        discountValue: freezed == discountValue
+            ? _value.discountValue
+            : discountValue // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        depositType: freezed == depositType
+            ? _value.depositType
+            : depositType // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        depositValue: freezed == depositValue
+            ? _value.depositValue
+            : depositValue // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -505,6 +562,10 @@ class _$QuoteDraftImpl extends _QuoteDraft {
     this.clientLabel,
     final List<DraftLine> lines = const <DraftLine>[],
     this.calculation,
+    this.discountType,
+    this.discountValue,
+    this.depositType,
+    this.depositValue,
   }) : _lines = lines,
        super._();
 
@@ -524,9 +585,22 @@ class _$QuoteDraftImpl extends _QuoteDraft {
   @override
   final QuoteCalculation? calculation;
 
+  /// Discount + deposit the artisan set (décision 5: quote-level, not lines).
+  /// ``*Type`` is `'percent'` | `'amount'` | null; ``*Value`` is the entered
+  /// percentage or euro amount, as a string like the rest of the draft. The
+  /// backend computes every amount — these are only the inputs it is sent.
+  @override
+  final String? discountType;
+  @override
+  final String? discountValue;
+  @override
+  final String? depositType;
+  @override
+  final String? depositValue;
+
   @override
   String toString() {
-    return 'QuoteDraft(clientId: $clientId, clientLabel: $clientLabel, lines: $lines, calculation: $calculation)';
+    return 'QuoteDraft(clientId: $clientId, clientLabel: $clientLabel, lines: $lines, calculation: $calculation, discountType: $discountType, discountValue: $discountValue, depositType: $depositType, depositValue: $depositValue)';
   }
 
   @override
@@ -540,7 +614,15 @@ class _$QuoteDraftImpl extends _QuoteDraft {
                 other.clientLabel == clientLabel) &&
             const DeepCollectionEquality().equals(other._lines, _lines) &&
             (identical(other.calculation, calculation) ||
-                other.calculation == calculation));
+                other.calculation == calculation) &&
+            (identical(other.discountType, discountType) ||
+                other.discountType == discountType) &&
+            (identical(other.discountValue, discountValue) ||
+                other.discountValue == discountValue) &&
+            (identical(other.depositType, depositType) ||
+                other.depositType == depositType) &&
+            (identical(other.depositValue, depositValue) ||
+                other.depositValue == depositValue));
   }
 
   @override
@@ -550,6 +632,10 @@ class _$QuoteDraftImpl extends _QuoteDraft {
     clientLabel,
     const DeepCollectionEquality().hash(_lines),
     calculation,
+    discountType,
+    discountValue,
+    depositType,
+    depositValue,
   );
 
   /// Create a copy of QuoteDraft
@@ -567,6 +653,10 @@ abstract class _QuoteDraft extends QuoteDraft {
     final String? clientLabel,
     final List<DraftLine> lines,
     final QuoteCalculation? calculation,
+    final String? discountType,
+    final String? discountValue,
+    final String? depositType,
+    final String? depositValue,
   }) = _$QuoteDraftImpl;
   const _QuoteDraft._() : super._();
 
@@ -578,6 +668,19 @@ abstract class _QuoteDraft extends QuoteDraft {
   List<DraftLine> get lines;
   @override
   QuoteCalculation? get calculation;
+
+  /// Discount + deposit the artisan set (décision 5: quote-level, not lines).
+  /// ``*Type`` is `'percent'` | `'amount'` | null; ``*Value`` is the entered
+  /// percentage or euro amount, as a string like the rest of the draft. The
+  /// backend computes every amount — these are only the inputs it is sent.
+  @override
+  String? get discountType;
+  @override
+  String? get discountValue;
+  @override
+  String? get depositType;
+  @override
+  String? get depositValue;
 
   /// Create a copy of QuoteDraft
   /// with the given fields replaced by the non-null parameter values.

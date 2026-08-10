@@ -124,9 +124,32 @@ class Quote(Base, UUIDMixin, TimestampMixin):
     client_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("clients.id", ondelete="RESTRICT"), index=True
     )
+    # The GROSS subtotal — the sum of the lines, before any discount. Kept as
+    # "total_*" for backward compatibility (this is what pre-V1.1.3 quotes hold).
     total_ht: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
     total_vat: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
     total_ttc: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
+
+    # --- Discount + deposit (V1.1 #3, décision 5: quote fields, not lines) ---
+    # A global discount on the HT (VAT is recomputed per rate on the discounted
+    # base), then a deposit split of the net TTC. Every amount is computed by
+    # QuoteCalculator and snapshotted here, so the quote stays a photograph.
+    # Neutral defaults keep pre-V1.1.3 quotes coherent (net == gross, no
+    # deposit, balance == ttc) — the migration backfills the net_* / balance.
+    #
+    # ``discount_type``/``deposit_type``: 'percent' | 'amount' | None (no
+    # adjustment). ``*_value`` is what the artisan entered (a percentage or a
+    # euro amount); ``*_amount`` is the resolved euro figure.
+    discount_type: Mapped[str | None] = mapped_column(default=None)
+    discount_value: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
+    discount_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
+    net_total_ht: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
+    net_total_vat: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
+    net_total_ttc: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
+    deposit_type: Mapped[str | None] = mapped_column(default=None)
+    deposit_value: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
+    deposit_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
+    balance_due: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
 
 
 class QuoteLine(Base, UUIDMixin, TimestampMixin):
