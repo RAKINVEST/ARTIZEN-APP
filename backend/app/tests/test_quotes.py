@@ -463,3 +463,128 @@ async def test_send_quote_requires_validation_first(
     response = await client.post(f"/api/quotes/{quote_id}/send")
 
     assert response.status_code == 409  # draft → sent is not allowed
+
+
+# --- Objet du devis (V1.1 #6) ---
+
+
+async def test_create_quote_without_object_is_null(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    response = await client.post(
+        "/api/quotes",
+        json={
+            "company_id": company_id,
+            "client_id": client_id,
+            "lines": [{"catalog_item_id": item_id, "quantity": "1"}],
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["object"] is None
+
+
+async def test_create_quote_persists_object(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    response = await client.post(
+        "/api/quotes",
+        json={
+            "company_id": company_id,
+            "client_id": client_id,
+            "object": "Rénovation SDB — M. Dupont",
+            "lines": [{"catalog_item_id": item_id, "quantity": "1"}],
+        },
+    )
+    assert response.status_code == 201
+    quote_id = response.json()["id"]
+    assert response.json()["object"] == "Rénovation SDB — M. Dupont"
+
+    # Re-read: the objet is persisted, not merely echoed from the request.
+    read = await client.get(f"/api/quotes/{quote_id}")
+    assert read.status_code == 200
+    assert read.json()["object"] == "Rénovation SDB — M. Dupont"
+
+
+async def test_duplicate_quote_keeps_object(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    created = await client.post(
+        "/api/quotes",
+        json={
+            "company_id": company_id,
+            "client_id": client_id,
+            "object": "Pose chaudière",
+            "lines": [{"catalog_item_id": item_id, "quantity": "1"}],
+        },
+    )
+    original_id = created.json()["id"]
+
+    duplicated = await client.post(f"/api/quotes/{original_id}/duplicate")
+    assert duplicated.status_code == 201
+    # A genuinely new quote, carrying the same objet (a photograph of the source).
+    assert duplicated.json()["id"] != original_id
+    assert duplicated.json()["object"] == "Pose chaudière"
+
+
+async def test_create_quote_object_at_max_length_accepted(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    objet = "x" * 255
+    response = await client.post(
+        "/api/quotes",
+        json={
+            "company_id": company_id,
+            "client_id": client_id,
+            "object": objet,
+            "lines": [{"catalog_item_id": item_id, "quantity": "1"}],
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["object"] == objet
+
+
+async def test_create_quote_object_over_max_length_rejected(
+    client: AsyncClient, company_id: str, client_id: str, category_id: str
+) -> None:
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    response = await client.post(
+        "/api/quotes",
+        json={
+            "company_id": company_id,
+            "client_id": client_id,
+            "object": "x" * 256,
+            "lines": [{"catalog_item_id": item_id, "quantity": "1"}],
+        },
+    )
+    assert response.status_code == 422
+
+
+async def test_calculate_response_has_no_object(
+    client: AsyncClient, company_id: str, category_id: str
+) -> None:
+    """The stateless pricing preview is untouched by V1.1 #6 — objet is not a
+    monetary input and never appears in a calculation."""
+    item_id = await _create_item(
+        client, company_id, category_id, unit_price_ht="100.00", vat_rate="20.00"
+    )
+    body = (
+        await client.post(
+            "/api/quotes/calculate",
+            json={"lines": [{"catalog_item_id": item_id, "quantity": "1"}]},
+        )
+    ).json()
+    assert "object" not in body

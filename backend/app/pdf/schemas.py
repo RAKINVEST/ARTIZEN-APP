@@ -135,6 +135,11 @@ class Document:
     #: Optional "valid until" date shown next to the issue date (a quote's
     #: validity). ``None`` for document types that have no such date.
     valid_until: date | None = None
+    #: The document's subject line ("Objet") — a free-text label for what it
+    #: covers. ``None`` or empty renders nothing, so a document without one
+    #: looks exactly as before. Generic on purpose: a quote maps its own
+    #: ``object`` here; another document type would map whatever it calls one.
+    subject: str | None = None
     #: Printed small at the bottom. The caller decides what the law
     #: requires of *this* document type — the engine only lays it out.
     legal_mentions: list[str] = field(default_factory=list)

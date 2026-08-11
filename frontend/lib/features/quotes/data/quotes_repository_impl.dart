@@ -124,6 +124,7 @@ class QuotesRepositoryImpl implements QuotesRepository {
   Future<Quote> create({
     required String companyId,
     required String clientId,
+    String? object,
     required List<QuoteLineInput> lines,
     String? discountType,
     String? discountValue,
@@ -135,6 +136,7 @@ class QuotesRepositoryImpl implements QuotesRepository {
       data: {
         'company_id': companyId,
         'client_id': clientId,
+        'object': ?object,
         'lines': lines.map((line) => line.toJson()).toList(),
         ..._adjustmentsBody(
           discountType: discountType,

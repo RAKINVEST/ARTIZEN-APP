@@ -116,6 +116,7 @@ class HtmlPdfRenderer:
 <body>
 {self._header(document, navy, gold, contact)}
 {self._cards(document)}
+{self._subject(document)}
 {self._lines_table(document, navy, gold)}
 {self._totals(document, navy, gold)}
 {self._signatures(document)}
@@ -179,6 +180,11 @@ class HtmlPdfRenderer:
                        letter-spacing: 0.5px; }}
         .card-name {{ font-weight: 700; font-size: 10.5pt; margin: 4px 0 2px; }}
         .card-line {{ color: {_MUTED}; font-size: 9pt; line-height: 1.4; }}
+
+        /* Objet (subject) */
+        .subject {{ margin-top: 12px; font-size: 9.5pt; color: {_TEXT};
+                    line-height: 1.4; }}
+        .subject-label {{ color: {navy}; font-weight: 700; }}
 
         /* Lines table */
         table.lines {{ width: 100%; border-collapse: collapse; margin-top: 16px;
@@ -320,6 +326,19 @@ class HtmlPdfRenderer:
     {client_lines}
   </div>
 </div>"""
+
+    def _subject(self, document: Document) -> str:
+        """The "Objet" line, shown between the address cards and the lines table
+        only when the document carries one. Empty string otherwise — a document
+        without a subject renders exactly as before."""
+        subject = (document.subject or "").strip()
+        if not subject:
+            return ""
+        return (
+            '<div class="subject">'
+            '<span class="subject-label">Objet :</span> '
+            f"{_esc(subject)}</div>"
+        )
 
     def _lines_table(self, document: Document, navy: str, gold: str) -> str:
         show_vat = document.show_vat

@@ -222,16 +222,22 @@ class FakeQuotesRepository implements QuotesRepository {
   Future<Quote> get(String id) async =>
       _quotes.firstWhere((quote) => quote.id == id);
 
+  /// The objet du devis (V1.1 #6) the last [create] call received — lets a test
+  /// assert the wizard forwards the draft's objet. Null until [create] runs.
+  String? lastCreateObject;
+
   @override
   Future<Quote> create({
     required String companyId,
     required String clientId,
+    String? object,
     required List<QuoteLineInput> lines,
     String? discountType,
     String? discountValue,
     String? depositType,
     String? depositValue,
   }) async {
+    lastCreateObject = object;
     if (createResult == null) throw UnimplementedError();
     _quotes.insert(0, createResult!);
     return createResult!;

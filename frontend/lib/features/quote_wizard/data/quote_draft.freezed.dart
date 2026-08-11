@@ -350,6 +350,11 @@ abstract class _DraftLine implements DraftLine {
 mixin _$QuoteDraft {
   String? get clientId => throw _privateConstructorUsedError;
   String? get clientLabel => throw _privateConstructorUsedError;
+
+  /// Objet du devis (V1.1 #6) — free-text subject the artisan types at the
+  /// Personnaliser step. Null when empty. Persisted with the quote (unlike the
+  /// folder, which is navigation only — décision P4.3).
+  String? get object => throw _privateConstructorUsedError;
   List<DraftLine> get lines => throw _privateConstructorUsedError;
   QuoteCalculation? get calculation => throw _privateConstructorUsedError;
 
@@ -379,6 +384,7 @@ abstract class $QuoteDraftCopyWith<$Res> {
   $Res call({
     String? clientId,
     String? clientLabel,
+    String? object,
     List<DraftLine> lines,
     QuoteCalculation? calculation,
     String? discountType,
@@ -407,6 +413,7 @@ class _$QuoteDraftCopyWithImpl<$Res, $Val extends QuoteDraft>
   $Res call({
     Object? clientId = freezed,
     Object? clientLabel = freezed,
+    Object? object = freezed,
     Object? lines = null,
     Object? calculation = freezed,
     Object? discountType = freezed,
@@ -423,6 +430,10 @@ class _$QuoteDraftCopyWithImpl<$Res, $Val extends QuoteDraft>
             clientLabel: freezed == clientLabel
                 ? _value.clientLabel
                 : clientLabel // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            object: freezed == object
+                ? _value.object
+                : object // ignore: cast_nullable_to_non_nullable
                       as String?,
             lines: null == lines
                 ? _value.lines
@@ -480,6 +491,7 @@ abstract class _$$QuoteDraftImplCopyWith<$Res>
   $Res call({
     String? clientId,
     String? clientLabel,
+    String? object,
     List<DraftLine> lines,
     QuoteCalculation? calculation,
     String? discountType,
@@ -508,6 +520,7 @@ class __$$QuoteDraftImplCopyWithImpl<$Res>
   $Res call({
     Object? clientId = freezed,
     Object? clientLabel = freezed,
+    Object? object = freezed,
     Object? lines = null,
     Object? calculation = freezed,
     Object? discountType = freezed,
@@ -524,6 +537,10 @@ class __$$QuoteDraftImplCopyWithImpl<$Res>
         clientLabel: freezed == clientLabel
             ? _value.clientLabel
             : clientLabel // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        object: freezed == object
+            ? _value.object
+            : object // ignore: cast_nullable_to_non_nullable
                   as String?,
         lines: null == lines
             ? _value._lines
@@ -560,6 +577,7 @@ class _$QuoteDraftImpl extends _QuoteDraft {
   const _$QuoteDraftImpl({
     this.clientId,
     this.clientLabel,
+    this.object,
     final List<DraftLine> lines = const <DraftLine>[],
     this.calculation,
     this.discountType,
@@ -573,6 +591,12 @@ class _$QuoteDraftImpl extends _QuoteDraft {
   final String? clientId;
   @override
   final String? clientLabel;
+
+  /// Objet du devis (V1.1 #6) — free-text subject the artisan types at the
+  /// Personnaliser step. Null when empty. Persisted with the quote (unlike the
+  /// folder, which is navigation only — décision P4.3).
+  @override
+  final String? object;
   final List<DraftLine> _lines;
   @override
   @JsonKey()
@@ -600,7 +624,7 @@ class _$QuoteDraftImpl extends _QuoteDraft {
 
   @override
   String toString() {
-    return 'QuoteDraft(clientId: $clientId, clientLabel: $clientLabel, lines: $lines, calculation: $calculation, discountType: $discountType, discountValue: $discountValue, depositType: $depositType, depositValue: $depositValue)';
+    return 'QuoteDraft(clientId: $clientId, clientLabel: $clientLabel, object: $object, lines: $lines, calculation: $calculation, discountType: $discountType, discountValue: $discountValue, depositType: $depositType, depositValue: $depositValue)';
   }
 
   @override
@@ -612,6 +636,7 @@ class _$QuoteDraftImpl extends _QuoteDraft {
                 other.clientId == clientId) &&
             (identical(other.clientLabel, clientLabel) ||
                 other.clientLabel == clientLabel) &&
+            (identical(other.object, object) || other.object == object) &&
             const DeepCollectionEquality().equals(other._lines, _lines) &&
             (identical(other.calculation, calculation) ||
                 other.calculation == calculation) &&
@@ -630,6 +655,7 @@ class _$QuoteDraftImpl extends _QuoteDraft {
     runtimeType,
     clientId,
     clientLabel,
+    object,
     const DeepCollectionEquality().hash(_lines),
     calculation,
     discountType,
@@ -651,6 +677,7 @@ abstract class _QuoteDraft extends QuoteDraft {
   const factory _QuoteDraft({
     final String? clientId,
     final String? clientLabel,
+    final String? object,
     final List<DraftLine> lines,
     final QuoteCalculation? calculation,
     final String? discountType,
@@ -664,6 +691,12 @@ abstract class _QuoteDraft extends QuoteDraft {
   String? get clientId;
   @override
   String? get clientLabel;
+
+  /// Objet du devis (V1.1 #6) — free-text subject the artisan types at the
+  /// Personnaliser step. Null when empty. Persisted with the quote (unlike the
+  /// folder, which is navigation only — décision P4.3).
+  @override
+  String? get object;
   @override
   List<DraftLine> get lines;
   @override

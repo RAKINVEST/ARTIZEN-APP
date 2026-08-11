@@ -2,6 +2,7 @@ import 'package:artizen/features/catalog/data/catalog_models.dart';
 import 'package:artizen/features/catalog/data/catalog_repository_impl.dart';
 import 'package:artizen/features/clients/data/client_model.dart';
 import 'package:artizen/features/clients/data/clients_repository_impl.dart';
+import 'package:artizen/features/quote_wizard/presentation/quote_draft_provider.dart';
 import 'package:artizen/features/quote_wizard/presentation/quote_wizard_screen.dart';
 import 'package:artizen/features/quotes/data/quotes_repository_impl.dart';
 import 'package:artizen/shared/providers/current_company_provider.dart';
@@ -229,5 +230,31 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('2'), findsOneWidget); // quantity preserved
+  });
+
+  testWidgets('typing an objet stores it on the draft (V1.1 #6)', (
+    tester,
+  ) async {
+    await _pumpToPersonnaliser(
+      tester,
+      categories: [_category('cat1', 'Sanitaires')],
+      items: [_item('i1', 'cat1', 'WC suspendu')],
+      add: ['WC suspendu'],
+    );
+
+    final field = find.widgetWithText(TextField, 'Objet du devis');
+    expect(field, findsOneWidget);
+    await tester.ensureVisible(field);
+    await tester.pumpAndSettle();
+    await tester.enterText(field, 'Rénovation SDB — M. Dupont');
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(QuoteWizardScreen)),
+    );
+    expect(
+      container.read(quoteDraftProvider).object,
+      'Rénovation SDB — M. Dupont',
+    );
   });
 }

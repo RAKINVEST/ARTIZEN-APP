@@ -18,6 +18,7 @@ from decimal import Decimal
 import pytest
 from pypdf import PdfReader
 
+from app.pdf.html_renderer import HtmlPdfRenderer
 from app.pdf.renderer import PdfRenderer, _money, _quantity
 from app.pdf.schemas import (
     Document,
@@ -278,3 +279,23 @@ def test_the_vat_summary_appears_only_when_rates_differ() -> None:
     text = _text_of(PdfRenderer().render(multi))
 
     assert "Base HT" in text
+
+
+# --- Objet du devis (V1.1 #6), rendered by the active HTML renderer ---
+
+
+def test_html_pdf_shows_the_objet_when_present() -> None:
+    """The client PDF (HtmlPdfRenderer — the one the endpoint uses) prints the
+    quote's objet, between the address cards and the lines table."""
+    pdf = HtmlPdfRenderer().render(
+        _document(subject="Renovation salle de bain Dupont")
+    )
+    text = _text_of(pdf)
+    assert "Objet" in text
+    assert "Dupont" in text
+
+
+def test_html_pdf_without_objet_prints_no_label() -> None:
+    """A quote with no objet renders exactly as before — no stray label."""
+    text = _text_of(HtmlPdfRenderer().render(_document()))
+    assert "Objet" not in text

@@ -258,4 +258,41 @@ void main() {
       expect(find.text('20.00 €'), findsNothing);
     },
   );
+
+  testWidgets('shows the objet in the recap when the artisan set one', (
+    tester,
+  ) async {
+    // Stop on Personnaliser to type the objet, then walk on to the Récap.
+    await _pumpToRecap(
+      tester,
+      categories: [_category('cat1', 'Sanitaires')],
+      items: [_item('i1', 'cat1', 'WC suspendu')],
+      add: ['WC suspendu'],
+      toTotalsOnly: true,
+    );
+
+    final field = find.widgetWithText(TextField, 'Objet du devis');
+    await tester.ensureVisible(field);
+    await tester.pumpAndSettle();
+    await tester.enterText(field, 'Rénovation SDB — M. Dupont');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Suivant')); // Personnaliser → Récap
+    await tester.pumpAndSettle();
+
+    expect(find.text('Objet'), findsOneWidget);
+    expect(find.text('Rénovation SDB — M. Dupont'), findsOneWidget);
+  });
+
+  testWidgets('omits the objet row in the recap when none is set', (
+    tester,
+  ) async {
+    await _pumpToRecap(
+      tester,
+      categories: [_category('cat1', 'Sanitaires')],
+      items: [_item('i1', 'cat1', 'WC suspendu')],
+      add: ['WC suspendu'],
+    );
+
+    expect(find.text('Objet'), findsNothing);
+  });
 }

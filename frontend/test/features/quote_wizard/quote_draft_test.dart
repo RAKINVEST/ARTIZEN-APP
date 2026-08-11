@@ -136,4 +136,48 @@ void main() {
     expect(state.lines, hasLength(1)); // lines untouched
     expect(container.read(stepCompleteProvider(WizardStep.client)), isFalse);
   });
+
+  // --- Objet du devis (V1.1 #6) ---
+
+  test('setObject stores a trimmed objet; blank or null clears it', () {
+    final container = makeContainer();
+    final draft = container.read(quoteDraftProvider.notifier);
+
+    draft.setObject('  Rénovation SDB — M. Dupont  ');
+    expect(
+      container.read(quoteDraftProvider).object,
+      'Rénovation SDB — M. Dupont',
+    );
+
+    draft.setObject('   ');
+    expect(container.read(quoteDraftProvider).object, isNull);
+
+    draft.setObject('Pose chaudière');
+    draft.setObject(null);
+    expect(container.read(quoteDraftProvider).object, isNull);
+  });
+
+  test('the objet never gates a step (it is optional)', () {
+    final container = makeContainer();
+    final draft = container.read(quoteDraftProvider.notifier);
+    draft.addArticle(_line('a'));
+    // Personnaliser is complete on its lines alone, with or without an objet.
+    expect(
+      container.read(stepCompleteProvider(WizardStep.personnaliser)),
+      isTrue,
+    );
+    draft.setObject('Un objet');
+    expect(
+      container.read(stepCompleteProvider(WizardStep.personnaliser)),
+      isTrue,
+    );
+  });
+
+  test('reset clears the objet', () {
+    final container = makeContainer();
+    final draft = container.read(quoteDraftProvider.notifier);
+    draft.setObject('Pose chaudière');
+    draft.reset();
+    expect(container.read(quoteDraftProvider).object, isNull);
+  });
 }

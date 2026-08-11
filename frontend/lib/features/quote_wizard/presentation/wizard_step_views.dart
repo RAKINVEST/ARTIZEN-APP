@@ -1070,6 +1070,8 @@ class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
               : null,
         ),
       const SizedBox(height: ArtizenSpacing.sm),
+      const _ObjectField(),
+      const SizedBox(height: ArtizenSpacing.sm),
       const _AdjustmentsCard(),
       const SizedBox(height: ArtizenSpacing.sm),
       _TotalsCard(
@@ -1126,6 +1128,59 @@ class _PersonnaliserStepState extends ConsumerState<_PersonnaliserStep> {
           discountValue: draft.discountValue,
           depositType: draft.depositType,
           depositValue: draft.depositValue,
+        ),
+      ),
+    );
+  }
+}
+
+/// The optional "Objet du devis" (V1.1 #6): a free-text subject for the quote
+/// ("Rénovation SDB — M. Dupont"). Seeded once from the draft so a reopened
+/// quote shows its saved objet; every keystroke updates the draft. Purely a
+/// text input — no amount, and it never gates the step (Personnaliser stays
+/// complete on its lines alone).
+class _ObjectField extends ConsumerStatefulWidget {
+  const _ObjectField();
+
+  @override
+  ConsumerState<_ObjectField> createState() => _ObjectFieldState();
+}
+
+class _ObjectFieldState extends ConsumerState<_ObjectField> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: ref.read(quoteDraftProvider).object ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(ArtizenSpacing.md),
+        child: TextField(
+          controller: _controller,
+          maxLength: 255,
+          textCapitalization: TextCapitalization.sentences,
+          textInputAction: TextInputAction.done,
+          decoration: const InputDecoration(
+            labelText: 'Objet du devis',
+            hintText: 'ex. Rénovation SDB — M. Dupont',
+            helperText: 'Facultatif — apparaît sur le devis',
+            border: OutlineInputBorder(),
+          ),
+          onChanged: (value) =>
+              ref.read(quoteDraftProvider.notifier).setObject(value),
         ),
       ),
     );
@@ -1729,6 +1784,8 @@ class _RecapStepState extends ConsumerState<_RecapStep> {
             child: Column(
               children: [
                 _CheckItem('Client', draft.clientLabel ?? '—'),
+                if (draft.object != null && draft.object!.trim().isNotEmpty)
+                  _CheckItem('Objet', draft.object!),
                 _CheckItem(
                   'Lignes',
                   '$lineCount article${lineCount > 1 ? 's' : ''}',
@@ -2048,6 +2105,7 @@ class _CreerStepState extends ConsumerState<_CreerStep> {
           .read(quotesNotifierProvider.notifier)
           .createQuote(
             clientId: draft.clientId!,
+            object: draft.object,
             lines: [for (final line in draft.lines) line.toInput()],
             discountType: draft.discountType,
             discountValue: draft.discountValue,

@@ -151,6 +151,14 @@ class Quote(Base, UUIDMixin, TimestampMixin):
     deposit_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
     balance_due: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
 
+    # --- Objet du devis (V1.1 #6) ---
+    # A free-text label for what the quote is about ("Rénovation SDB —
+    # M. Dupont"), distinct from the folder (which is only navigation, décision
+    # P4.3, and never persisted). Nullable: a quote without one renders exactly
+    # as before. Its length is bounded at the schema (255, like ``designation``),
+    # not the column. Not a monetary field — QuoteCalculator never sees it.
+    object: Mapped[str | None] = mapped_column(default=None)
+
 
 class QuoteLine(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "quote_lines"

@@ -140,6 +140,7 @@ class QuoteService:
         return await self._persist_new_quote(
             company_id=data.company_id,
             client_id=data.client_id,
+            object=data.object,
             line_models=line_models,
             totals=quote_totals,
             adjustments=adjustments,
@@ -338,6 +339,7 @@ class QuoteService:
         *,
         company_id: uuid.UUID,
         client_id: uuid.UUID,
+        object: str | None = None,
         line_models: list[QuoteLine],
         totals: QuoteTotals,
         adjustments: _Adjustments,
@@ -363,6 +365,7 @@ class QuoteService:
             Quote(
                 company_id=company_id,
                 client_id=client_id,
+                object=object,
                 quote_number=format_quote_number(year, sequence),
                 status=QuoteStatus.DRAFT,
                 total_ht=totals.total_ht,
@@ -470,6 +473,7 @@ class QuoteService:
         return await self._persist_new_quote(
             company_id=original.company_id,
             client_id=original.client_id,
+            object=original.object,
             line_models=line_models,
             totals=quote_totals,
             adjustments=adjustments,
@@ -813,6 +817,7 @@ class QuoteService:
             id=quote.id,
             company_id=quote.company_id,
             client_id=quote.client_id,
+            object=quote.object,
             quote_number=quote.quote_number,
             status=quote.status,
             total_ht=quote.total_ht,

@@ -75,6 +75,9 @@ class Quote with _$Quote {
     required String companyId,
     required String clientId,
 
+    /// Objet du devis (V1.1 #6) — free-text subject, null when the quote has none.
+    String? object,
+
     /// "DEV-2026-0001" — what the artisan and their customer actually use.
     /// `id` is a UUID nobody reads out loud.
     required String quoteNumber,

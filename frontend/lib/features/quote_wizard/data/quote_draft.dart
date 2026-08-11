@@ -83,6 +83,11 @@ class QuoteDraft with _$QuoteDraft {
   const factory QuoteDraft({
     String? clientId,
     String? clientLabel,
+
+    /// Objet du devis (V1.1 #6) — free-text subject the artisan types at the
+    /// Personnaliser step. Null when empty. Persisted with the quote (unlike the
+    /// folder, which is navigation only — décision P4.3).
+    String? object,
     @Default(<DraftLine>[]) List<DraftLine> lines,
     QuoteCalculation? calculation,
 

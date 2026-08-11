@@ -245,6 +245,7 @@ def quote_to_document(
     return Document(
         title=QUOTE_TITLE,
         number=quote.quote_number,
+        subject=quote.object,
         issued_on=resolved_issued_on,
         valid_until=resolved_issued_on + timedelta(days=validity_days),
         issuer=_company_party(profile),

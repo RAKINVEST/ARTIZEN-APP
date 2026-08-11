@@ -130,6 +130,15 @@ class QuoteDraftNotifier extends Notifier<QuoteDraft> {
     state = state.copyWith(depositType: null, depositValue: null);
   }
 
+  /// Set the quote's objet (V1.1 #6). Empty or whitespace-only clears it back
+  /// to null, so an untouched or blanked field persists nothing.
+  void setObject(String? value) {
+    final trimmed = value?.trim();
+    state = state.copyWith(
+      object: (trimmed == null || trimmed.isEmpty) ? null : trimmed,
+    );
+  }
+
   /// Start over — a fresh draft.
   void reset() => state = const QuoteDraft();
 
@@ -315,6 +324,8 @@ void loadQuoteForEdit(
   if (quote.depositType != null) {
     notifier.setDeposit(quote.depositType!, quote.depositValue);
   }
+  // Restore the objet (V1.1 #6) — a reopened quote shows its saved subject.
+  notifier.setObject(quote.object);
   ref.read(selectedFolderProvider.notifier).clear();
   ref.read(createdQuoteProvider.notifier).state = null;
   ref.read(editingQuoteIdProvider.notifier).state = quote.id;

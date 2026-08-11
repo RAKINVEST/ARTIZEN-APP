@@ -24,6 +24,7 @@ abstract class QuotesRepository {
   Future<Quote> create({
     required String companyId,
     required String clientId,
+    String? object,
     required List<QuoteLineInput> lines,
     String? discountType,
     String? discountValue,

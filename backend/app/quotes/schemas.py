@@ -134,6 +134,9 @@ class QuoteCreate(_QuoteAdjustmentsInput):
     # value that would be ignored anyway.
     company_id: uuid.UUID | None = None
     client_id: uuid.UUID
+    # Objet du devis (V1.1 #6) — optional free-text subject of the quote,
+    # bounded like a line designation. Not a monetary field.
+    object: str | None = Field(default=None, max_length=255)
     lines: list[QuoteLineCreate] = Field(min_length=1)
 
 
@@ -249,6 +252,8 @@ class QuoteRead(_QuoteAdjustmentsRead):
     id: uuid.UUID
     company_id: uuid.UUID
     client_id: uuid.UUID
+    # Objet du devis (V1.1 #6) — the free-text subject, echoed back as stored.
+    object: str | None = None
     # The identity the artisan and their customer use ("DEV-2026-0001"),
     # as opposed to `id`, which is a UUID nobody reads out loud.
     quote_number: str

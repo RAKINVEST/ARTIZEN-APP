@@ -106,6 +106,7 @@ class QuotesNotifier extends PagedListNotifier<Quote> {
   Future<Quote> createQuote({
     required String clientId,
     required List<QuoteLineInput> lines,
+    String? object,
     String? discountType,
     String? discountValue,
     String? depositType,
@@ -117,6 +118,7 @@ class QuotesNotifier extends PagedListNotifier<Quote> {
         .create(
           companyId: companyId,
           clientId: clientId,
+          object: object,
           lines: lines,
           discountType: discountType,
           discountValue: discountValue,

@@ -389,6 +389,9 @@ mixin _$Quote {
   String get companyId => throw _privateConstructorUsedError;
   String get clientId => throw _privateConstructorUsedError;
 
+  /// Objet du devis (V1.1 #6) — free-text subject, null when the quote has none.
+  String? get object => throw _privateConstructorUsedError;
+
   /// "DEV-2026-0001" — what the artisan and their customer actually use.
   /// `id` is a UUID nobody reads out loud.
   String get quoteNumber => throw _privateConstructorUsedError;
@@ -432,6 +435,7 @@ abstract class $QuoteCopyWith<$Res> {
     String id,
     String companyId,
     String clientId,
+    String? object,
     String quoteNumber,
     QuoteStatus status,
     String totalHt,
@@ -471,6 +475,7 @@ class _$QuoteCopyWithImpl<$Res, $Val extends Quote>
     Object? id = null,
     Object? companyId = null,
     Object? clientId = null,
+    Object? object = freezed,
     Object? quoteNumber = null,
     Object? status = null,
     Object? totalHt = null,
@@ -504,6 +509,10 @@ class _$QuoteCopyWithImpl<$Res, $Val extends Quote>
                 ? _value.clientId
                 : clientId // ignore: cast_nullable_to_non_nullable
                       as String,
+            object: freezed == object
+                ? _value.object
+                : object // ignore: cast_nullable_to_non_nullable
+                      as String?,
             quoteNumber: null == quoteNumber
                 ? _value.quoteNumber
                 : quoteNumber // ignore: cast_nullable_to_non_nullable
@@ -594,6 +603,7 @@ abstract class _$$QuoteImplCopyWith<$Res> implements $QuoteCopyWith<$Res> {
     String id,
     String companyId,
     String clientId,
+    String? object,
     String quoteNumber,
     QuoteStatus status,
     String totalHt,
@@ -632,6 +642,7 @@ class __$$QuoteImplCopyWithImpl<$Res>
     Object? id = null,
     Object? companyId = null,
     Object? clientId = null,
+    Object? object = freezed,
     Object? quoteNumber = null,
     Object? status = null,
     Object? totalHt = null,
@@ -665,6 +676,10 @@ class __$$QuoteImplCopyWithImpl<$Res>
             ? _value.clientId
             : clientId // ignore: cast_nullable_to_non_nullable
                   as String,
+        object: freezed == object
+            ? _value.object
+            : object // ignore: cast_nullable_to_non_nullable
+                  as String?,
         quoteNumber: null == quoteNumber
             ? _value.quoteNumber
             : quoteNumber // ignore: cast_nullable_to_non_nullable
@@ -749,6 +764,7 @@ class _$QuoteImpl implements _Quote {
     required this.id,
     required this.companyId,
     required this.clientId,
+    this.object,
     required this.quoteNumber,
     required this.status,
     required this.totalHt,
@@ -778,6 +794,10 @@ class _$QuoteImpl implements _Quote {
   final String companyId;
   @override
   final String clientId;
+
+  /// Objet du devis (V1.1 #6) — free-text subject, null when the quote has none.
+  @override
+  final String? object;
 
   /// "DEV-2026-0001" — what the artisan and their customer actually use.
   /// `id` is a UUID nobody reads out loud.
@@ -838,7 +858,7 @@ class _$QuoteImpl implements _Quote {
 
   @override
   String toString() {
-    return 'Quote(id: $id, companyId: $companyId, clientId: $clientId, quoteNumber: $quoteNumber, status: $status, totalHt: $totalHt, totalVat: $totalVat, totalTtc: $totalTtc, discountType: $discountType, discountValue: $discountValue, discountAmount: $discountAmount, netTotalHt: $netTotalHt, netTotalVat: $netTotalVat, netTotalTtc: $netTotalTtc, depositType: $depositType, depositValue: $depositValue, depositAmount: $depositAmount, balanceDue: $balanceDue, lines: $lines, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Quote(id: $id, companyId: $companyId, clientId: $clientId, object: $object, quoteNumber: $quoteNumber, status: $status, totalHt: $totalHt, totalVat: $totalVat, totalTtc: $totalTtc, discountType: $discountType, discountValue: $discountValue, discountAmount: $discountAmount, netTotalHt: $netTotalHt, netTotalVat: $netTotalVat, netTotalTtc: $netTotalTtc, depositType: $depositType, depositValue: $depositValue, depositAmount: $depositAmount, balanceDue: $balanceDue, lines: $lines, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -851,6 +871,7 @@ class _$QuoteImpl implements _Quote {
                 other.companyId == companyId) &&
             (identical(other.clientId, clientId) ||
                 other.clientId == clientId) &&
+            (identical(other.object, object) || other.object == object) &&
             (identical(other.quoteNumber, quoteNumber) ||
                 other.quoteNumber == quoteNumber) &&
             (identical(other.status, status) || other.status == status) &&
@@ -893,6 +914,7 @@ class _$QuoteImpl implements _Quote {
     id,
     companyId,
     clientId,
+    object,
     quoteNumber,
     status,
     totalHt,
@@ -932,6 +954,7 @@ abstract class _Quote implements Quote {
     required final String id,
     required final String companyId,
     required final String clientId,
+    final String? object,
     required final String quoteNumber,
     required final QuoteStatus status,
     required final String totalHt,
@@ -960,6 +983,10 @@ abstract class _Quote implements Quote {
   String get companyId;
   @override
   String get clientId;
+
+  /// Objet du devis (V1.1 #6) — free-text subject, null when the quote has none.
+  @override
+  String? get object;
 
   /// "DEV-2026-0001" — what the artisan and their customer actually use.
   /// `id` is a UUID nobody reads out loud.
