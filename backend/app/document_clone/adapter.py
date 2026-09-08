@@ -11,11 +11,10 @@ The block-id convention lives here, in :func:`iter_blocks`, and is the **single
 source of truth** shared with :mod:`app.document_clone.assembler` (which maps ids
 back to the elements it removes). Adapter and assembler therefore can never drift.
 
-P2 debt (documented, not worked around): ``RawBlock`` carries no page number, so
-on a multi-page document the blocks are one flat list and page boundaries are
-implicit. Enough for document-wide role assignment and single-page assembly;
-faithful multi-page field/table placement needs a contract evolution
-(``page`` on ``RawBlock``) — see the engine's UNKNOWNS/dette P2.
+Each ``RawBlock`` now carries its 0-based source ``page`` (P2.1), so page
+boundaries are explicit rather than implicit in the flat list. Consuming that page
+downstream — multi-page field/table placement and the renderer drawing bound
+fields beyond page 0 — is still P2 (this step only preserves the information).
 """
 
 from collections.abc import Iterator
@@ -64,11 +63,12 @@ def iter_blocks(
 def artizen_to_blocks(template: ArtizenTemplate) -> ExtractionBlocks:
     """Flatten ``template`` into the enricher's input contract, id-ordered."""
     blocks: list[RawBlock] = []
-    for bid, _page_index, kind, element in iter_blocks(template):
+    for bid, page_index, kind, element in iter_blocks(template):
         if kind is RawBlockKind.TEXT:
             blocks.append(
                 RawBlock(
                     id=bid,
+                    page=page_index,
                     kind=RawBlockKind.TEXT,
                     text=element.text,
                     rect=element.rect,
@@ -82,6 +82,7 @@ def artizen_to_blocks(template: ArtizenTemplate) -> ExtractionBlocks:
             blocks.append(
                 RawBlock(
                     id=bid,
+                    page=page_index,
                     kind=RawBlockKind.IMAGE,
                     text="",
                     rect=element.rect,

@@ -126,6 +126,17 @@ def test_replay_pneu_full_chain_no_regression() -> None:
     assert p1.overall >= baseline.overall - TOL
 
 
+def test_sje_repeated_blocks_keep_distinct_source_pages() -> None:
+    # P2.2: on a real 11-page document, the per-page repeated header must keep its
+    # own source page — the flat block list no longer collapses those occurrences.
+    original = _require("sje.pdf")
+    blocks = artizen_to_blocks(extract(original))
+    assert max(b.page for b in blocks.blocks) == 10  # 11 pages, 0-based
+    devis = [b for b in blocks.blocks if "D-25/10-01123" in b.text]  # header repeated per page
+    assert len(devis) >= 2
+    assert len({b.page for b in devis}) >= 2  # distinct source pages, not merged
+
+
 @pytest.mark.parametrize("name", sorted(FIELD_ONLY))
 def test_replay_multipage_field_path_no_regression(name: str) -> None:
     original = _require(name)

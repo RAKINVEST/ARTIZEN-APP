@@ -115,7 +115,15 @@ class TableColumn(BaseModel):
 
 class TableSpec(BaseModel):
     rect: Rect  # the table region (header + body area)
+    #: 0-based source page of the table (P2.2 — see FieldBinding.page).
+    page: int = 0
     columns: list[TableColumn] = Field(default_factory=list)
+    #: The document's own header labels, captured at assembly (P2.4) as FixedText at
+    #: their real positions. Empty when the TableSpec draws its own labels via
+    #: ``columns``. When present, reflow repeats these verbatim on continuation pages
+    #: — so a table whose headers are FixedText (not TableSpec labels) still repeats
+    #: correctly, at the original coordinates, with no fragile detection.
+    header_texts: list[FixedText] = Field(default_factory=list)
     header_style: TextStyle = Field(default_factory=TextStyle)
     header_fill: str | None = None
     body_style: TextStyle = Field(default_factory=TextStyle)
@@ -158,6 +166,13 @@ class FieldBinding(BaseModel):
     data and drawn at ``rect`` with ``style``. Anything not bound stays fixed."""
 
     field: str  # company.name | client.name | quote.number | totals.ttc | …
+    #: 0-based source page of this variable zone (P2.2). Records which page the
+    #: field came from so multi-page placement (P2.3) draws it on the right page.
+    page: int = 0
+    #: True for a total that sits BELOW the table (Total HT/TVA/TTC, acompte, reste).
+    #: When reflow (P2.4) pushes the table onto more pages, such a field follows the
+    #: table to the last page instead of staying behind. Its rect/style are kept.
+    after_table: bool = False
     rect: Rect
     style: TextStyle = Field(default_factory=TextStyle)
     prefix: str = ""

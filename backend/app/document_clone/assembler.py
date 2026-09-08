@@ -37,6 +37,7 @@ from app.document_clone.ai_contract import (
 from app.document_clone.artizen_format import (
     ArtizenTemplate,
     BusinessLayer,
+    FixedText,
     GraphicLayer,
     GraphicPage,
     HAlign,
@@ -91,9 +92,12 @@ def _in_region(rect: Rect, region: Rect) -> bool:
             and region.y <= cy <= region.y + region.h)
 
 
-def _body_cells(blocks: ExtractionBlocks, region: Rect, exclude_ids: set[int]):
+def _body_cells(blocks: ExtractionBlocks, region: Rect, exclude_ids: set[int], page: int = 0):
+    """Body cells of the table region ON A GIVEN SOURCE PAGE (P2.2). Scoping by
+    ``page`` (not just the rect) stops two blocks that share a y-band across
+    different pages from being merged into one physical table."""
     return [b for b in blocks.blocks
-            if b.id not in exclude_ids and b.text and _in_region(b.rect, region)]
+            if b.id not in exclude_ids and b.text and b.page == page and _in_region(b.rect, region)]
 
 
 def _column_bands(body, gap_eps: float = 3.5) -> list[tuple[float, float]]:
@@ -148,7 +152,7 @@ def _body_text_style(body) -> TextStyle:
     return TextStyle(font=font, size=size)
 
 
-def _build_table_spec(body, banded, region: Rect, first_row_y: float, row_height: float) -> TableSpec:
+def _build_table_spec(body, banded, region: Rect, first_row_y: float, row_height: float, page: int = 0) -> TableSpec:
     """Column geometry inferred from the body cells; header labels left empty (the
     real header blocks stay fixed above). ``rect.y`` is set so the first data row
     lands at ``first_row_y`` — the renderer draws an empty header row at ``rect.y``
@@ -178,6 +182,7 @@ def _build_table_spec(body, banded, region: Rect, first_row_y: float, row_height
     rect = Rect(x=region.x, y=first_row_y - row_height, w=region.w, h=region.h + row_height)
     return TableSpec(
         rect=rect,
+        page=page,  # source page of the table (P2.2)
         columns=columns,
         header_style=body_style.model_copy(update={"bold": True}),
         header_fill=None,
@@ -186,11 +191,11 @@ def _build_table_spec(body, banded, region: Rect, first_row_y: float, row_height
     )
 
 
-def table_geometry(blocks: ExtractionBlocks, region: Rect, exclude_ids: set[int]) -> tuple[float | None, float]:
-    """Derive ``(first_row_y, row_height)`` from the body cells: the first row is
-    the topmost cell, the row height the median vertical gap between rows. So a
-    caller only ever has to point at the table region."""
-    body = _body_cells(blocks, region, exclude_ids)
+def table_geometry(blocks: ExtractionBlocks, region: Rect, exclude_ids: set[int], page: int = 0) -> tuple[float | None, float]:
+    """Derive ``(first_row_y, row_height)`` from the body cells of the given source
+    page: the first row is the topmost cell, the row height the median vertical gap
+    between rows. So a caller only ever has to point at the table region."""
+    body = _body_cells(blocks, region, exclude_ids, page)
     if not body:
         return None, 14.0
     first_row_y = min(c.rect.y for c in body)
@@ -205,11 +210,12 @@ def extract_original_rows(
     region: Rect,
     exclude_ids: set[int],
     row_height: float,
+    page: int = 0,
 ) -> list[dict[str, str]]:
-    """The replay dataset: the document's own table rows, read back from the
-    extraction (no fabrication). Cells are clustered by y into rows and mapped to
-    column keys by the same body-derived bands used for the geometry."""
-    body = sorted(_body_cells(blocks, region, exclude_ids), key=lambda b: (round(b.rect.y, 0), b.rect.x))
+    """The replay dataset: the document's own table rows on the given source page,
+    read back from the extraction (no fabrication). Cells are clustered by y into
+    rows and mapped to column keys by the same body-derived bands as the geometry."""
+    body = sorted(_body_cells(blocks, region, exclude_ids, page), key=lambda b: (round(b.rect.y, 0), b.rect.x))
     banded = _bands_to_keys(_column_bands(body), blocks, semantics)
     rows: list[list] = []
     current: list = []
@@ -241,31 +247,67 @@ def assemble_artizen(
     semantics: SemanticStructure,
     *,
     table_region: Rect | None = None,
+    table_page: int = 0,
+    table_regions: dict[int, Rect] | None = None,
     first_row_y: float | None = None,
     row_height: float | None = None,
 ) -> ArtizenTemplate:
-    """Build the variabilised template: bound fields + (optional) TableSpec, with
-    the corresponding original ``FixedText`` removed. Pass ``table_region`` to
-    variabilise a single-page table (the row geometry is auto-derived from the body
-    cells unless ``first_row_y`` / ``row_height`` are given); omit it for the field
-    path only."""
+    """Build the variabilised template: bound fields + (optional) TableSpec(s), with
+    the corresponding original ``FixedText`` removed.
+
+    * Single page: pass ``table_region`` (+ ``table_page``); the row geometry is
+      auto-derived from that page's body cells unless ``first_row_y`` / ``row_height``
+      are given.
+    * Multi-page: pass ``table_regions`` as ``{page: region}`` — one TableSpec is
+      built per page, each scoped to and attached to its own source page, so lines
+      from different pages are never merged. Geometry is auto-derived per page.
+
+    Omit both table arguments for the field path only. Building the ORIGINAL rows for
+    replay is the caller's job (``extract_original_rows`` per page)."""
     # Anti-collapse guard: keep one block per bound role (best confidence); the rest
     # stay FixedText. Idempotent, so callers may pass raw or already-deduped roles.
     semantics = dedup_bound_roles(semantics)
     business = assemble_business_layer(blocks, semantics)
     bound = _bound_block_ids(semantics, business)
 
-    table_spec: TableSpec | None = None
+    regions: dict[int, Rect] = {}
+    if table_regions is not None:
+        regions = table_regions
+    elif table_region is not None:
+        regions = {table_page: table_region}
+    single = table_regions is None  # explicit row geometry only for the single-page shortcut
+
+    table_specs: dict[int, TableSpec] = {}
     body_ids: set[int] = set()
-    if semantics.columns and table_region is not None:
-        body = _body_cells(blocks, table_region, bound)
-        body_ids = {c.id for c in body}
-        derived_y, derived_h = table_geometry(blocks, table_region, bound)
-        row_y = first_row_y if first_row_y is not None else derived_y
-        row_h = row_height if row_height is not None else derived_h
-        if body and row_y is not None:
+    if semantics.columns and regions:
+        # Capture the document's own header labels at assembly (the header block ids
+        # are known here), so reflow can repeat them verbatim on continuation pages
+        # without any fragile detection. These blocks also stay as page FixedText.
+        by_id = {b.id: b for b in blocks.blocks}
+        header_texts = [
+            FixedText(
+                text=by_id[cm.block_id].text,
+                rect=by_id[cm.block_id].rect,
+                style=TextStyle(font=by_id[cm.block_id].font or "Exo 2",
+                                size=by_id[cm.block_id].size or 9.0,
+                                color=by_id[cm.block_id].color or "#1E293B",
+                                bold=by_id[cm.block_id].bold),
+            )
+            for cm in semantics.columns if cm.block_id in by_id
+        ]
+        for pg, region in regions.items():
+            body = _body_cells(blocks, region, bound, pg)
+            if not body:
+                continue
+            body_ids |= {c.id for c in body}
+            derived_y, derived_h = table_geometry(blocks, region, bound, pg)
+            row_y = first_row_y if (single and first_row_y is not None) else derived_y
+            row_h = row_height if (single and row_height is not None) else derived_h
+            if row_y is None:
+                continue
             banded = _bands_to_keys(_column_bands(body), blocks, semantics)
-            table_spec = _build_table_spec(body, banded, table_region, row_y, row_h)
+            spec = _build_table_spec(body, banded, region, row_y, row_h, pg)
+            table_specs[pg] = spec.model_copy(update={"header_texts": header_texts})
 
     remove = bound | body_ids
     drop = {id(el) for bid, _pi, kind, el in iter_blocks(template)
@@ -280,7 +322,8 @@ def assemble_artizen(
                 fixed_texts=kept,
                 shapes=page.shapes,
                 images=page.images,
-                table=(table_spec if page_index == 0 else page.table),
+                # each page keeps the TableSpec built for it (if any)
+                table=table_specs.get(page_index, page.table),
             )
         )
     new_graphic = GraphicLayer(

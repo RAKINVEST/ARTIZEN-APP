@@ -1,9 +1,9 @@
 """Tests for the ArtizenTemplate → ExtractionBlocks adapter.
 
 The adapter is the geometry→contract seam: it must preserve ids, text, position,
-style and reading order exactly, and surface images after texts per page. The
-``RawBlock`` has no page field — a documented P2 limit, pinned here so the day it
-is lifted this test is what changes.
+style and reading order exactly, and surface images after texts per page. Since
+P2.1 each ``RawBlock`` also records its 0-based source page, propagated unchanged
+from the adapter's page index.
 """
 
 from app.document_clone.adapter import artizen_to_blocks, iter_blocks
@@ -83,7 +83,22 @@ def test_adapter_treats_flat_template_as_one_implicit_page() -> None:
     assert [b.text for b in blocks.blocks] == ["X"]
 
 
-def test_rawblock_has_no_page_field_documented_p2_limit() -> None:
-    # Multi-page blocks are one flat list: RawBlock carries no page. Faithful
-    # multi-page field/table placement needs this contract to evolve (P2 debt).
-    assert "page" not in RawBlock.model_fields
+def test_rawblock_carries_zero_based_source_page() -> None:
+    # P2.1: RawBlock now records its 0-based source page.
+    assert "page" in RawBlock.model_fields
+    blocks = artizen_to_blocks(_template()).blocks
+    # page 0 = 2 texts + 1 image (ids 0,1,2); page 1 = 1 text (id 3)
+    assert [b.page for b in blocks] == [0, 0, 0, 1]
+
+
+def test_rawblock_page_distinguishes_two_pages() -> None:
+    blocks = artizen_to_blocks(_template()).blocks
+    assert {b.page for b in blocks} == {0, 1}
+    assert blocks[3].page == 1 and blocks[3].text == "Total TTC"
+
+
+def test_rawblock_page_matches_iter_blocks_page_index_unmodified() -> None:
+    template = _template()
+    by_id = {b.id: b for b in artizen_to_blocks(template).blocks}
+    for bid, page_index, _kind, _el in iter_blocks(template):
+        assert by_id[bid].page == page_index

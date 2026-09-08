@@ -80,8 +80,13 @@ def _font_name(style: TextStyle, mapping: dict[str, str]) -> str:
 def render_artizen(
     template: ArtizenTemplate,
     fields: dict[str, str],
-    rows: list[dict[str, str]],
+    rows: list[dict[str, str]] | dict[int, list[dict[str, str]]],
 ) -> bytes:
+    """Draw the ``.artizen`` to PDF. ``fields`` is a ``{path: value}`` map; each
+    :class:`FieldBinding` is drawn on the page its ``page`` names. ``rows`` is either
+    a flat list (single table — applied to whichever page holds the table) or a
+    ``{page: rows}`` map so each page's own :class:`TableSpec` draws its own lines
+    (multi-page). Both forms keep every existing coordinate, style and alignment."""
     g = template.graphic
     fonts = _register_fonts(template)
 
@@ -102,9 +107,10 @@ def render_artizen(
     c = canvas.Canvas(buffer, pagesize=(pages[0].page.width, pages[0].page.height))
     for index, page in enumerate(pages):
         c.setPageSize((page.page.width, page.page.height))
-        # Bound fields (the variable zones) live on the first page only; on a
-        # reproduction they are empty anyway.
-        _draw_page(c, template, page, fonts, fields if index == 0 else {}, rows)
+        page_rows = rows.get(index, []) if isinstance(rows, dict) else rows
+        # Each field is drawn on its own source page (FieldBinding.page); a
+        # single-page document keeps every field on page 0 as before.
+        _draw_page(c, template, page, fonts, fields, page_rows, page_index=index)
         c.showPage()
     c.save()
     return buffer.getvalue()
@@ -117,6 +123,7 @@ def _draw_page(
     fonts: dict[str, str],
     fields: dict[str, str],
     rows: list[dict[str, str]],
+    page_index: int = 0,
 ) -> None:
     height = page.page.height
 
@@ -203,8 +210,10 @@ def _draw_page(
     if page.table is not None:
         _draw_table(c, page.table, rows, flip, draw_text)
 
-    # 5) Bound fields (the variable zones).
+    # 5) Bound fields (the variable zones) — only those belonging to this page.
     for fb in template.business.fields:
+        if fb.page != page_index:
+            continue
         value = fields.get(fb.field, "")
         if value != "":
             draw_text(f"{fb.prefix}{value}{fb.suffix}", fb.rect, fb.style, valign_center=False)

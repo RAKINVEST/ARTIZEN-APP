@@ -119,6 +119,15 @@ def test_fixed_texts_removed_for_bound_fields_and_table_cells() -> None:
     assert {ft.text for ft in art.graphic.pages[0].fixed_texts} == {"Désignation", "Montant HT"}
 
 
+def test_tablespec_captures_only_declared_column_headers() -> None:
+    # header_texts must hold exactly the declared column headers — not the company
+    # name, the totals, or the body cells (no fragile absorption).
+    tpl = _template()
+    blocks = artizen_to_blocks(tpl)
+    art = assemble_artizen(tpl, blocks, _semantics(), table_region=_REGION)
+    assert {h.text for h in art.graphic.pages[0].table.header_texts} == {"Désignation", "Montant HT"}
+
+
 def test_extract_original_rows_recovers_the_document_data() -> None:
     template = _template()
     blocks = artizen_to_blocks(template)
@@ -244,3 +253,73 @@ def test_assemble_multi_block_bound_role_keeps_others_as_fixed_text() -> None:
     fields = {"company.address": blocks.blocks[0].text}  # deduped → block 0
     report = compare_pdfs(original, render_artizen(art, fields, []))
     assert report.matched_texts == report.reference_texts
+
+
+# --- P2.2: source page consumed through the chain ----------------------------
+def _two_page_template() -> ArtizenTemplate:
+    geo = PageGeometry(width=595, height=842)
+    body = TextStyle(size=10)
+    right = TextStyle(size=10, align=HAlign.RIGHT)
+
+    def _page(tag: str, montant: str) -> GraphicPage:
+        return GraphicPage(page=geo, fixed_texts=[
+            FixedText(text=f"ACME {tag}", rect=Rect(x=30, y=20, w=100, h=18)),
+            FixedText(text="Désignation", rect=Rect(x=150, y=270, w=80, h=12), style=TextStyle(size=9, bold=True)),
+            FixedText(text="Montant HT", rect=Rect(x=470, y=270, w=60, h=12), style=TextStyle(size=9, bold=True)),
+            FixedText(text=f"Ligne {tag}", rect=Rect(x=70, y=300, w=150, h=11), style=body),
+            FixedText(text=montant, rect=Rect(x=500, y=300, w=50, h=11), style=right),
+        ])
+    # both pages put a body row at the SAME y=300 — only page scoping separates them
+    return ArtizenTemplate(graphic=GraphicLayer(page=geo, pages=[_page("P0", "100,00"), _page("P1", "200,00")]))
+
+
+_TWO_REGION = Rect(x=30, y=292, w=530, h=30)
+
+
+def test_table_body_rows_are_scoped_to_their_source_page() -> None:
+    tpl = _two_page_template()
+    blocks = artizen_to_blocks(tpl)
+    sem = SemanticStructure(columns=[
+        ColumnMapping(block_id=1, key="designation", label="Désignation"),
+        ColumnMapping(block_id=2, key="total_ht", label="Montant HT"),
+    ])
+    assert extract_original_rows(blocks, sem, _TWO_REGION, set(), 14.0, page=0) == [
+        {"designation": "Ligne P0", "total_ht": "100,00"}]
+    assert extract_original_rows(blocks, sem, _TWO_REGION, set(), 14.0, page=1) == [
+        {"designation": "Ligne P1", "total_ht": "200,00"}]
+
+
+def test_tablespec_records_and_attaches_to_its_source_page() -> None:
+    tpl = _two_page_template()
+    blocks = artizen_to_blocks(tpl)
+    sem = SemanticStructure(columns=[
+        ColumnMapping(block_id=6, key="designation", label="Désignation"),  # page-1 headers
+        ColumnMapping(block_id=7, key="total_ht", label="Montant HT"),
+    ])
+    art = assemble_artizen(tpl, blocks, sem, table_region=_TWO_REGION, table_page=1)
+
+    assert art.graphic.pages[0].table is None            # not on page 0
+    assert art.graphic.pages[1].table is not None
+    assert art.graphic.pages[1].table.page == 1          # records its source page
+    # page-0 body cell stays fixed (belongs to another page), page-1 cell is variabilised
+    assert "Ligne P0" in {ft.text for ft in art.graphic.pages[0].fixed_texts}
+    assert "Ligne P1" not in {ft.text for ft in art.graphic.pages[1].fixed_texts}
+
+
+def test_bound_role_across_pages_still_collapses_to_one_and_keeps_source_page() -> None:
+    geo = PageGeometry(width=595, height=842)
+    page = [GraphicPage(page=geo, fixed_texts=[FixedText(text="ACME", rect=Rect(x=30, y=20, w=100, h=18))])
+            for _ in range(2)]
+    tpl = ArtizenTemplate(graphic=GraphicLayer(page=geo, pages=page))
+    blocks = artizen_to_blocks(tpl)  # id 0 -> page 0, id 1 -> page 1
+    sem = SemanticStructure(roles=[
+        BlockRole(block_id=0, role=FieldRole.COMPANY_NAME, confidence=0.8),
+        BlockRole(block_id=1, role=FieldRole.COMPANY_NAME, confidence=0.9),
+    ])
+    art = assemble_artizen(tpl, blocks, sem)
+
+    company = [f for f in art.business.fields if f.field == "company.name"]
+    assert len(company) == 1          # page did NOT bypass the anti-collapse guard
+    assert company[0].page == 1       # best-confidence block (page 1) kept, with its page
+    # the other physical occurrence stays FixedText on its own page
+    assert {ft.text for ft in art.graphic.pages[0].fixed_texts} == {"ACME"}

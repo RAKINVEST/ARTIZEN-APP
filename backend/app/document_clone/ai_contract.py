@@ -52,6 +52,11 @@ class RawBlock(BaseModel):
     meaning."""
 
     id: int
+    #: 0-based index of the source page within the document's pages — the same
+    #: ordering the rest of the engine uses (``GraphicLayer.pages``, the renderer's
+    #: ``enumerate(pages)``, the comparator). Producers set it explicitly; the
+    #: default suits single-page inputs (all blocks on page 0).
+    page: int = 0
     kind: RawBlockKind = RawBlockKind.TEXT
     text: str = ""
     rect: Rect
@@ -107,6 +112,14 @@ _BOUND_ROLES = {
     FieldRole.DOC_NUMBER, FieldRole.DOC_DATE, FieldRole.VALID_UNTIL,
     FieldRole.TOTAL_HT, FieldRole.TOTAL_VAT, FieldRole.TOTAL_TTC,
     FieldRole.DEPOSIT, FieldRole.RESTE_A_PAYER, FieldRole.IBAN, FieldRole.BIC,
+}
+
+
+#: Bound roles that sit BELOW the table (the totals block). Flagged so reflow keeps
+#: them with the table's last page instead of leaving them behind (P2.4).
+_AFTER_TABLE_ROLES = {
+    FieldRole.TOTAL_HT, FieldRole.TOTAL_VAT, FieldRole.TOTAL_TTC,
+    FieldRole.DEPOSIT, FieldRole.RESTE_A_PAYER,
 }
 
 
@@ -188,6 +201,8 @@ def assemble_business_layer(
         fields.append(
             FieldBinding(
                 field=r.role.value,
+                page=block.page,  # keep the field's source page (P2.2)
+                after_table=r.role in _AFTER_TABLE_ROLES,  # totals follow the table (P2.4)
                 rect=block.rect,
                 style=TextStyle(
                     font=block.font or "Exo 2",
