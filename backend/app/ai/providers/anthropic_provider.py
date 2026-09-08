@@ -50,6 +50,13 @@ class AnthropicProvider(AIProvider):
         ]
 
         max_tokens = kwargs.get("max_tokens", _DEFAULT_MAX_TOKENS)
+        # Optional per-request timeout override. Additive and backward-compatible:
+        # existing (interactive) callers pass none and keep the 30s client budget;
+        # a heavier, non-interactive caller (the document-clone enricher, whose
+        # Claude call runs well past 30s with default extended thinking) can raise
+        # it without changing the copilot's behaviour.
+        request_timeout = kwargs.get("timeout")
+        extra = {} if request_timeout is None else {"timeout": float(request_timeout)}
         try:
             response = await self._client.messages.create(
                 model=self.model,
@@ -60,6 +67,7 @@ class AnthropicProvider(AIProvider):
                     if isinstance(max_tokens, int | str)
                     else _DEFAULT_MAX_TOKENS
                 ),
+                **extra,
             )
         except APIError as exc:
             # Base class of every SDK failure: connection, timeout, 429 and

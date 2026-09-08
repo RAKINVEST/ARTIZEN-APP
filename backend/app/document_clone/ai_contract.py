@@ -142,9 +142,13 @@ class SemanticStructure(BaseModel):
 class AIEnricher(Protocol):
     """The one seam the real model plugs into. A single method, so swapping the
     mock for a real enricher touches nothing else — the factory pattern the rest
-    of the app already uses for AIProvider and storage."""
+    of the app already uses for AIProvider and storage.
 
-    def enrich(self, blocks: ExtractionBlocks) -> SemanticStructure: ...
+    ``enrich`` is async: the real enricher issues an ``AIProvider.complete`` call,
+    which is async across every provider, so the seam is async end to end. The
+    offline mock is trivially async too."""
+
+    async def enrich(self, blocks: ExtractionBlocks) -> SemanticStructure: ...
 
 
 class MockAIEnricher:
@@ -153,7 +157,7 @@ class MockAIEnricher:
     so the whole pipeline runs end-to-end with no model and no network: the app
     must always start and always answer, per the provider-abstraction rule."""
 
-    def enrich(self, blocks: ExtractionBlocks) -> SemanticStructure:
+    async def enrich(self, blocks: ExtractionBlocks) -> SemanticStructure:
         return SemanticStructure(
             document_type=blocks.document_type,
             calc_rules=[

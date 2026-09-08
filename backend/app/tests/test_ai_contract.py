@@ -59,10 +59,10 @@ def test_contract_round_trips_losslessly() -> None:
     assert SemanticStructure.model_validate_json(semantics.model_dump_json()) == semantics
 
 
-def test_mock_enricher_answers_offline() -> None:
+async def test_mock_enricher_answers_offline() -> None:
     enricher: AIEnricher = MockAIEnricher()
 
-    result = enricher.enrich(_blocks())
+    result = await enricher.enrich(_blocks())
 
     # A valid, well-formed structure with no model and no network.
     assert isinstance(result, SemanticStructure)
